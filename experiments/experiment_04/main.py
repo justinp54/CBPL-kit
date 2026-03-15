@@ -19,5 +19,4 @@ def main(x1_values: Iterable[float] | None = None) -> list[float]:
 if __name__ == "__main__":
     temperatures = main()
     for x1, t_bub in zip(config.x1_list, temperatures):
-        print(f"x1={x1:.4f}, T_bubble={t_bub:.3f} °C")
-    
+        print(f"x1={x1:.4f}, T_bubble={t_bub:.3f} degC")
