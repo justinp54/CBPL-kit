@@ -1,12 +1,25 @@
 import numpy as np
 import mol_class
+from typing import Tuple, List
 
-def modified_Raoult(
+def modified_raoult(
     mol1: mol_class.MoleculeClass,
     mol2: mol_class.MoleculeClass,
     x1: float,
-    T: float,
-):
+)-> Tuple[float, List[float]]:
+    """
+    Calculate Bubble point temperature using modified Raoult's law
+    
+    Parameters:
+    mol1: MoleculeClass
+    mol2: MoleculeClass
+    x1: float - mole fraction of component 1 (acetone)
+    
+    Returns:
+    T: float - bubble point temperature [°C]
+    T_arr: List[float] - list of temperature estimates during iteration
+    """
+    
     if not 0.0 <= x1 <= 1.0:
         raise ValueError("x1 must be in [0, 1].")
 

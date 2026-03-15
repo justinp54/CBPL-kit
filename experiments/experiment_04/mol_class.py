@@ -7,9 +7,9 @@ class MoleculeClass:
     B: float
     C: float
     
-    Tc: float
-    Pc: float
-    w: float
+    Tc: float = None
+    Pc: float = None
+    w: float = None
     k: float = 0.0
     # will be made in the future when needed
     # def calculate_alpha(self) -> float:
