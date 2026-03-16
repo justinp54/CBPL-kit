@@ -18,7 +18,7 @@ def modified_raoult(
     x1: float - mole fraction of component 1 (acetone)
 
     Returns:
-    T: float - bubble point temperature [°C]
+    T: float - bubble point temperature [K]
     T_arr: List[float] - list of temperature estimates during iteration
     """
 
@@ -88,7 +88,19 @@ def vapor_composition_at_bubble(
     pressure: float = 1.0,
     epsilon: float = 1e-3,
 ) -> float:
-    """Return vapor composition y1 at bubble point for a given liquid composition x1."""
+    """
+    Return vapor composition y1 at bubble point for a given liquid composition x1.
+    
+    Parameters:
+    mol1: MoleculeClass
+    mol2: MoleculeClass
+    x1: float - mole fraction of component 1
+    pressure: float - system pressure [bar]
+    epsilon: float - convergence criterion
+    
+    Returns:
+    y1: float - vapor mole fraction of component 1 at bubble point
+    """
     t_bubble, _ = modified_raoult(
         mol1,
         mol2,
@@ -125,7 +137,10 @@ def build_xy_data(
     x1_list: list[float],
     pressure: float = 1.0,
 ) -> tuple[list[float], list[float]]:
-    """Compute x-y VLE data from modified Raoult results."""
+    """
+    Compute x-y VLE data from modified Raoult results.
+    Takes a list of liquid compositions and returns corresponding vapor compositions.
+    """
     x_data = sorted(x1_list)
     y_data: list[float] = [
         vapor_composition_at_bubble(mol1, mol2, x1, pressure=pressure)

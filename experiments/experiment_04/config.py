@@ -21,8 +21,9 @@ y1_exp: list[float] = [
 P = 1.0  # constant pressure [bar]
 
 # --- Physical constants ---
-R = 0.08314462  # ideal gas constant [bar·L/mol·K]
-kij = 0.0  # PR EOS binary interaction parameter
+PSI = 0.45724    # PR EOS psi
+OMEGA = 0.07780  # PR EOS omega
+kij = 0.0        # PR EOS binary interaction parameter
 
 # --- Component properties ---
 ACETONE = {

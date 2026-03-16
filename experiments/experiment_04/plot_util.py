@@ -30,7 +30,8 @@ def plot_vle_comparison(
     x_exp: Sequence[float] | None = None,
     y_exp: Sequence[float] | None = None,
     connect_exp_endpoints: bool = True,
-    title: str = "VLE diagram by experiment and MRL calculation",
+    model_name: str = "MRL",
+    title: str | None = None,
     save_path: str | Path | None = None,
     show_plot: bool = True,
 ) -> None:
@@ -41,12 +42,27 @@ def plot_vle_comparison(
     x_model = list(x_model)
     y_model = list(y_model)
 
+    if title is None:
+        title = f"VLE diagram by experiment and {model_name} calculation"
+
     plt.figure(figsize=(7, 7))
 
-    # Acetone and isopropanol MRL curves
-    plt.plot(x_model, y_model, color="0.55", linewidth=1.5, label="Acetone_MR")
+    # Acetone and isopropanol model curves
+    plt.plot(
+        x_model,
+        y_model,
+        color="0.55",
+        linewidth=1.5,
+        label=f"Acetone ({model_name})",
+    )
     x2_model, y2_model = _mirror_binary_curve(x_model, y_model)
-    plt.plot(x2_model, y2_model, color="0.55", linewidth=1.5, label="Isopropanol_MR")
+    plt.plot(
+        x2_model,
+        y2_model,
+        color="0.55",
+        linewidth=1.5,
+        label=f"Isopropanol ({model_name})",
+    )
 
     # Optional experimental points
     if x_exp is not None and y_exp is not None:
