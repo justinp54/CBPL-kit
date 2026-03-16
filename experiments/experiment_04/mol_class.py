@@ -29,7 +29,7 @@ class MoleculeClass:
         p_sat = 10 ** log_p_sat
         return p_sat
     
-    def gamma(self, x: float, A: float, T: float) -> float:
+    def gamma(self, x: float, A: float) -> float:
         # calculate activity coefficient using Wilson model
         # A is the interaction parameter
         gamma = np.exp(A * ((1 - x) ** 2))

@@ -4,11 +4,20 @@ from mol_class import MoleculeClass
 
 # --- Experimental input ---
 x1_list = [
-    0.1112,
-    0.1558,
-    0.2815,
-    0.3268,
+    0.1147,
+    0.1439,
+    0.2278,
+    0.3502,
 ]  # liquid mole fraction of acetone [Sample 1-4]
+
+# Experimental vapor composition of acetone for each x1 in x1_list.
+y1_exp: list[float] = [
+    0.1564,
+    0.3596,
+    0.4501,
+    0.5582,
+]
+
 P = 1.0  # constant pressure [bar]
 
 # --- Physical constants ---
