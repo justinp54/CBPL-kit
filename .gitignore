@@ -1,0 +1,16 @@
+#python
+__pycache__/
+*.pyc
+*.pyo
+
+# virtual env
+.venv/
+env/
+
+#vscode
+.vscode/
+
+#results / data
+data/
+results/
+outputs/
