@@ -57,6 +57,23 @@ def build_continuous_xy(n_points: int = 101, method: str = "modified_raoult") ->
     )
 
 
+def model_vapor_composition_at_bubble(x1: float, method: str = "modified_raoult") -> float:
+    """Return model-predicted vapor composition y1 at bubble point for a given x1."""
+    if method == "pr_eos":
+        return pr_eos.vapor_composition_at_bubble(
+            config.acetone,
+            config.isopropanol,
+            x1,
+            pressure=config.P,
+        )
+    return mrl.vapor_composition_at_bubble(
+        config.acetone,
+        config.isopropanol,
+        x1,
+        pressure=config.P,
+    )
+
+
 def plot_vle_with_experiment(
     y1_exp: Iterable[float],
     x1_exp: Iterable[float] | None = None,
@@ -129,6 +146,9 @@ def save_vle_outputs(
         )
 
     temperatures = main(config.x1_list, method=method)
+    y_model_at_exp: list[float] = [
+        model_vapor_composition_at_bubble(x1, method=method) for x1 in x_exp
+    ]
 
     with model_csv_path.open("w", encoding="utf-8") as f:
         f.write("x1_model,y1_model\n")
@@ -137,9 +157,17 @@ def save_vle_outputs(
 
     if y_exp and len(y_exp) == len(x_exp):
         with exp_csv_path.open("w", encoding="utf-8") as f:
-            f.write("x1_exp,y1_exp,t_bubble_model_K\n")
-            for x1, y1, t_bubble in zip(x_exp, y_exp, temperatures):
-                f.write(f"{x1:.8f},{y1:.8f},{t_bubble:.8f}\n")
+            f.write("x1_exp,y1_exp,y1_model,abs_diff_y,t_bubble_model_K\n")
+            for x1, y1_exp_i, y1_model_i, t_bubble in zip(
+                x_exp,
+                y_exp,
+                y_model_at_exp,
+                temperatures,
+            ):
+                abs_diff = abs(y1_model_i - y1_exp_i)
+                f.write(
+                    f"{x1:.8f},{y1_exp_i:.8f},{y1_model_i:.8f},{abs_diff:.8f},{t_bubble:.8f}\n"
+                )
 
     lines: list[str] = [
         "experiment=experiment_04",
@@ -150,6 +178,17 @@ def save_vle_outputs(
     ]
     for x1, t_bubble in zip(config.x1_list, temperatures):
         lines.append(f"x1={x1:.4f}, t_bubble_K={t_bubble:.6f}")
+
+    if y_exp and len(y_exp) == len(x_exp):
+        abs_errors = [abs(y_m - y_e) for y_m, y_e in zip(y_model_at_exp, y_exp)]
+        mae = sum(abs_errors) / len(abs_errors)
+        lines.append("")
+        lines.append("y_comparison_at_experimental_x1:")
+        for x1, y_e, y_m, abs_diff in zip(x_exp, y_exp, y_model_at_exp, abs_errors):
+            lines.append(
+                f"x1={x1:.4f}, y_exp={y_e:.6f}, y_model={y_m:.6f}, abs_diff={abs_diff:.6f}"
+            )
+        lines.append(f"y_abs_error_mae={mae:.6f}")
 
     lines.append("")
     lines.append(f"figure_file={figure_path.name}")

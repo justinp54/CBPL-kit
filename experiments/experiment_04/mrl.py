@@ -32,8 +32,9 @@ def modified_raoult(
 
     T_sat1 = mol1.T_sat(pressure)
     T_sat2 = mol2.T_sat(pressure)
-
-    T_i = T_sat1 * x1 + T_sat2 * x2  # initial guess for T
+    
+    # initial guess for T from the Antoine equation
+    T_i = T_sat1 * x1 + T_sat2 * x2  
     if not np.isfinite(T_i):
         raise ValueError("Initial temperature estimate is not finite.")
     T = T_i

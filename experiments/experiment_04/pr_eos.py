@@ -133,6 +133,7 @@ def pr_eos(
     T_arr = [T]
 
     # Initial K-values from Wilson correlation
+    # K is the ratio of fugacity coefficients
     K1 = (mol1.Pc / pressure) * np.exp(5.373 * (1 + mol1.w) * (1 - mol1.Tc / T))
     K2 = (mol2.Pc / pressure) * np.exp(5.373 * (1 + mol2.w) * (1 - mol2.Tc / T))
     S = K1 * x1 + K2 * x2
