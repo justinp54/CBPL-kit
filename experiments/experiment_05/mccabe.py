@@ -1,7 +1,12 @@
 import numpy as np
 from scipy.interpolate import interp1d
 from typing import List, Tuple, TypeAlias
-from config import Segment
+import matplotlib.pyplot as plt
+
+try:
+    from .config import Segment
+except ImportError:
+    from config import Segment
 
 def _clamp_unit(value: float) -> float:
     return float(np.clip(value, 0.0, 1.0))
@@ -55,6 +60,42 @@ def set_equilibrium_data(x_data: List[float], y_data: List[float]) -> None:
     y_arr = np.asarray(y_data, dtype=float)
     y_eq, x_eq = _build_interpolators(x_arr, y_arr)
 
+def digitize_curve_from_image(image_path: str, num_points: int = 20) -> Tuple[np.ndarray, np.ndarray]:
+    img = plt.imread(image_path)
+    
+    fig, ax = plt.subplots(figsize = (8,6))
+    ax.imshow(img)
+    plt.title(img)
+    ax.set_title("Click to digitize points on the curve in order:\n"
+                "1) origin (0,0), 2) x-axis point (1,0), 3) y-axis max point (0,1)\n"
+                f"Then click {num_points} points along the curve.")
+    
+    pts = plt.ginput(num_points + 3, timeout=0)
+    plt.close(fig)
+    
+    pts = np.array(pts, dtype=float)
+    origin = pts[0]
+    x_ref = pts[1]
+    y_ref = pts[2]
+    curve_points = pts[3:]
+    
+    x0, y0 = origin
+    xx, yx = x_ref
+    xy, yy = y_ref
+    
+    x_scale = 1.0 / (xx - x0)
+    y_scale = 1.0 / (yy - y0)
+    
+    x_data = (curve_points[:, 0] - x0) * x_scale
+    y_data = (curve_points[:, 1] - y0) * y_scale
+    
+    x_data = np.clip(x_data, 0.0, 1.0)
+    y_data = np.clip(y_data, 0.0, 1.0)
+    order = np.argsort(x_data)
+    x_data = x_data[order]
+    y_data = y_data[order]
+    
+    return x_data, y_data
 
 def compute_total_reflux(xD: float, xB: float, max_steps: int = 1000)-> Tuple[List[Segment], float]:
     _validate_inputs(xD, xB, max_steps)
