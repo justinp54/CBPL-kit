@@ -14,3 +14,8 @@ env/
 data/
 results/
 outputs/
+
+#logs, results
+.omc/
+*.png
+*.html
