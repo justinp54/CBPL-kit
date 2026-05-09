@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/compute.py": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/public/index.html"
+    }
+  ]
+}

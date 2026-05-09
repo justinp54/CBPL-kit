@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLE Hunter-Nash Simulator</title>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:    #0f2744;
+      --navy-md: #1a3a5c;
+      --blue:    #2563eb;
+      --blue-lt: #dbeafe;
+      --bg:      #f1f5f9;
+      --surface: #ffffff;
+      --border:  #e2e8f0;
+      --text:    #1e293b;
+      --muted:   #64748b;
+      --sidebar-w: 272px;
+      --header-h:  52px;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      height: var(--header-h);
+      background: var(--navy);
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .badge {
+      background: var(--blue);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    header h1 { color: #fff; font-size: 15px; font-weight: 600; }
+    header .sub { color: #64748b; font-size: 11.5px; margin-left: auto; white-space: nowrap; }
+
+    /* ── Layout ── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    aside {
+      width: var(--sidebar-w);
+      background: var(--navy-md);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    aside::-webkit-scrollbar { width: 4px; }
+    aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+
+    .section {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    /* Input field */
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field-label {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .field-label .hint {
+      font-size: 10px;
+      color: #475569;
+      font-weight: 400;
+    }
+    .field-body {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .field-input {
+      flex: 1;
+      background: rgba(15, 39, 68, 0.6);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 7px;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 500;
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color .15s, background .15s;
+      width: 100%;
+      text-align: right;
+    }
+    .field-input:focus {
+      border-color: #3b82f6;
+      background: rgba(15, 39, 68, 0.9);
+    }
+    .field-input:hover { border-color: rgba(255,255,255,.22); }
+    .field-unit {
+      font-size: 11.5px;
+      color: #64748b;
+      white-space: nowrap;
+      min-width: 28px;
+    }
+    /* Slider */
+    .field-slider {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,.12);
+      outline: none;
+      cursor: pointer;
+      accent-color: #3b82f6;
+    }
+    .field-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.2);
+      transition: box-shadow .15s;
+    }
+    .field-slider::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 0 5px rgba(59,130,246,.3);
+    }
+    .field-slider::-moz-range-thumb {
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: none;
+      cursor: pointer;
+    }
+    .range-ends {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9.5px;
+      color: #334155;
+      margin-top: 2px;
+    }
+
+    /* Separator */
+    .sep { height: 1px; background: rgba(255,255,255,.06); margin: 2px 0 10px; }
+
+    /* Calculate button */
+    .btn-calc {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: var(--blue);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background .15s, box-shadow .15s, transform .1s;
+    }
+    .btn-calc:hover { background: #1d4ed8; box-shadow: 0 4px 14px rgba(37,99,235,.45); }
+    .btn-calc:active { transform: scale(.98); }
+    .btn-calc.dirty { background: #0891b2; animation: pulse 1.6s ease-in-out infinite; }
+    .btn-calc:disabled { background: #334155; cursor: not-allowed; animation: none; }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(8,145,178,.5); }
+      50%      { box-shadow: 0 0 0 7px rgba(8,145,178,0); }
+    }
+    .spinner {
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      margin-top: 10px;
+      background: rgba(220,38,38,.12);
+      border: 1px solid rgba(220,38,38,.35);
+      border-radius: 7px;
+      color: #fca5a5;
+      font-size: 11.5px;
+      padding: 9px 11px;
+      display: none;
+      line-height: 1.5;
+    }
+    .error-box.show { display: block; }
+
+    /* Results */
+    #results-panel { display: none; }
+    #results-panel.show { display: block; }
+
+    .n-card {
+      background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .n-label { font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #7dd3fc; margin-bottom: 3px; }
+    .n-val   { font-size: 48px; font-weight: 700; color: #fff; line-height: 1; }
+    .n-sub   { font-size: 10.5px; color: #7dd3fc; margin-top: 5px; }
+
+    .comp-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #cbd5e1; }
+    .comp-table th {
+      color: #475569;
+      font-weight: 600;
+      padding: 3px 4px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .comp-table th:first-child { text-align: left; }
+    .comp-table td { padding: 4px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
+    .comp-table td:first-child { font-family: 'Inter', sans-serif; font-weight: 600; color: #e2e8f0; text-align: left; }
+    .comp-table tr { border-bottom: 1px solid rgba(255,255,255,.04); }
+    .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+    .dot-R { background: #3b82f6; }
+    .dot-E { background: #ef4444; }
+
+    .toggle-btn {
+      background: none; border: none; color: #475569;
+      font-size: 11px; cursor: pointer; padding: 6px 0 0;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .toggle-btn:hover { color: #94a3b8; }
+    #stages-detail { display: none; margin-top: 8px; }
+    #stages-detail.show { display: block; }
+
+    .flows-text { font-size: 10.5px; color: #475569; margin-top: 10px; line-height: 1.8; }
+    .flows-text strong { color: #94a3b8; }
+
+    /* ── Main ── */
+    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .tab-bar {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      padding: 0 14px;
+      gap: 0;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .tab-bar::-webkit-scrollbar { height: 0; }
+    .tab-btn {
+      background: none; border: none;
+      padding: 11px 13px 9px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px; font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      white-space: nowrap;
+      transition: color .12s, border-color .12s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--blue); border-color: var(--blue); font-weight: 600; }
+    .n-badge {
+      display: inline-block;
+      background: var(--blue-lt);
+      color: var(--blue);
+      font-size: 10px; font-weight: 700;
+      padding: 1px 5px; border-radius: 10px;
+      margin-left: 5px;
+    }
+    .tab-btn.active .n-badge { background: var(--blue); color: #fff; }
+
+    .figure-area { flex: 1; position: relative; overflow: hidden; background: var(--surface); }
+    .plot-pane { width: 100%; height: 100%; display: none; }
+    .plot-pane.active { display: block; }
+
+    /* Loading */
+    #loading {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,.9);
+      display: none;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; z-index: 10;
+    }
+    #loading.show { display: flex; }
+    .ld-ring {
+      width: 44px; height: 44px;
+      border: 3px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+    .ld-text { font-size: 14px; font-weight: 500; color: var(--muted); }
+    .ld-sub  { font-size: 12px; color: #94a3b8; }
+
+    /* Empty state */
+    #empty {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; color: var(--muted);
+      pointer-events: none;
+    }
+    #empty .ico { font-size: 52px; opacity: .18; }
+    #empty h2 { font-size: 17px; font-weight: 600; color: var(--text); opacity: .35; }
+    #empty p  { font-size: 12.5px; max-width: 280px; text-align: center; opacity: .7; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="badge">SNU CBE</span>
+  <h1>LLE Hunter-Nash Simulator</h1>
+  <span class="sub">n-Bromopropane / Propionic Acid / Water</span>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside>
+
+    <div class="section">
+      <div class="section-label">Titration Volumes</div>
+
+      <div class="field">
+        <div class="field-label">
+          V<sub>R0</sub> — Feed
+          <span class="hint">10× diluted</span>
+        </div>
+        <div class="field-body">
+          <input class="field-input" id="V_R0" type="number" value="10.78" min="0.5" max="40" step="0.01" />
+          <span class="field-unit">mL</span>
+        </div>
+        <input class="field-slider" id="s-V_R0" type="range" value="10.78" min="0.5" max="40" step="0.01" />
+        <div class="range-ends"><span>0.5</span><span>40</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          V<sub>E1</sub> — First Extract
+          <span class="hint">10× diluted</span>
+        </div>
+        <div class="field-body">
+          <input class="field-input" id="V_E1" type="number" value="3.80" min="0.1" max="20" step="0.01" />
+          <span class="field-unit">mL</span>
+        </div>
+        <input class="field-slider" id="s-V_E1" type="range" value="3.80" min="0.1" max="20" step="0.01" />
+        <div class="range-ends"><span>0.1</span><span>20</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          V<sub>Rn</sub> — Raffinate
+          <span class="hint">undiluted</span>
+        </div>
+        <div class="field-body">
+          <input class="field-input" id="V_RN" type="number" value="0.64" min="0.01" max="5" step="0.01" />
+          <span class="field-unit">mL</span>
+        </div>
+        <input class="field-slider" id="s-V_RN" type="range" value="0.64" min="0.01" max="5" step="0.01" />
+        <div class="range-ends"><span>0.01</span><span>5</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Flow Rates</div>
+
+      <div class="field">
+        <div class="field-label">Solvent (n-BP)</div>
+        <div class="field-body">
+          <input class="field-input" id="flow_solvent" type="number" value="100" min="5" max="500" step="1" />
+          <span class="field-unit">mL/min</span>
+        </div>
+        <input class="field-slider" id="s-flow_solvent" type="range" value="100" min="5" max="500" step="1" />
+        <div class="range-ends"><span>5</span><span>500</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Feed</div>
+        <div class="field-body">
+          <input class="field-input" id="flow_feed" type="number" value="40" min="5" max="300" step="1" />
+          <span class="field-unit">mL/min</span>
+        </div>
+        <input class="field-slider" id="s-flow_feed" type="range" value="40" min="5" max="300" step="1" />
+        <div class="range-ends"><span>5</span><span>300</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <button class="btn-calc" id="calc-btn" onclick="calculate()">
+        <span id="calc-icon">⚗</span>
+        <span id="calc-label">Calculate</span>
+      </button>
+      <div class="error-box" id="error-box"></div>
+    </div>
+
+    <div class="section" id="results-panel">
+      <div class="section-label">Results</div>
+
+      <div class="n-card">
+        <div class="n-label">Theoretical Stages</div>
+        <div class="n-val" id="n-val">—</div>
+        <div class="n-sub" id="n-sub"></div>
+      </div>
+
+      <table class="comp-table">
+        <thead>
+          <tr><th>Stream</th><th>PA%</th><th>BP%</th><th>W%</th></tr>
+        </thead>
+        <tbody id="stream-tbody"></tbody>
+      </table>
+
+      <button class="toggle-btn" id="stage-toggle" onclick="toggleStages()">
+        ▶ Stage breakdown
+      </button>
+      <div id="stages-detail">
+        <table class="comp-table">
+          <thead><tr><th>#</th><th></th><th>PA%</th><th>BP%</th><th>W%</th></tr></thead>
+          <tbody id="stages-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="flows-text" id="flows-text"></div>
+    </div>
+
+  </aside>
+
+  <!-- Main -->
+  <main>
+    <nav class="tab-bar">
+      <button class="tab-btn active" id="tab-fig3"    onclick="switchTab('fig3')">Hunter-Nash <span class="n-badge" id="badge-n">N=?</span></button>
+      <button class="tab-btn"        id="tab-fig1"    onclick="switchTab('fig1')">Equilibrium</button>
+      <button class="tab-btn"        id="tab-fig2a"   onclick="switchTab('fig2a')">Conjugate Curve</button>
+      <button class="tab-btn"        id="tab-fig2b"   onclick="switchTab('fig2b')">Tie Lines</button>
+      <button class="tab-btn"        id="tab-fig4"    onclick="switchTab('fig4')">Lever Rule</button>
+      <button class="tab-btn"        id="tab-fig_sf"  onclick="switchTab('fig_sf')">S:F Explorer ✦</button>
+      <button class="tab-btn"        id="tab-fig_feed"onclick="switchTab('fig_feed')">Feed Explorer ✦</button>
+    </nav>
+
+    <div class="figure-area">
+      <div id="loading">
+        <div class="ld-ring"></div>
+        <div class="ld-text">Computing…</div>
+        <div class="ld-sub">Fitting equilibrium curve · Hunter-Nash stepping</div>
+      </div>
+
+      <div id="empty">
+        <div class="ico">⬡</div>
+        <h2>Ternary Phase Diagram</h2>
+        <p>Enter your titration volumes and flow rates, then click <strong>Calculate</strong>.</p>
+      </div>
+
+      <div class="plot-pane active" id="plot-fig3"></div>
+      <div class="plot-pane"        id="plot-fig1"></div>
+      <div class="plot-pane"        id="plot-fig2a"></div>
+      <div class="plot-pane"        id="plot-fig2b"></div>
+      <div class="plot-pane"        id="plot-fig4"></div>
+      <div class="plot-pane"        id="plot-fig_sf"></div>
+      <div class="plot-pane"        id="plot-fig_feed"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+const FIELDS   = ['V_R0','V_E1','V_RN','flow_solvent','flow_feed'];
+let cache      = {};   // figKey → parsed plotly object
+let rendered   = {};   // figKey → bool
+let activeTab  = 'fig3';
+
+function markDirty() {
+  if (Object.keys(cache).length === 0) return;
+  document.getElementById('calc-btn').classList.add('dirty');
+  document.getElementById('calc-label').textContent = 'Recalculate';
+}
+
+// Bidirectional sync: number input ↔ slider
+FIELDS.forEach(f => {
+  const num = document.getElementById(f);
+  const sld = document.getElementById('s-' + f);
+
+  sld.addEventListener('input', () => {
+    num.value = sld.value;
+    markDirty();
+  });
+
+  num.addEventListener('input', () => {
+    sld.value = num.value;
+  });
+
+  num.addEventListener('change', () => {
+    let v = parseFloat(num.value);
+    const lo = parseFloat(num.min), hi = parseFloat(num.max);
+    if (isNaN(v)) v = parseFloat(num.defaultValue);
+    v = Math.max(lo, Math.min(hi, v));
+    num.value = v;
+    sld.value = v;
+    markDirty();
+  });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('calc-btn').disabled) calculate();
+});
+
+// ── Calculate ──────────────────────────────────────────────────────────────
+async function calculate() {
+  const btn = document.getElementById('calc-btn');
+  btn.disabled = true;
+  btn.classList.remove('dirty');
+  document.getElementById('calc-icon').innerHTML = '<div class="spinner"></div>';
+  document.getElementById('calc-label').textContent = 'Computing…';
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('error-box').classList.remove('show');
+
+  const body = {};
+  FIELDS.forEach(f => { body[f] = parseFloat(document.getElementById(f).value); });
+
+  try {
+    const res  = await fetch('/api/compute', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Computation failed');
+
+    // Cache and render
+    cache    = {};
+    rendered = {};
+    for (const [k, v] of Object.entries(data.figures)) {
+      cache[k]    = JSON.parse(v);
+      rendered[k] = false;
+    }
+    renderFig(activeTab);
+    showResults(data);
+
+  } catch (err) {
+    const box = document.getElementById('error-box');
+    box.textContent = '⚠ ' + err.message;
+    box.classList.add('show');
+    document.getElementById('empty').style.display = 'flex';
+  } finally {
+    document.getElementById('loading').classList.remove('show');
+    btn.disabled = false;
+    document.getElementById('calc-icon').textContent = '⚗';
+    document.getElementById('calc-label').textContent = 'Calculate';
+  }
+}
+
+// ── Plotly render ──────────────────────────────────────────────────────────
+function renderFig(key) {
+  if (!cache[key] || rendered[key]) return;
+  const el  = document.getElementById('plot-' + key);
+  const fig = cache[key];
+  Plotly.react(el, fig.data, fig.layout, {responsive: true, scrollZoom: true});
+  if (fig.frames?.length) Plotly.addFrames(el, fig.frames);
+  rendered[key] = true;
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(key) {
+  document.getElementById('plot-' + activeTab).classList.remove('active');
+  document.getElementById('tab-'  + activeTab).classList.remove('active');
+  activeTab = key;
+  document.getElementById('plot-' + key).classList.add('active');
+  document.getElementById('tab-'  + key).classList.add('active');
+  renderFig(key);
+}
+
+// ── Results ────────────────────────────────────────────────────────────────
+function showResults(data) {
+  document.getElementById('n-val').textContent  = data.N_theory;
+  document.getElementById('badge-n').textContent = 'N=' + data.N_theory;
+  document.getElementById('n-sub').textContent  =
+    `Plait pt · PA ${data.plait_point.wpa}% · BP ${data.plait_point.wbp}%`;
+
+  const streams = [
+    {name:'R₀',  cls:'R', d:data.stream_points.R0 },
+    {name:'E₁',  cls:'E', d:data.stream_points.E1 },
+    {name:'Rₙ',  cls:'R', d:data.stream_points.Rn },
+    {name:'Eₙ₊₁',cls:'E', d:data.stream_points.En1},
+  ];
+  document.getElementById('stream-tbody').innerHTML = streams.map(s =>
+    `<tr>
+      <td><span class="dot dot-${s.cls}"></span>${s.name}</td>
+      <td>${s.d.wpa}</td><td>${s.d.wbp}</td><td>${s.d.ww}</td>
+    </tr>`
+  ).join('');
+
+  document.getElementById('stages-tbody').innerHTML = data.stages.flatMap(s => [
+    `<tr><td>${s.index}</td><td style="color:#f87171">E</td><td>${s.E.wpa}</td><td>${s.E.wbp}</td><td>${s.E.ww}</td></tr>`,
+    `<tr><td></td><td style="color:#60a5fa">R</td><td>${s.R.wpa}</td><td>${s.R.wbp}</td><td>${s.R.ww}</td></tr>`,
+  ]).join('');
+
+  document.getElementById('flows-text').innerHTML =
+    `<strong>Solvent</strong> ${data.mass_flows.solvent_g_min} g/min<br>` +
+    `<strong>Feed</strong> &nbsp;&nbsp;&nbsp;&nbsp;${data.mass_flows.feed_g_min} g/min`;
+
+  document.getElementById('results-panel').classList.add('show');
+}
+
+function toggleStages() {
+  const el  = document.getElementById('stages-detail');
+  const btn = document.getElementById('stage-toggle');
+  el.classList.toggle('show');
+  btn.textContent = (el.classList.contains('show') ? '▼' : '▶') + ' Stage breakdown';
+}
+</script>
+</body>
+</html>
