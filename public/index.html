@@ -540,11 +540,27 @@ let hasCalculatedOnce = false;
 let lastBody          = {};
 
 function scheduleRecalculate() {
-  if (!hasCalculatedOnce) return;   // 첫 계산은 수동으로
+  if (!hasCalculatedOnce) return;
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    if (!document.getElementById('calc-btn').disabled) calculate();
+    if (!document.getElementById('calc-btn').disabled) calculate(false);
   }, 500);
+}
+
+function getExplorerFrame(key) {
+  try { return document.getElementById('plot-' + key)._fullLayout?.sliders?.[0]?.active ?? 0; }
+  catch { return 0; }
+}
+
+function restoreExplorerFrame(key, frameIdx) {
+  if (frameIdx <= 0 || !cache[key]?.frames?.[frameIdx]) return;
+  setTimeout(() => {
+    Plotly.animate(
+      document.getElementById('plot-' + key),
+      [cache[key].frames[frameIdx].name],
+      { frame: { duration: 0, redraw: true }, mode: 'immediate' }
+    ).catch(() => {});
+  }, 80);
 }
 
 // Bidirectional sync: number input ↔ slider
@@ -577,7 +593,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Calculate ──────────────────────────────────────────────────────────────
-async function calculate() {
+async function calculate(isManual = true) {
   const btn = document.getElementById('calc-btn');
   btn.disabled = true;
   btn.classList.remove('dirty');
@@ -608,17 +624,36 @@ async function calculate() {
 
     hasCalculatedOnce = true;
 
-    // Reset cache — other figures will lazy-load on tab click
-    cache    = {};
-    rendered = {};
-    for (const [k, v] of Object.entries(data.figures)) {
-      cache[k]    = JSON.parse(v);
-      rendered[k] = false;
+    if (isManual) {
+      // Save explorer slider positions before clearing cache
+      const sf_frame   = getExplorerFrame('fig_sf');
+      const feed_frame = getExplorerFrame('fig_feed');
+
+      cache    = {};
+      rendered = {};
+      for (const [k, v] of Object.entries(data.figures)) {
+        cache[k]    = JSON.parse(v);
+        rendered[k] = false;
+      }
+
+      if (activeTab !== 'fig3') switchTab('fig3');
+      else renderFig('fig3');
+      showResults(data);
+
+      // Re-fetch explorer tabs with stale cache cleared, then restore positions
+      ['fig_sf', 'fig_feed'].forEach(key => {
+        if (rendered[key]) return;   // already rendered (shouldn't happen)
+        fetchFig(key, key === 'fig_sf' ? sf_frame : feed_frame);
+      });
+    } else {
+      // Auto: only update fig3, leave explorer cache intact
+      for (const [k, v] of Object.entries(data.figures)) {
+        cache[k]    = JSON.parse(v);
+        rendered[k] = false;
+      }
+      if (activeTab === 'fig3') renderFig('fig3');
+      showResults(data);
     }
-    // Switch to fig3 and render it
-    if (activeTab !== 'fig3') switchTab('fig3');
-    else renderFig('fig3');
-    showResults(data);
 
   } catch (err) {
     if (err.name === 'AbortError') return;   // 새 요청에 의해 취소됨 — 무시
@@ -659,7 +694,7 @@ function switchTab(key) {
   }
 }
 
-async function fetchFig(key) {
+async function fetchFig(key, restoreFrame = 0) {
   const el = document.getElementById('plot-' + key);
   el.innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;gap:12px;color:#64748b"><div class="ld-ring"></div> Loading figure…</div>';
 
@@ -675,6 +710,8 @@ async function fetchFig(key) {
     cache[key]    = JSON.parse(data.figures[key]);
     rendered[key] = false;
     renderFig(key);
+    // Restore slider position after render
+    if (restoreFrame > 0) restoreExplorerFrame(key, restoreFrame);
   } catch (err) {
     el.innerHTML = `<div style="padding:20px;color:#f87171">⚠ ${err.message}</div>`;
   }
