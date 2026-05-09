@@ -537,6 +537,7 @@ let activeTab  = 'fig3';
 let debounceTimer     = null;
 let abortController   = null;
 let hasCalculatedOnce = false;
+let lastBody          = {};
 
 function scheduleRecalculate() {
   if (!hasCalculatedOnce) return;   // 첫 계산은 수동으로
@@ -588,16 +589,18 @@ async function calculate() {
 
   const body = {};
   FIELDS.forEach(f => { body[f] = parseFloat(document.getElementById(f).value); });
+  lastBody = { ...body };
 
   // Cancel previous in-flight request
   if (abortController) abortController.abort();
   abortController = new AbortController();
 
   try {
+    // Fast: only request fig3 on Calculate
     const res  = await fetch('/api/compute', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, figures: ['fig3'] }),
       signal: abortController.signal,
     });
     const data = await res.json();
@@ -605,14 +608,16 @@ async function calculate() {
 
     hasCalculatedOnce = true;
 
-    // Cache and render
+    // Reset cache — other figures will lazy-load on tab click
     cache    = {};
     rendered = {};
     for (const [k, v] of Object.entries(data.figures)) {
       cache[k]    = JSON.parse(v);
       rendered[k] = false;
     }
-    renderFig(activeTab);
+    // Switch to fig3 and render it
+    if (activeTab !== 'fig3') switchTab('fig3');
+    else renderFig('fig3');
     showResults(data);
 
   } catch (err) {
@@ -639,14 +644,40 @@ function renderFig(key) {
   rendered[key] = true;
 }
 
-// ── Tab switching ──────────────────────────────────────────────────────────
+// ── Tab switching + lazy figure fetch ─────────────────────────────────────
 function switchTab(key) {
   document.getElementById('plot-' + activeTab).classList.remove('active');
   document.getElementById('tab-'  + activeTab).classList.remove('active');
   activeTab = key;
   document.getElementById('plot-' + key).classList.add('active');
   document.getElementById('tab-'  + key).classList.add('active');
-  renderFig(key);
+
+  if (cache[key]) {
+    renderFig(key);
+  } else if (hasCalculatedOnce) {
+    fetchFig(key);
+  }
+}
+
+async function fetchFig(key) {
+  const el = document.getElementById('plot-' + key);
+  el.innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;gap:12px;color:#64748b"><div class="ld-ring"></div> Loading figure…</div>';
+
+  try {
+    const res  = await fetch('/api/compute', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ ...lastBody, figures: [key] }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    el.innerHTML = '';
+    cache[key]    = JSON.parse(data.figures[key]);
+    rendered[key] = false;
+    renderFig(key);
+  } catch (err) {
+    el.innerHTML = `<div style="padding:20px;color:#f87171">⚠ ${err.message}</div>`;
+  }
 }
 
 // ── Results ────────────────────────────────────────────────────────────────

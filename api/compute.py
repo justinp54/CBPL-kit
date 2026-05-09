@@ -114,32 +114,45 @@ def _compute(inp: dict) -> dict:
     # Plait point composition
     pp = xy_to_comp(*conjugate.pt_plait)
 
-    # All figures as Plotly JSON
-    figures = {
-        "fig1":  plot_util.fig_ternary_equilibrium(system).to_json(),
-        "fig2a": plot_util.fig_conjugate_curve(system, conjugate).to_json(),
-        "fig2b": plot_util.fig_interpolated_tie_lines(
-            system, conjugate, steps, N_theory
-        ).to_json(),
-        "fig3": plot_util.fig_hunter_nash(
-            system, steps, N_theory,
-            pt_R0, pt_Rn, pt_E1, pt_En1, pt_P,
-        ).to_json(),
-        "fig4": plot_util.fig_lever_rule(
-            system, pt_R0, pt_Rn, pt_E1, pt_En1,
-            pt_M, pt_Mp_exp, pt_E1p_exp,
-            title="Lever Rule — Experimental Flow Ratio",
-        ).to_json(),
-        "fig_sf": plot_util.fig_lever_rule_interactive(
-            system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M,
-        ).to_json(),
-        "fig_feed": plot_util.fig_lever_rule_interactive_feed(
-            system, pt_Rn, pt_E1, pt_En1,
-            mass_R0=mass_R0_gm,
-            mass_En1=mass_En1,
-            pt_R0_actual=pt_R0,
-        ).to_json(),
-    }
+    # Build only the requested figures (lazy loading support)
+    # key=None means build all; otherwise build only the specified key
+    def _build(key: str) -> str:
+        if key == "fig1":
+            return plot_util.fig_ternary_equilibrium(system).to_json()
+        if key == "fig2a":
+            return plot_util.fig_conjugate_curve(system, conjugate).to_json()
+        if key == "fig2b":
+            return plot_util.fig_interpolated_tie_lines(
+                system, conjugate, steps, N_theory
+            ).to_json()
+        if key == "fig3":
+            return plot_util.fig_hunter_nash(
+                system, steps, N_theory,
+                pt_R0, pt_Rn, pt_E1, pt_En1, pt_P,
+            ).to_json()
+        if key == "fig4":
+            return plot_util.fig_lever_rule(
+                system, pt_R0, pt_Rn, pt_E1, pt_En1,
+                pt_M, pt_Mp_exp, pt_E1p_exp,
+                title="Lever Rule — Experimental Flow Ratio",
+            ).to_json()
+        if key == "fig_sf":
+            return plot_util.fig_lever_rule_interactive(
+                system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M, n_steps=20,
+            ).to_json()
+        if key == "fig_feed":
+            return plot_util.fig_lever_rule_interactive_feed(
+                system, pt_Rn, pt_E1, pt_En1,
+                mass_R0=mass_R0_gm,
+                mass_En1=mass_En1,
+                pt_R0_actual=pt_R0,
+                n_steps=20,
+            ).to_json()
+        return ""
+
+    requested = inp.get("figures", ["fig3"])   # default: only fig3
+    figures = {k: _build(k) for k in requested if k in
+               ["fig1","fig2a","fig2b","fig3","fig4","fig_sf","fig_feed"]}
 
     def _r(v: float) -> float:
         return round(float(v), 2)
@@ -197,6 +210,7 @@ class handler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", 0))
             body   = json.loads(self.rfile.read(length)) if length else {}
             inp    = _validate(body)
+            inp["figures"] = body.get("figures", ["fig3"])
             result = _compute(inp)
         except Exception as exc:
             result = {"success": False, "error": str(exc)}

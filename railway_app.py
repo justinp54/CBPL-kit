@@ -27,6 +27,7 @@ async def compute(request: Request):
     try:
         body   = await request.json()
         inp    = _validate(body)
+        inp["figures"] = body.get("figures", ["fig3"])
         result = _compute(inp)
     except Exception as e:
         result = {"success": False, "error": str(e)}
