@@ -607,16 +607,24 @@ async function calculate(isManual = true) {
   FIELDS.forEach(f => { body[f] = parseFloat(document.getElementById(f).value); });
   lastBody = { ...body };
 
+  // Save explorer slider positions BEFORE re-fetching
+  const sf_frame   = getExplorerFrame('fig_sf');
+  const feed_frame = getExplorerFrame('fig_feed');
+
+  // Always fetch fig3 + explorers (if already loaded or currently active)
+  const toFetch = ['fig3'];
+  if (cache['fig_sf']   || activeTab === 'fig_sf')   toFetch.push('fig_sf');
+  if (cache['fig_feed'] || activeTab === 'fig_feed') toFetch.push('fig_feed');
+
   // Cancel previous in-flight request
   if (abortController) abortController.abort();
   abortController = new AbortController();
 
   try {
-    // Fast: only request fig3 on Calculate
     const res  = await fetch('/api/compute', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ ...body, figures: ['fig3'] }),
+      body: JSON.stringify({ ...body, figures: toFetch }),
       signal: abortController.signal,
     });
     const data = await res.json();
@@ -624,35 +632,25 @@ async function calculate(isManual = true) {
 
     hasCalculatedOnce = true;
 
+    // Update whatever was fetched
+    for (const [k, v] of Object.entries(data.figures)) {
+      cache[k]    = JSON.parse(v);
+      rendered[k] = false;
+    }
+
+    // Render active tab
+    if (activeTab === 'fig3' || cache[activeTab]) renderFig(activeTab);
+    showResults(data);
+
+    // Restore explorer slider positions
+    restoreExplorerFrame('fig_sf',   sf_frame);
+    restoreExplorerFrame('fig_feed', feed_frame);
+
+    // On manual Calculate: clear other cached figures so they re-fetch fresh
     if (isManual) {
-      // Save explorer slider positions before clearing cache
-      const sf_frame   = getExplorerFrame('fig_sf');
-      const feed_frame = getExplorerFrame('fig_feed');
-
-      cache    = {};
-      rendered = {};
-      for (const [k, v] of Object.entries(data.figures)) {
-        cache[k]    = JSON.parse(v);
-        rendered[k] = false;
-      }
-
-      if (activeTab !== 'fig3') switchTab('fig3');
-      else renderFig('fig3');
-      showResults(data);
-
-      // Re-fetch explorer tabs with stale cache cleared, then restore positions
-      ['fig_sf', 'fig_feed'].forEach(key => {
-        if (rendered[key]) return;   // already rendered (shouldn't happen)
-        fetchFig(key, key === 'fig_sf' ? sf_frame : feed_frame);
+      ['fig1','fig2a','fig2b','fig4'].forEach(k => {
+        delete cache[k]; delete rendered[k];
       });
-    } else {
-      // Auto: only update fig3, leave explorer cache intact
-      for (const [k, v] of Object.entries(data.figures)) {
-        cache[k]    = JSON.parse(v);
-        rendered[k] = false;
-      }
-      if (activeTab === 'fig3') renderFig('fig3');
-      showResults(data);
     }
 
   } catch (err) {
