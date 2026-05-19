@@ -360,13 +360,13 @@ async function initPyodide() {
 
     setProgress(75, 'Fetching experiment modules…');
     const moduleFiles = [
-      'experiments/experiment_06/config.py',
-      'experiments/experiment_06/ternary.py',
-      'experiments/experiment_06/equilibrium.py',
-      'experiments/experiment_06/conjugate.py',
-      'experiments/experiment_06/hunter_nash.py',
-      'experiments/experiment_06/lever_rule.py',
-      'experiments/experiment_06/plot_util.py',
+      'exp06/config.py',
+      'exp06/ternary.py',
+      'exp06/equilibrium.py',
+      'exp06/conjugate.py',
+      'exp06/hunter_nash.py',
+      'exp06/lever_rule.py',
+      'exp06/plot_util.py',
     ];
 
     pyodide.runPython(`
