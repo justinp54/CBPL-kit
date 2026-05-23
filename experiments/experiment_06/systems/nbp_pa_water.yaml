@@ -1,0 +1,40 @@
+name: "n-Bromopropane / Propionic Acid / Water"
+abbr: "n-BP / PA / W"
+
+# Component roles in the Hunter-Nash ternary diagram:
+#   solvent  – extracting solvent  (right vertex, BP-rich phase)
+#   solute   – transferred species (top axis, measured by acid-base titration)
+#   diluent  – original carrier    (left vertex, water-rich phase)
+components:
+  solvent: { name: "n-Bromopropane", abbr: "BP" }
+  solute:  { name: "Propionic Acid",  abbr: "PA" }
+  diluent: { name: "Water",           abbr: "W"  }
+
+# Equilibrium (binodal) data
+# Each row: [wSolvent%, wSolute%, wDiluent%]  (must sum to 100)
+# Order: left vertex → plait point → right vertex (increasing solvent content)
+equilibrium_data:
+  - [  5.100,  9.490, 85.410]
+  - [  8.370, 36.650, 54.980]
+  - [ 17.670, 49.400, 32.930]
+  - [ 32.724, 49.087, 18.189]
+  - [ 56.740, 37.830,  5.430]
+  - [ 84.180,  9.350,  6.470]
+
+# Tie-line data
+# Each row: [wSolute% in diluent-rich phase, wSolute% in solvent-rich phase]
+# Must be strictly increasing in both columns.
+tie_lines:
+  - [  6.253,  2.564]
+  - [  8.020,  2.650]
+  - [  8.291,  3.058]
+  - [ 14.175,  8.047]
+  - [ 16.730,  9.880]
+  - [ 26.069, 19.418]
+
+# Physical properties
+properties:
+  rho_solvent: 1.354   # g/mL  — n-Bromopropane density at 25 °C
+  rho_solute:  0.993   # g/mL  — Propionic Acid density at 25 °C
+  rho_diluent: 1.000   # g/mL  — Water density
+  mw_solute:   74.08   # g/mol — Propionic Acid molar mass (for NaOH titration → mol/L)
