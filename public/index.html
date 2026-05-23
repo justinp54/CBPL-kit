@@ -6,6 +6,8 @@
   <title>LLE Hunter-Nash Simulator</title>
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js.yaml.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
@@ -149,6 +151,45 @@
     #empty .ico { font-size: 52px; opacity: .18; }
     #empty h2 { font-size: 17px; font-weight: 600; color: var(--text); opacity: .35; }
     #empty p  { font-size: 12.5px; max-width: 280px; text-align: center; opacity: .7; }
+
+    /* System pane */
+    .system-pane { overflow-y: auto; padding: 36px 48px; background: var(--surface); }
+    .system-content { max-width: 740px; margin: 0 auto; }
+    .system-content h2 { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+    .system-content > p { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+    .sys-actions-top { display: flex; gap: 8px; margin-bottom: 10px; }
+    .sys-textarea { width: 100%; height: 400px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.65; background: #0f172a; color: #e2e8f0; border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; outline: none; resize: vertical; tab-size: 2; }
+    .sys-textarea:focus { border-color: var(--blue); }
+    .sys-footer { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+    .btn-apply { padding: 9px 22px; background: var(--blue); color: #fff; border: none; border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-apply:hover { background: #1d4ed8; }
+    .sys-btn { padding: 7px 14px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; transition: border-color .15s; }
+    .sys-btn:hover { border-color: #94a3b8; }
+    .sys-msg { font-size: 12.5px; margin-top: 0; }
+    .sys-msg.error { color: #dc2626; }
+    .sys-msg.success { color: #16a34a; }
+    .sys-note { font-size: 11.5px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+    .sys-note code { font-family: 'JetBrains Mono', monospace; background: var(--bg); padding: 1px 5px; border-radius: 3px; font-size: 11px; border: 1px solid var(--border); }
+
+    /* Guide pane */
+    .guide-pane { overflow-y: auto; padding: 36px 48px; background: var(--surface); }
+    .guide-content { max-width: 740px; margin: 0 auto; line-height: 1.75; color: var(--text); }
+    .guide-content h1 { font-size: 21px; font-weight: 700; margin-bottom: 4px; color: var(--navy); }
+    .guide-content h2 { font-size: 14.5px; font-weight: 700; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border); color: var(--navy-md); text-transform: uppercase; letter-spacing: .04em; }
+    .guide-content h3 { font-size: 13px; font-weight: 600; margin: 18px 0 6px; color: var(--text); }
+    .guide-content p  { font-size: 13px; margin-bottom: 10px; }
+    .guide-content ul, .guide-content ol { font-size: 13px; padding-left: 22px; margin-bottom: 10px; }
+    .guide-content li { margin-bottom: 5px; }
+    .guide-content table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 12px 0 16px; }
+    .guide-content th { background: var(--bg); padding: 7px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); color: var(--navy-md); }
+    .guide-content td { padding: 7px 12px; border-bottom: 1px solid var(--border); }
+    .guide-content code { font-family: 'JetBrains Mono', monospace; background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 11.5px; color: var(--navy-md); border: 1px solid var(--border); }
+    .guide-content pre { background: #0f172a; border-radius: 8px; padding: 16px 20px; margin: 12px 0 16px; overflow-x: auto; }
+    .guide-content pre code { background: none; border: none; color: #e2e8f0; font-size: 12px; padding: 0; }
+    .guide-content strong { font-weight: 600; color: var(--navy-md); }
+    .guide-content blockquote { border-left: 3px solid var(--blue); padding: 8px 14px; margin: 12px 0; background: var(--blue-lt); border-radius: 0 6px 6px 0; font-size: 12.5px; color: #1e40af; }
+    .guide-content blockquote p { margin: 0; }
+    .guide-content hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
   </style>
 </head>
 <body>
@@ -262,7 +303,9 @@
   <!-- Main -->
   <main>
     <nav class="tab-bar">
-      <button class="tab-btn active" id="tab-fig3"     onclick="switchTab('fig3')">Hunter-Nash <span class="n-badge" id="badge-n">N=?</span></button>
+      <button class="tab-btn active" id="tab-guide"    onclick="switchTab('guide')">Guide</button>
+      <button class="tab-btn"        id="tab-system"   onclick="switchTab('system')">System ✦</button>
+      <button class="tab-btn"        id="tab-fig3"     onclick="switchTab('fig3')">Hunter-Nash <span class="n-badge" id="badge-n">N=?</span></button>
       <button class="tab-btn"        id="tab-fig1"     onclick="switchTab('fig1')">Equilibrium</button>
       <button class="tab-btn"        id="tab-fig2a"    onclick="switchTab('fig2a')">Conjugate Curve</button>
       <button class="tab-btn"        id="tab-fig2b"    onclick="switchTab('fig2b')">Tie Lines</button>
@@ -314,13 +357,36 @@
         <p>Enter your titration volumes and click <strong>Calculate</strong>.</p>
       </div>
 
-      <div class="plot-pane active" id="plot-fig3"></div>
+      <div class="plot-pane" id="plot-fig3"></div>
       <div class="plot-pane"        id="plot-fig1"></div>
       <div class="plot-pane"        id="plot-fig2a"></div>
       <div class="plot-pane"        id="plot-fig2b"></div>
       <div class="plot-pane"        id="plot-fig4"></div>
       <div class="plot-pane"        id="plot-fig_sf"></div>
       <div class="plot-pane"        id="plot-fig_feed"></div>
+      <div class="plot-pane system-pane" id="plot-system">
+        <div class="system-content">
+          <h2>System Configuration</h2>
+          <p>Paste or edit a YAML system definition below, then click <strong>Apply System</strong>.<br>
+             After applying, click <strong>Calculate</strong> in the sidebar to rebuild all figures with the new system.</p>
+          <div class="sys-actions-top">
+            <button class="sys-btn" onclick="resetSystem()">Reset to Default</button>
+            <a class="sys-btn" id="sys-download" href="/systems/nbp_pa_water.yaml" download="nbp_pa_water.yaml">Download YAML</a>
+          </div>
+          <textarea class="sys-textarea" id="sys-yaml" spellcheck="false" autocomplete="off"></textarea>
+          <div class="sys-footer">
+            <button class="btn-apply" onclick="applySystem()">Apply System</button>
+            <span class="sys-msg" id="sys-msg"></span>
+          </div>
+          <p class="sys-note">
+            Required fields: <code>equilibrium_data</code> (rows of [wSolvent%, wSolute%, wDiluent%]),
+            <code>tie_lines</code> (rows of [wSolute% left, wSolute% right]),
+            and <code>properties</code> (rho_solvent, rho_solute, rho_diluent, mw_solute).
+            See the <strong>Guide</strong> tab for the full format.
+          </p>
+        </div>
+      </div>
+      <div class="plot-pane guide-pane active" id="plot-guide"></div>
     </div>
   </main>
 </div>
@@ -332,7 +398,7 @@ let pyodide   = null;
 let pyReady   = false;
 let cache     = {};
 let rendered  = {};
-let activeTab = 'fig3';
+let activeTab = 'guide';
 let debTimer  = null;
 let computing = false;
 
@@ -400,10 +466,12 @@ async function initPyodide() {
     setProgress(100, 'Ready!');
     pyReady = true;
 
-    // Hide init overlay, show empty state
+    // Hide init overlay; only show empty state on plot tabs
     setTimeout(() => {
       document.getElementById('init-overlay').classList.add('hide');
-      document.getElementById('empty').style.display = 'flex';
+      if (activeTab !== 'guide' && activeTab !== 'system') {
+        document.getElementById('empty').style.display = 'flex';
+      }
     }, 400);
 
     // Enable UI
@@ -768,8 +836,11 @@ function switchTab(key) {
     bar.style.display = 'none';
     document.getElementById('plot-fig_sf').style.paddingTop   = '0';
     document.getElementById('plot-fig_feed').style.paddingTop = '0';
+    if (key === 'guide')  { document.getElementById('empty').style.display = 'none'; loadGuide(); return; }
+    if (key === 'system') { document.getElementById('empty').style.display = 'none'; loadSystemTab(); return; }
     if (cache[key]) renderFig(key);
     else if (pyReady && Object.keys(cache).length > 0) calculate([key]);
+    else if (pyReady) document.getElementById('empty').style.display = 'flex';
   }
 }
 
@@ -826,7 +897,112 @@ function toggleStages() {
   btn.textContent = (el.classList.contains('show') ? '▼' : '▶') + ' Stage breakdown';
 }
 
+// ── System configuration ───────────────────────────────────────────────────
+let defaultSystemYaml = '';
+let systemTabLoaded   = false;
+
+async function loadSystemTab() {
+  if (systemTabLoaded) return;
+  systemTabLoaded = true;
+  try {
+    const resp = await fetch('/systems/nbp_pa_water.yaml');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    defaultSystemYaml = await resp.text();
+    document.getElementById('sys-yaml').value = defaultSystemYaml;
+  } catch (e) {
+    setSysMsg('Failed to load default system YAML: ' + e.message, 'error');
+  }
+}
+
+function resetSystem() {
+  document.getElementById('sys-yaml').value = defaultSystemYaml;
+  setSysMsg('', '');
+}
+
+function setSysMsg(text, type) {
+  const el = document.getElementById('sys-msg');
+  el.textContent = text;
+  el.className   = 'sys-msg' + (type ? ' ' + type : '');
+}
+
+async function applySystem() {
+  if (!pyReady) { setSysMsg('Python runtime not ready yet.', 'error'); return; }
+
+  const yamlText = document.getElementById('sys-yaml').value.trim();
+  setSysMsg('', '');
+
+  let sysData;
+  try {
+    sysData = jsyaml.load(yamlText);
+  } catch (e) {
+    setSysMsg('YAML parse error: ' + e.message, 'error'); return;
+  }
+
+  if (!sysData?.equilibrium_data || !sysData?.tie_lines || !sysData?.properties) {
+    setSysMsg('Missing required fields: equilibrium_data, tie_lines, or properties.', 'error'); return;
+  }
+
+  const p = sysData.properties;
+  if ([p.rho_solvent, p.rho_solute, p.rho_diluent, p.mw_solute].some(v => !v)) {
+    setSysMsg('properties must include rho_solvent, rho_solute, rho_diluent, mw_solute.', 'error'); return;
+  }
+
+  setSysMsg('Building system…', '');
+  try {
+    pyodide.globals.set('_sys_equil',  pyodide.toPy(sysData.equilibrium_data));
+    pyodide.globals.set('_sys_ties',   pyodide.toPy(sysData.tie_lines));
+    pyodide.globals.set('_sys_rho_s',  p.rho_solvent);
+    pyodide.globals.set('_sys_rho_o',  p.rho_solute);
+    pyodide.globals.set('_sys_rho_d',  p.rho_diluent);
+    pyodide.globals.set('_sys_mw_o',   p.mw_solute);
+
+    await pyodide.runPythonAsync(`
+import numpy as np, builtins as _b, config as _cfg, equilibrium as _eq_mod
+equil = np.array([[float(v) for v in row] for row in list(_sys_equil)])
+ties  = [(float(row[0]), float(row[1])) for row in list(_sys_ties)]
+# Update physical properties in both config and equilibrium module namespaces
+# (equilibrium.py imports them at module load, so both need updating)
+for _mod in (_cfg, _eq_mod):
+    _mod.RHO_BP = float(_sys_rho_s)
+    _mod.RHO_PA = float(_sys_rho_o)
+    _mod.RHO_W  = float(_sys_rho_d)
+    _mod.MW_PA  = float(_sys_mw_o)
+_system    = EquilibriumSystem(equil_data=equil, tie_data=ties)
+_conjugate = ConjugateCurve(_system)
+_b._esystem    = _system
+_b._econjugate = _conjugate
+_b._eready     = False
+`);
+
+    cache = {}; rendered = {}; explorerReady = false;
+    document.getElementById('results-panel').classList.remove('show');
+    document.getElementById('empty').style.display = 'flex';
+    setSysMsg('System applied — click Calculate to update figures.', 'success');
+
+  } catch (e) {
+    setSysMsg('Failed to build system: ' + e.message, 'error');
+  }
+}
+
+// ── Guide ──────────────────────────────────────────────────────────────────
+let guideLoaded = false;
+async function loadGuide() {
+  if (guideLoaded) return;
+  const el = document.getElementById('plot-guide');
+  el.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:13px">Loading guide…</div>';
+  try {
+    const resp = await fetch('/docs/guide.md');
+    if (!resp.ok) throw new Error('guide.md not found');
+    const md = await resp.text();
+    el.innerHTML = `<div class="guide-content">${marked.parse(md)}</div>`;
+    guideLoaded = true;
+  } catch (e) {
+    el.innerHTML = `<div style="padding:20px;color:#dc2626;font-size:13px">Failed to load guide: ${e.message}</div>`;
+  }
+}
+
 // ── Boot ───────────────────────────────────────────────────────────────────
+loadGuide();
 initPyodide();
 </script>
 </body>
