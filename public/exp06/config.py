@@ -1,41 +1,37 @@
+"""
+Experiment 06 — system constants loaded from systems/nbp_pa_water.yaml.
+
+To change the ternary system, edit (or replace) that YAML file.
+To change titration/flow defaults, edit the values at the bottom of this file
+or override them in the web sidebar.
+"""
+from __future__ import annotations
+
 import numpy as np
+import yaml
+from pathlib import Path
 
-# System: n-Bromopropane (bp) / Propionic Acid (pa) / Water (w)
+_path = Path(__file__).parent / "systems" / "nbp_pa_water.yaml"
+_d    = yaml.safe_load(_path.read_text())
+_p    = _d["properties"]
 
-# Equilibrium data [wbp wt%, wpa wt%, ww wt%]
-EQUIL_DATA = np.array([
-    [ 5.100,  9.490, 85.410],
-    [ 8.370, 36.650, 54.980],
-    [17.670, 49.400, 32.930],
-    [32.724, 49.087, 18.189],
-    [56.740, 37.830,  5.430],
-    [84.180,  9.350,  6.470],
-])
+# Thermodynamic / physical data (from YAML)
+EQUIL_DATA: np.ndarray               = np.array(_d["equilibrium_data"], dtype=float)
+TIE_DATA:   list[tuple[float, float]] = [tuple(float(v) for v in r) for r in _d["tie_lines"]]
 
-# Tie-line data [(wpa in water-rich phase, wpa in bp-rich phase)] wt%
-TIE_DATA: list[tuple[float, float]] = [
-    (6.253,  2.564),
-    (8.020,  2.650),
-    (8.291,  3.058),
-    (14.175, 8.047),
-    (16.730, 9.880),
-    (26.069, 19.418),
-]
+RHO_BP: float = float(_p["rho_solvent"])   # g/mL  — solvent density
+RHO_PA: float = float(_p["rho_solute"])    # g/mL  — solute density
+RHO_W:  float = float(_p["rho_diluent"])   # g/mL  — diluent density
+MW_PA:  float = float(_p["mw_solute"])     # g/mol — solute molar mass (NaOH titration)
 
-# Physical properties
-RHO_BP: float = 1.354   # g/mL
-RHO_PA: float = 0.993   # g/mL
-RHO_W:  float = 1.000   # g/mL
-MW_BP:  float = 122.99  # g/mol
-MW_PA:  float = 74.08   # g/mol
-MW_W:   float = 18.015  # g/mol
+# Supplementary constants (not in YAML, not used in core calculations)
+MW_BP: float = 122.99   # g/mol — n-Bromopropane
+MW_W:  float = 18.015   # g/mol — Water
 
-# Titration results (0.5 M NaOH; diluted 10x for R0 and E1, undiluted for Rn)
-# c [mol/L] = 0.05 * v[mL]  (undiluted); multiply by 10 for 10x-diluted samples
-V_R0: float = 10.78  # feed   (10x diluted) [mL]
-V_E1: float = 3.80   # extract (10x diluted) [mL]
-V_RN: float = 0.64   # raffinate (undiluted) [mL]
+# Experiment defaults — override with your actual titration results
+V_R0: float = 10.78   # feed   (10× diluted) [mL]
+V_E1: float = 3.80    # first extract (10× diluted) [mL]
+V_RN: float = 0.64    # raffinate (undiluted) [mL]
 
-# Operating flow rates
-FLOW_SOLVENT_ML_MIN: float = 100.0  # pure n-BP solvent [mL/min]
-FLOW_FEED_ML_MIN:    float = 40.0   # feed [mL/min]
+FLOW_SOLVENT_ML_MIN: float = 100.0   # pure n-BP solvent [mL/min]
+FLOW_FEED_ML_MIN:    float = 40.0    # feed stream [mL/min]

@@ -414,8 +414,8 @@ async function initPyodide() {
     setProgress(5, 'Loading Python runtime (Pyodide)…');
     pyodide = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/' });
 
-    setProgress(30, 'Installing numpy & scipy…');
-    await pyodide.loadPackage(['numpy', 'scipy']);
+    setProgress(30, 'Installing numpy, scipy & pyyaml…');
+    await pyodide.loadPackage(['numpy', 'scipy', 'pyyaml']);
 
     setProgress(55, 'Installing plotly…');
     await pyodide.loadPackage('micropip');
@@ -437,9 +437,14 @@ async function initPyodide() {
 
     pyodide.runPython(`
       import os, sys
-      os.makedirs('/cbpl', exist_ok=True)
+      os.makedirs('/cbpl/systems', exist_ok=True)
       if '/cbpl' not in sys.path: sys.path.insert(0, '/cbpl')
     `);
+
+    // Fetch default system YAML and write to Pyodide FS (needed by config.py)
+    const sysResp = await fetch('/systems/nbp_pa_water.yaml');
+    if (!sysResp.ok) throw new Error(`Failed to fetch system YAML: ${sysResp.status}`);
+    pyodide.FS.writeFile('/cbpl/systems/nbp_pa_water.yaml', await sysResp.text());
 
     for (const path of moduleFiles) {
       const resp = await fetch('/' + path);
