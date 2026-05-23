@@ -5,23 +5,22 @@ All internal calculations use Cartesian (x, y) coordinates.
 Plotly's Scatterternary uses (a=wpa, b=ww, c=wbp) with sum=100.
 """
 from __future__ import annotations
-from typing import Optional
 
 import numpy as np
 import plotly.graph_objects as go
 
 try:
-    from .ternary import xy_to_comp
-    from .equilibrium import EquilibriumSystem
     from .conjugate import ConjugateCurve
+    from .equilibrium import EquilibriumSystem
     from .hunter_nash import Step
-    from .lever_rule import mixing_point, find_E1_prime, find_M_and_P
+    from .lever_rule import find_E1_prime, find_M_and_P, mixing_point
+    from .ternary import xy_to_comp
 except ImportError:
-    from ternary import xy_to_comp
-    from equilibrium import EquilibriumSystem
     from conjugate import ConjugateCurve
+    from equilibrium import EquilibriumSystem
     from hunter_nash import Step
-    from lever_rule import mixing_point, find_E1_prime, find_M_and_P
+    from lever_rule import find_E1_prime, find_M_and_P, mixing_point
+    from ternary import xy_to_comp
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -39,7 +38,9 @@ def _arr_to_ternary(
     a, b, c = [], [], []
     for x, y in zip(xs, ys):
         wpa, ww, wbp = _to_ternary(x, y)
-        a.append(wpa); b.append(ww); c.append(wbp)
+        a.append(wpa)
+        b.append(ww)
+        c.append(wbp)
     return a, b, c
 
 
@@ -302,7 +303,7 @@ def _cart_point_trace(
 def _cart_line_trace(
     p1: tuple[float, float],
     p2: tuple[float, float],
-    name: Optional[str],
+    name: str | None,
     color: str,
     dash: str = "solid",
     width: float = 1.2,
@@ -518,9 +519,9 @@ def fig_lever_rule(
     pt_En1: tuple[float, float],
     pt_M: tuple[float, float],
     pt_Mp: tuple[float, float],
-    pt_E1p: Optional[tuple[float, float]],
+    pt_E1p: tuple[float, float] | None,
     title: str = "Lever Rule",
-    pt_R0_actual: Optional[tuple[float, float]] = None,
+    pt_R0_actual: tuple[float, float] | None = None,
 ) -> go.Figure:
     """
     Figs 4, 5(a/b), 6(a/b) — Lever-rule M' and E1' construction.

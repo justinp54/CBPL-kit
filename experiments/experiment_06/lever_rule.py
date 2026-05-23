@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Optional
 
 import numpy as np
 from scipy.optimize import brentq
@@ -18,7 +17,7 @@ def _line_coeffs(
 def _intersect(
     L1: tuple[float, float, float],
     L2: tuple[float, float, float],
-) -> Optional[tuple[float, float]]:
+) -> tuple[float, float] | None:
     """Intersection of two lines given as (A, B, C) coefficients."""
     A1, B1, C1 = L1
     A2, B2, C2 = L2
@@ -61,7 +60,7 @@ def find_E1_prime(
     pt_Rn: tuple[float, float],
     pt_Mp: tuple[float, float],
     spline,
-) -> Optional[tuple[float, float]]:
+) -> tuple[float, float] | None:
     """
     E1' = intersection of the Rn–M' line with the left branch of the
     equilibrium curve.  Returns None if no intersection is found.

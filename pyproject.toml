@@ -1,0 +1,38 @@
+[project]
+name = "cbpl-kit"
+version = "0.1.0"
+description = "Interactive simulation toolkit for SNU CBE lab experiments"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "plotly>=5.18",
+    "ipywidgets>=8.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP"]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "E731",   # lambda assignment (short math helpers in scipy calls)
+    "N802",   # function name should be lowercase (scientific: _E_to_R, _R_to_E)
+    "N803",   # argument name should be lowercase (scientific: V_R0, pt_E1, etc.)
+    "N806",   # variable in function should be lowercase (pt_R0, wpa_R0, etc.)
+    "N815",   # mixed-case variable in class scope (scientific variable names)
+    "N816",   # mixed-case variable in global scope (EQUIL_DATA keys, etc.)
+]
+
+exclude = ["*.ipynb"]
+
+[tool.ruff.lint.per-file-ignores]
+"experiments/experiment_04/*" = ["I"]   # legacy import style
+"experiments/experiment_05/*" = ["I"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

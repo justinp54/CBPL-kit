@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -69,11 +70,9 @@ class ConjugateCurve:
             return (float(x_pp), float(self.eval(x_pp)))
         except ValueError as exc:
             raise ValueError(
-                "Plait point not found: the degree-{} conjugate polynomial does "
-                "not intersect the equilibrium curve in [{:.3f}, 100]. "
-                "Check tie-line data or try a different polynomial degree.".format(
-                    self.degree, x_max
-                )
+                f"Plait point not found: the degree-{self.degree} conjugate polynomial does "
+                f"not intersect the equilibrium curve in [{x_max:.3f}, 100]. "
+                "Check tie-line data or try a different polynomial degree."
             ) from exc
 
     def _eval_curve(self) -> tuple[np.ndarray, np.ndarray]:

@@ -1,16 +1,17 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 import numpy as np
 from scipy.optimize import brentq, minimize_scalar
 
 try:
-    from .equilibrium import EquilibriumSystem
     from .conjugate import ConjugateCurve
+    from .equilibrium import EquilibriumSystem
     from .ternary import xy_to_comp
 except ImportError:
-    from equilibrium import EquilibriumSystem
     from conjugate import ConjugateCurve
+    from equilibrium import EquilibriumSystem
     from ternary import xy_to_comp
 
 

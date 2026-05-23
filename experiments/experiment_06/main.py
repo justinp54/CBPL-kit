@@ -10,35 +10,44 @@ Or from the package:
     main(output_dir="experiments/experiment_06/outputs")
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
-
 try:
-    from .config import (
-        V_R0, V_E1, V_RN,
-        RHO_BP, RHO_PA, MW_PA,
-        FLOW_SOLVENT_ML_MIN, FLOW_FEED_ML_MIN,
-    )
-    from .equilibrium import EquilibriumSystem
-    from .conjugate import ConjugateCurve
-    from .hunter_nash import HunterNashSolver
-    from .lever_rule import find_M_and_P, mixing_point, find_E1_prime
-    from .ternary import comp_to_xy, xy_to_comp
     from . import plot_util
-except ImportError:
-    from config import (
-        V_R0, V_E1, V_RN,
-        RHO_BP, RHO_PA, MW_PA,
-        FLOW_SOLVENT_ML_MIN, FLOW_FEED_ML_MIN,
+    from .config import (
+        FLOW_FEED_ML_MIN,
+        FLOW_SOLVENT_ML_MIN,
+        MW_PA,
+        RHO_BP,
+        RHO_PA,
+        V_E1,
+        V_R0,
+        V_RN,
     )
-    from equilibrium import EquilibriumSystem
-    from conjugate import ConjugateCurve
-    from hunter_nash import HunterNashSolver
-    from lever_rule import find_M_and_P, mixing_point, find_E1_prime
-    from ternary import comp_to_xy, xy_to_comp
+    from .conjugate import ConjugateCurve
+    from .equilibrium import EquilibriumSystem
+    from .hunter_nash import HunterNashSolver
+    from .lever_rule import find_E1_prime, find_M_and_P, mixing_point
+    from .ternary import comp_to_xy, xy_to_comp
+except ImportError:
     import plot_util
+    from config import (
+        FLOW_FEED_ML_MIN,
+        FLOW_SOLVENT_ML_MIN,
+        MW_PA,
+        RHO_BP,
+        RHO_PA,
+        V_E1,
+        V_R0,
+        V_RN,
+    )
+    from conjugate import ConjugateCurve
+    from equilibrium import EquilibriumSystem
+    from hunter_nash import HunterNashSolver
+    from lever_rule import find_E1_prime, find_M_and_P, mixing_point
+    from ternary import comp_to_xy, xy_to_comp
 
 
 # ---------------------------------------------------------------------------
@@ -129,7 +138,7 @@ def main(output_dir: str | Path = ".") -> None:
 
     # ── Operating points M and P ──────────────────────────────────────────
     pt_M, pt_P = find_M_and_P(sp.pt_E1, sp.pt_Rn, sp.pt_En1, sp.pt_R0)
-    print(f"\nOperating points")
+    print("\nOperating points")
     print(f"  M = ({pt_M[0]:.3f}, {pt_M[1]:.3f})")
     print(f"  P = ({pt_P[0]:.3f}, {pt_P[1]:.3f})")
 

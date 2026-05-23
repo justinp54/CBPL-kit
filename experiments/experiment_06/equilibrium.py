@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -6,10 +7,10 @@ from scipy.interpolate import make_interp_spline
 from scipy.optimize import brentq, minimize_scalar
 
 try:
-    from .config import EQUIL_DATA, TIE_DATA, RHO_BP, RHO_PA, RHO_W, MW_PA
+    from .config import EQUIL_DATA, MW_PA, RHO_BP, RHO_PA, RHO_W, TIE_DATA
     from .ternary import xy_to_comp
 except ImportError:
-    from config import EQUIL_DATA, TIE_DATA, RHO_BP, RHO_PA, RHO_W, MW_PA
+    from config import EQUIL_DATA, MW_PA, RHO_BP, RHO_PA, RHO_W, TIE_DATA
     from ternary import xy_to_comp
 
 
@@ -66,6 +67,17 @@ class EquilibriumSystem:
         wpa, wbp, ww = xy_to_comp(x, y)
         vol_L = (wpa / RHO_PA + wbp / RHO_BP + ww / RHO_W) / 1000.0
         return (wpa / MW_PA) / vol_L
+
+    @classmethod
+    def from_yaml(cls, path: str | Path) -> "EquilibriumSystem":
+        """Load equilibrium and tie-line data from a system YAML file."""
+        import yaml
+        from pathlib import Path as _Path
+        with open(_Path(path)) as f:
+            data = yaml.safe_load(f)
+        equil = np.array(data["equilibrium_data"], dtype=float)
+        ties = [tuple(float(v) for v in row) for row in data["tie_lines"]]
+        return cls(equil_data=equil, tie_data=ties)
 
     def find_curve_point_by_concentration(
         self, target_c: float, left: bool
