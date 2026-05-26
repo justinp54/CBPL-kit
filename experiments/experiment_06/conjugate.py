@@ -62,18 +62,43 @@ class ConjugateCurve:
     def _find_plait_point(self) -> tuple[float, float]:
         x_max = max(p[0] for p in self.aux_points)
 
-        def diff(x: float) -> float:
-            return float(self.eval(x)) - float(self.system.spline(x))
+        def _try(coefs: np.ndarray, lo: float) -> tuple[float, float] | None:
+            def diff(x: float) -> float:
+                return float(np.polyval(coefs, x)) - float(self.system.spline(x))
+            try:
+                x_pp = brentq(diff, lo, 100.0)
+                return float(x_pp), float(np.polyval(coefs, x_pp))
+            except ValueError:
+                return None
 
-        try:
-            x_pp = brentq(diff, x_max, 100.0)
-            return (float(x_pp), float(self.eval(x_pp)))
-        except ValueError as exc:
-            raise ValueError(
-                f"Plait point not found: the degree-{self.degree} conjugate polynomial does "
-                f"not intersect the equilibrium curve in [{x_max:.3f}, 100]. "
-                "Check tie-line data or try a different polynomial degree."
-            ) from exc
+        # Try current degree with slightly relaxed lower bound
+        for lo in [x_max, x_max * 0.9]:
+            result = _try(self._coefs, lo)
+            if result:
+                return result
+
+        # Fallback: refit with progressively lower degree
+        xa, ya = self.aux_points[0]
+        x_guide = np.array([p[0] for p in self.aux_points[1:]])
+        y_guide = np.array([p[1] for p in self.aux_points[1:]])
+        t = np.linspace(0, 1, len(x_guide) + 2)[1:-1]
+        x_fit = np.concatenate([[xa], (1 - t) * xa + t * x_guide])
+        y_fit = np.concatenate([[ya], (1 - t) * ya + t * y_guide])
+
+        for deg in range(self.degree - 1, 1, -1):
+            coefs = np.polyfit(x_fit, y_fit, deg)
+            for lo in [x_max, x_max * 0.9]:
+                result = _try(coefs, lo)
+                if result:
+                    self._coefs = coefs
+                    self.degree = deg
+                    return result
+
+        raise ValueError(
+            f"Plait point not found with polynomial degrees {self.degree} down to 2 "
+            f"(search range [{x_max:.3f}, 100]). "
+            "Check that equilibrium and tie-line data are consistent."
+        )
 
     def _eval_curve(self) -> tuple[np.ndarray, np.ndarray]:
         x_min = min(p[0] for p in self.aux_points)

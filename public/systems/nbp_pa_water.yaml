@@ -2,17 +2,17 @@ name: "n-Bromopropane / Propionic Acid / Water"
 abbr: "n-BP / PA / W"
 
 # Component roles in the Hunter-Nash ternary diagram:
-#   solvent  – extracting solvent  (right vertex, BP-rich phase)
+#   solvent  – left-vertex component, extracting solvent (water-rich phase, E₁/Eₙ₊₁ side)
 #   solute   – transferred species (top axis, measured by acid-base titration)
-#   diluent  – original carrier    (left vertex, water-rich phase)
+#   diluent  – right-vertex component, feed carrier    (BP-rich phase, R₀/Rₙ side)
 components:
-  solvent: { name: "n-Bromopropane", abbr: "BP" }
+  solvent: { name: "Water",           abbr: "W"  }
   solute:  { name: "Propionic Acid",  abbr: "PA" }
-  diluent: { name: "Water",           abbr: "W"  }
+  diluent: { name: "n-Bromopropane", abbr: "BP" }
 
 # Equilibrium (binodal) data
-# Each row: [wSolvent%, wSolute%, wDiluent%]  (must sum to 100)
-# Order: left vertex → plait point → right vertex (increasing solvent content)
+# Each row: [wDiluent%, wSolute%, wSolvent%]  (= [wBP%, wPA%, wW%], must sum to 100)
+# Order: left vertex → plait point → right vertex (increasing n-BP / diluent content)
 equilibrium_data:
   - [  5.100,  9.490, 85.410]
   - [  8.370, 36.650, 54.980]
@@ -22,7 +22,8 @@ equilibrium_data:
   - [ 84.180,  9.350,  6.470]
 
 # Tie-line data
-# Each row: [wSolute% in diluent-rich phase, wSolute% in solvent-rich phase]
+# Each row: [wSolute% in solvent-rich phase, wSolute% in diluent-rich phase]
+#            (= [wPA% in water-rich / extract side, wPA% in BP-rich / raffinate side])
 # Must be strictly increasing in both columns.
 tie_lines:
   - [  6.253,  2.564]
@@ -34,7 +35,7 @@ tie_lines:
 
 # Physical properties
 properties:
-  rho_solvent: 1.354   # g/mL  — n-Bromopropane density at 25 °C
+  rho_solvent: 1.000   # g/mL  — Water density
   rho_solute:  0.993   # g/mL  — Propionic Acid density at 25 °C
-  rho_diluent: 1.000   # g/mL  — Water density
+  rho_diluent: 1.354   # g/mL  — n-Bromopropane density at 25 °C
   mw_solute:   74.08   # g/mol — Propionic Acid molar mass (for NaOH titration → mol/L)

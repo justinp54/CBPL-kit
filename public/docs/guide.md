@@ -4,7 +4,7 @@
 
 This simulator applies the **Hunter-Nash graphical method** to liquid-liquid extraction (LLE) analysis. All computation runs entirely in your browser using Pyodide (Python in WebAssembly) — no server required.
 
-**Default system:** n-Bromopropane (solvent) / Propionic Acid (solute) / Water (diluent)
+**Default system:** n-Bromopropane (feed carrier) / Propionic Acid (solute) / Water (extracting solvent)
 
 ---
 
@@ -38,7 +38,7 @@ Each value can be typed directly or adjusted with the slider below the field. Th
 
 | Field | Meaning |
 |-------|---------|
-| **Solvent (n-BP)** | Pure solvent volumetric flow [mL/min] |
+| **Solvent (Water)** | Pure water (extracting solvent, Eₙ₊₁) volumetric flow [mL/min] |
 | **Feed** | Feed stream volumetric flow [mL/min] |
 
 ---
@@ -77,7 +77,7 @@ Lever-rule mass-balance diagram at the experimental flow ratio.
 | Point | Meaning |
 |-------|---------|
 | **R₀** | Feed (on BP–PA binary edge, no water) |
-| **Eₙ₊₁** | Pure solvent inlet (n-BP vertex) |
+| **Eₙ₊₁** | Pure water inlet (left vertex, extracting solvent) |
 | **M** | Overall mixing point (lever rule between R₀ and Eₙ₊₁) |
 | **P** | Operating point (line M–Rₙ extended to the left branch) |
 | **E₁′** | Predicted first extract — compare to your measured E₁ |

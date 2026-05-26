@@ -250,7 +250,7 @@
       <div class="section-label">Flow Rates</div>
 
       <div class="field">
-        <div class="field-label">Solvent (n-BP)</div>
+        <div class="field-label">Solvent (Water)</div>
         <div class="field-body">
           <input class="field-input" id="flow_solvent" type="number" value="100" min="5" max="500" step="1" />
           <span class="field-unit">mL/min</span>
@@ -528,7 +528,7 @@ document.addEventListener('keydown', e => {
 // ── Core Python computation ────────────────────────────────────────────────
 const PY_COMPUTE = `
 import json
-from config import RHO_BP, RHO_PA, MW_PA, FLOW_SOLVENT_ML_MIN, FLOW_FEED_ML_MIN
+from config import RHO_BP, RHO_PA, RHO_W, MW_PA, FLOW_SOLVENT_ML_MIN, FLOW_FEED_ML_MIN
 
 def _c(v, x10): return 0.05 * v * (10.0 if x10 else 1.0)
 def _r(v):      return round(float(v), 2)
@@ -556,7 +556,7 @@ pt_M, pt_P = find_M_and_P(pt_E1, pt_Rn, pt_En1, pt_R0)
 solver = HunterNashSolver(system, conjugate, pt_P, pt_E1, pt_Rn)
 steps, N_theory = solver.solve()
 
-mass_En1   = config.FLOW_SOLVENT_ML_MIN * RHO_BP
+mass_En1   = config.FLOW_SOLVENT_ML_MIN * RHO_W
 vol_per_g  = wpa_R0/100/RHO_PA + wbp_R0/100/RHO_BP
 mass_R0_gm = config.FLOW_FEED_ML_MIN / vol_per_g
 
@@ -597,7 +597,7 @@ json.dumps({
         'R0':  {'wpa': _r(wpa_R0), 'wbp': _r(wbp_R0), 'ww': 0.0},
         'E1':  _comp(comp_E1),
         'Rn':  _comp(comp_Rn),
-        'En1': {'wpa': 0.0, 'wbp': 100.0, 'ww': 0.0},
+        'En1': {'wpa': 0.0, 'wbp': 0.0, 'ww': 100.0},
     },
     'mass_flows': {'solvent_g_min': _r(mass_En1), 'feed_g_min': _r(mass_R0_gm)},
     'stages': [{'index': s.index, 'E': _comp(s.comp_E), 'R': _comp(s.comp_R)} for s in steps[:N_theory]],
@@ -968,9 +968,9 @@ ties  = [(float(row[0]), float(row[1])) for row in list(_sys_ties)]
 # Update physical properties in both config and equilibrium module namespaces
 # (equilibrium.py imports them at module load, so both need updating)
 for _mod in (_cfg, _eq_mod):
-    _mod.RHO_BP = float(_sys_rho_s)
+    _mod.RHO_BP = float(_sys_rho_d)
     _mod.RHO_PA = float(_sys_rho_o)
-    _mod.RHO_W  = float(_sys_rho_d)
+    _mod.RHO_W  = float(_sys_rho_s)
     _mod.MW_PA  = float(_sys_mw_o)
 _system    = EquilibriumSystem(equil_data=equil, tie_data=ties)
 _conjugate = ConjugateCurve(_system)

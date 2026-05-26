@@ -23,8 +23,24 @@ class EquilibriumSystem:
 
     def __post_init__(self) -> None:
         # Cartesian coords from equilibrium data columns [wbp, wpa, ww]
-        self.x_equil: np.ndarray = self.equil_data[:, 0] + 0.5 * self.equil_data[:, 1]
-        self.y_equil: np.ndarray = np.sqrt(3) / 2.0 * self.equil_data[:, 1]
+        x_raw = self.equil_data[:, 0] + 0.5 * self.equil_data[:, 1]
+        y_raw = np.sqrt(3) / 2.0 * self.equil_data[:, 1]
+
+        # Sort by x so YAML row order doesn't matter
+        idx = np.argsort(x_raw)
+        self.x_equil: np.ndarray = x_raw[idx]
+        self.y_equil: np.ndarray = y_raw[idx]
+
+        # Detect near-duplicate x values that make the spline degenerate
+        gaps = np.diff(self.x_equil)
+        if np.any(gaps < 1.0):
+            bad = int(np.argmin(gaps))
+            raise ValueError(
+                f"Equilibrium points at rows {idx[bad]} and {idx[bad + 1]} are too "
+                f"close in the ternary diagram (Δx = {gaps[bad]:.3f}). Minimum "
+                "separation of ~5 x-units is recommended. Remove one point or choose "
+                "a more distinct composition."
+            )
 
         self.spline = make_interp_spline(self.x_equil, self.y_equil, k=3)
 

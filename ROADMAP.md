@@ -52,22 +52,34 @@ no cold start). Python modules served from `public/exp06/`.
 - [x] `StreamPoints` dataclass, `conjugate.py` ValueError on solver failure
 - [x] `experiments/experiment_04/__init__.py` added
 
-## Phase 3 — Paper Preparation (next)
+## Phase 3 — Multi-System & Onboarding ✓ Completed
+
+- [x] **Guide tab** — `public/docs/guide.md` rendered via marked.js; default active tab
+  on load so users read usage instructions while Pyodide initialises
+- [x] **System ✦ tab** — YAML textarea + Apply System; js-yaml parses in JS,
+  rebuilds `EquilibriumSystem` + `ConjugateCurve` in Pyodide
+- [x] **YAML system definition** — `systems/nbp_pa_water.yaml` covers equilibrium
+  data, tie lines, and physical properties; human-editable without touching Python
+- [x] **config.py → YAML** — thermodynamic data loaded from YAML; only experiment
+  defaults (V_R0, V_E1, V_RN, flow rates) remain hardcoded in config.py
+- [x] **`EquilibriumSystem.from_yaml()`** — classmethod for Python / Jupyter users
+- [x] **Robustness fixes** — equilibrium data auto-sorted by ternary x; near-duplicate
+  point detection with clear error; conjugate polynomial degree auto-fallback (4→3→2)
+
+## Phase 4 — Paper Preparation (next)
 
 - [ ] **Zenodo DOI** — GitHub release → Zenodo webhook (10 min, do first)
-- [ ] **README update** — web URL, usage, citation, authors
-- [ ] **Hunter-Nash explanation page** — onboarding slide in the web app
-  explaining the theory and how to use each figure
-- [ ] Local dev server note: `python dev_server.py 8080`
+- [ ] **CITATION.cff** — machine-readable citation file (GitHub "Cite this repo" button)
+- [ ] **`git tag v1.0.0`** — pin version before Zenodo snapshot
+- [ ] **README** — add DOI badge after Zenodo
 
-## Phase 4 — Future Features
+## Phase 5 — Future Features
 
-- [ ] **Different chemical systems** — UI to upload custom equilibrium data
-  (EQUIL_DATA, TIE_DATA in config.py are already the only things to change)
+- [ ] **Conjugate curve degree adaptive** — auto-set `degree = min(4, n_ties)` at init
 - [ ] **Exp 04 web app** — VLE simulator (Python done, needs Plotly UI)
 - [ ] **Exp 05 web app** — McCabe-Thiele (image digitization → canvas click)
 - [ ] **Landing page** — experiment selector when multiple apps exist
-- [ ] Service Worker caching — eliminate 20s Pyodide cold start on repeat visits
+- [ ] **Service Worker caching** — eliminate 20 s Pyodide cold start on repeat visits
 
 ---
 
