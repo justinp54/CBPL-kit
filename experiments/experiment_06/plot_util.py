@@ -327,7 +327,7 @@ def fig_ternary_equilibrium(system: EquilibriumSystem) -> go.Figure:
     """Fig 1 — Ternary diagram with equilibrium curve and tie lines."""
     traces = _equil_traces(system) + _tie_traces(system)
     fig = go.Figure(data=traces)
-    fig.update_layout(**_layout("Fig 1 — LLE Ternary Diagram"))
+    fig.update_layout(**_layout("LLE Ternary Diagram"))
     return fig
 
 
@@ -389,7 +389,7 @@ def fig_conjugate_curve(
     fig = go.Figure(data=traces)
     y_min = min(p[1] for p in conjugate.aux_points)
     fig.update_layout(**_cart_layout(
-        "Fig 2(a) — Conjugate Curve and Plait Point",
+        "Conjugate Curve and Plait Point",
         y_range=(y_min - 8, 100),
     ))
     return fig
@@ -453,7 +453,7 @@ def fig_hunter_nash(
     fig = go.Figure(data=traces)
     pad = 10
     fig.update_layout(**_cart_layout(
-        f"Fig 3 — Hunter-Nash  (N = {N_theory} theoretical stages)",
+        f"Hunter-Nash  (N = {N_theory} theoretical stages)",
         x_range=(min(pt_P[0] - pad, -pad), 118),
         y_range=(min(pt_P[1] - pad, -pad), 100),
     ))
@@ -506,7 +506,7 @@ def fig_interpolated_tie_lines(
     fig = go.Figure(data=traces)
     y_min = min(p[1] for p in conjugate.aux_points)
     fig.update_layout(**_cart_layout(
-        "Fig 2(b) — Interpolated Tie Lines", y_range=(y_min - 8, 100)
+        "Interpolated Tie Lines", y_range=(y_min - 8, 100)
     ))
     return fig
 
@@ -737,7 +737,7 @@ def fig_lever_rule_interactive_feed(
         for wpa in wpa_vals
     ]
     fig.update_layout(
-        **_cart_layout("Fig 6 — Lever Rule: Drag slider to adjust Feed PA wt%"),
+        **_cart_layout("Lever Rule: Drag slider to adjust Feed PA wt%"),
         sliders=[dict(
             active=0,
             steps=slider_steps,

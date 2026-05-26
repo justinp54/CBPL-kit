@@ -1,3 +1,6 @@
+# oh-my-claudecode
+.omc/
+
 #python
 __pycache__/
 *.pyc
@@ -14,3 +17,8 @@ env/
 data/
 results/
 outputs/
+
+# generated figures / screenshots
+*.png
+*.jpg
+*.jpeg
