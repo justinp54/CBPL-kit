@@ -22,3 +22,9 @@ outputs/
 *.png
 *.jpg
 *.jpeg
+
+# MacOS
+.DS_Store
+
+# Paper manuscript work
+Draft/
