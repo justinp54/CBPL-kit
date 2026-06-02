@@ -446,8 +446,9 @@ async function initPyodide() {
     if (!sysResp.ok) throw new Error(`Failed to fetch system YAML: ${sysResp.status}`);
     pyodide.FS.writeFile('/cbpl/systems/nbp_pa_water.yaml', await sysResp.text());
 
+    const _v = Date.now();
     for (const path of moduleFiles) {
-      const resp = await fetch('/' + path);
+      const resp = await fetch('/' + path + '?v=' + _v, {cache: 'no-store'});
       if (!resp.ok) throw new Error(`Failed to fetch ${path}: ${resp.status}`);
       const code = await resp.text();
       pyodide.FS.writeFile('/cbpl/' + path.split('/').pop(), code);

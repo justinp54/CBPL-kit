@@ -58,9 +58,12 @@ class HunterNashSolver:
                 comp_E=xy_to_comp(*current_E),
                 comp_R=xy_to_comp(*pt_R),
             ))
-            if pt_R[1] < y_Rn:
+            if pt_R[1] <= y_Rn + 1e-6:
                 return steps, i
-            current_E = self._R_to_E(pt_R)
+            next_E = self._R_to_E(pt_R)
+            if abs(next_E[0] - current_E[0]) + abs(next_E[1] - current_E[1]) < 1e-4:
+                break  # solver converged to a fixed point (separation limit reached)
+            current_E = next_E
 
         return steps, len(steps)
 
@@ -81,10 +84,15 @@ class HunterNashSolver:
 
         m2 = np.sqrt(3)
         line_m2 = lambda x: m2 * (x - x_inter) + y_inter
-        xR = brentq(
-            lambda x: line_m2(x) - float(self.system.spline(x)),
-            x_inter, 100.0,
-        )
+        x_pp = self.conjugate.pt_plait[0]
+        x_scan = np.linspace(x_pp, 100.0, 2000)
+        f_vals = np.array([line_m2(x) - float(self.system.spline(x)) for x in x_scan])
+        sc = np.where(f_vals[:-1] * f_vals[1:] < 0)[0]
+        if len(sc) > 0:
+            xR = brentq(lambda x: line_m2(x) - float(self.system.spline(x)),
+                        x_scan[sc[0]], x_scan[sc[0] + 1])
+        else:
+            xR = float(x_scan[int(np.argmin(np.abs(f_vals)))])
         return (float(xR), float(line_m2(xR))), (x_inter, y_inter)
 
     def _R_to_E(self, pt_R: tuple[float, float]) -> tuple[float, float]:
@@ -92,8 +100,13 @@ class HunterNashSolver:
         x2, y2 = self.pt_P
         m = (y2 - y1) / (x2 - x1)
         b = y1 - m * x1
-        xE = brentq(
-            lambda x: (m * x + b) - float(self.system.spline(x)),
-            0.0, 50.0,
-        )
+        x_pp = self.conjugate.pt_plait[0]
+        x_scan = np.linspace(0.0, x_pp, 2000)
+        f_vals = np.array([(m * x + b) - float(self.system.spline(x)) for x in x_scan])
+        sc = np.where(f_vals[:-1] * f_vals[1:] < 0)[0]
+        if len(sc) > 0:
+            xE = brentq(lambda x: (m * x + b) - float(self.system.spline(x)),
+                        x_scan[sc[0]], x_scan[sc[0] + 1])
+        else:
+            xE = float(x_scan[int(np.argmin(np.abs(f_vals)))])
         return (float(xE), float(m * xE + b))

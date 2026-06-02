@@ -33,13 +33,12 @@ class EquilibriumSystem:
 
         # Detect near-duplicate x values that make the spline degenerate
         gaps = np.diff(self.x_equil)
-        if np.any(gaps < 1.0):
+        if np.any(gaps < 0.05):
             bad = int(np.argmin(gaps))
             raise ValueError(
-                f"Equilibrium points at rows {idx[bad]} and {idx[bad + 1]} are too "
-                f"close in the ternary diagram (Δx = {gaps[bad]:.3f}). Minimum "
-                "separation of ~5 x-units is recommended. Remove one point or choose "
-                "a more distinct composition."
+                f"Equilibrium points at rows {idx[bad]} and {idx[bad + 1]} are "
+                f"nearly identical in the ternary diagram (Δx = {gaps[bad]:.4f}). "
+                "Remove the duplicate point or replace with a more distinct composition."
             )
 
         self.spline = make_interp_spline(self.x_equil, self.y_equil, k=3)
@@ -60,18 +59,64 @@ class EquilibriumSystem:
             if y[i] * y[i + 1] < 0:
                 root = brentq(self.spline, x[i], x[i + 1])
                 roots.append(round(float(root), 3))
+
+        # For systems where data nearly spans [0, 100], the y=0 intercepts may
+        # lie just outside the spline range. Try a short extrapolation window;
+        # fall back to the data boundary (y is small there anyway).
+        def _edge_intercept(x_inner: float, direction: int) -> float:
+            x_outer = x_inner + direction * 5.0
+            try:
+                if float(self.spline(x_inner)) * float(self.spline(x_outer)) < 0:
+                    return round(brentq(self.spline, min(x_inner, x_outer),
+                                       max(x_inner, x_outer)), 3)
+            except Exception:
+                pass
+            return round(float(x_inner), 3)
+
+        if len(roots) == 0:
+            roots = [_edge_intercept(float(self.x_equil[0]),  -1),
+                     _edge_intercept(float(self.x_equil[-1]), +1)]
+        elif len(roots) == 1 and roots[0] < 50.0:
+            roots.append(_edge_intercept(float(self.x_equil[-1]), +1))
+        elif len(roots) == 1:
+            roots.insert(0, _edge_intercept(float(self.x_equil[0]), -1))
         return roots
 
     def _build_tie_coords(
         self,
     ) -> list[tuple[tuple[float, float], tuple[float, float]]]:
         def on_curve(wpa_target: float, left: bool) -> tuple[float, float]:
-            # wpa determines y directly: y = (√3/2)·wpa
-            # Invert the spline: find x s.t. spline(x) = y_target
+            # Invert the spline: find x on the left or right branch where
+            # spline(x) = y_target.  Uses a dense scan so that:
+            #   (a) normal tie lines  → sign change found → brentq refines it
+            #   (b) near-plait-point → function barely touches zero (no sign
+            #       change) → fall back to the minimum-|f| point on the scan.
             y_target = np.sqrt(3) / 2.0 * wpa_target
             lo, hi = (0.0, 50.0) if left else (50.0, 100.0)
-            x = brentq(lambda x: float(self.spline(x)) - y_target, lo, hi)
-            return float(x), float(self.spline(x))
+            x_scan = np.linspace(lo, hi, 5000)
+            f_vals = np.array([float(self.spline(x)) - y_target for x in x_scan])
+
+            sign_changes = np.where(f_vals[:-1] * f_vals[1:] < 0)[0]
+            if len(sign_changes) > 0:
+                i = sign_changes[0]
+                x_star = brentq(
+                    lambda x: float(self.spline(x)) - y_target,
+                    x_scan[i], x_scan[i + 1],
+                )
+                return float(x_star), float(self.spline(x_star))
+
+            # Touching root (near plait point): accept closest approach
+            idx_min = int(np.argmin(np.abs(f_vals)))
+            if abs(f_vals[idx_min]) < 0.5:
+                x_star = float(x_scan[idx_min])
+                return x_star, float(self.spline(x_star))
+
+            side = "left" if left else "right"
+            raise ValueError(
+                f"Tie-line endpoint not found on {side} branch for "
+                f"wSolute = {wpa_target:.3f}%. "
+                "Check that all tie-line compositions lie within the two-phase envelope."
+            )
 
         return [
             (on_curve(wpa_left, left=True), on_curve(wpa_right, left=False))
