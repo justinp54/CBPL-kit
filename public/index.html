@@ -601,7 +601,7 @@ json.dumps({
         'En1': {'wpa': 0.0, 'wbp': 0.0, 'ww': 100.0},
     },
     'mass_flows': {'solvent_g_min': _r(mass_En1), 'feed_g_min': _r(mass_R0_gm)},
-    'stages': [{'index': s.index, 'E': _comp(s.comp_E), 'R': _comp(s.comp_R)} for s in steps[:N_theory]],
+    'stages': [{'index': s.index, 'E': _comp(s.comp_E), 'R': _comp(s.comp_R)} for s in steps],
     'figures': _figs,
 })
 `;
@@ -869,8 +869,8 @@ function restoreExplorerFrame(key, frameIdx) {
 
 // ── Results panel ──────────────────────────────────────────────────────────
 function showResults(data) {
-  document.getElementById('n-val').textContent   = data.N_theory;
-  document.getElementById('badge-n').textContent = 'N=' + data.N_theory;
+  document.getElementById('n-val').textContent   = data.N_theory.toFixed(1);
+  document.getElementById('badge-n').textContent = 'N=' + data.N_theory.toFixed(1);
   document.getElementById('n-sub').textContent   =
     `Plait pt · PA ${data.plait_point.wpa}% · BP ${data.plait_point.wbp}%`;
 

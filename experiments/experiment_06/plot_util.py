@@ -415,7 +415,7 @@ def fig_conjugate_curve(
 def fig_hunter_nash(
     system: EquilibriumSystem,
     steps: list[Step],
-    N_theory: int,
+    N_theory: float,
     pt_R0: tuple[float, float],
     pt_Rn: tuple[float, float],
     pt_E1: tuple[float, float],
@@ -446,7 +446,7 @@ def fig_hunter_nash(
         ))
 
     # Stages: tie line E_i → R_i, then operating line R_i → P
-    for s in steps[:N_theory]:
+    for s in steps:
         i = s.index
         wpa_E, wpa_R = s.comp_E[0], s.comp_R[0]
         traces.append(go.Scatter(
@@ -463,7 +463,7 @@ def fig_hunter_nash(
             name="Stages" if i == 1 else None,
             showlegend=(i == 1),
         ))
-        if i < N_theory:
+        if i < len(steps):
             traces.append(_cart_line_trace(
                 s.pt_R, pt_P, None, "saddlebrown", dash="dash", width=0.8, showlegend=False
             ))
@@ -471,7 +471,7 @@ def fig_hunter_nash(
     fig = go.Figure(data=traces)
     pad = 10
     fig.update_layout(**_cart_layout(
-        f"Hunter-Nash  (N = {N_theory} theoretical stages)",
+        f"Hunter-Nash  (N = {N_theory:.1f} theoretical stages)",
         x_range=(min(pt_P[0] - pad, -pad), 118),
         y_range=(min(pt_P[1] - pad, -pad), 100),
     ))
@@ -482,7 +482,7 @@ def fig_interpolated_tie_lines(
     system: EquilibriumSystem,
     conjugate: ConjugateCurve,
     steps: list[Step],
-    N_theory: int,
+    N_theory: float,
 ) -> go.Figure:
     """Fig 2(b) — Interpolated tie lines via conjugate curve (Cartesian, extrapolation visible)."""
     traces = _cart_triangle_traces(system) + _cart_equil_traces(system)
@@ -498,7 +498,7 @@ def fig_interpolated_tie_lines(
         labels=_lb(system),
     ))
 
-    for s in steps[:N_theory]:
+    for s in steps:
         i = s.index
         # Interpolated tie line E_i → R_i
         traces.append(go.Scatter(
