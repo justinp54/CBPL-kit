@@ -43,7 +43,7 @@ class HunterNashSolver:
     pt_Rn: tuple[float, float]
     max_steps: int = 50
 
-    def solve(self) -> tuple[list[Step], int]:
+    def solve(self) -> tuple[list[Step], float]:
         steps: list[Step] = []
         current_E = self.pt_E1
         y_Rn = self.pt_Rn[1]
@@ -59,7 +59,13 @@ class HunterNashSolver:
                 comp_R=xy_to_comp(*pt_R),
             ))
             if pt_R[1] <= y_Rn + 1e-6:
-                return steps, i
+                if len(steps) >= 2:
+                    y_prev = steps[-2].pt_R[1]
+                    y_curr = pt_R[1]
+                    denom = y_prev - y_curr
+                    frac = (y_prev - y_Rn) / denom if denom > 1e-9 else 1.0
+                    return steps, float(i - 1) + frac
+                return steps, float(i)
             next_E = self._R_to_E(pt_R)
             if abs(next_E[0] - current_E[0]) + abs(next_E[1] - current_E[1]) < 0.05:
                 # Separation limit: last step barely advances — exclude it
@@ -68,7 +74,7 @@ class HunterNashSolver:
                 break
             current_E = next_E
 
-        return steps, len(steps)
+        return steps, float(len(steps))
 
     def _E_to_R(
         self, pt_E: tuple[float, float]
