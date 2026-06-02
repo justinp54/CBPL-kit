@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.interpolate import PchipInterpolator
 from scipy.optimize import brentq
 
 try:
@@ -59,6 +60,19 @@ class ConjugateCurve:
     def eval(self, x: float | np.ndarray) -> np.ndarray:
         return np.polyval(self._coefs, x)
 
+    def intersect_line(self, slope: float, x0: float, y0: float) -> tuple[float, float]:
+        """Intersection of line y = slope*(x-x0)+y0 with the PCHIP conjugate curve."""
+        f = self.y_curve - (slope * (self.x_curve - x0) + y0)
+        sc = np.where(f[:-1] * f[1:] < 0)[0]
+        if len(sc) > 0:
+            i = int(sc[0])
+            alpha = f[i] / (f[i] - f[i + 1])
+            x = float(self.x_curve[i] + alpha * (self.x_curve[i + 1] - self.x_curve[i]))
+            y = float(self.y_curve[i] + alpha * (self.y_curve[i + 1] - self.y_curve[i]))
+            return x, y
+        idx = int(np.argmin(np.abs(f)))
+        return float(self.x_curve[idx]), float(self.y_curve[idx])
+
     def _find_plait_point(self) -> tuple[float, float]:
         x_max = max(p[0] for p in self.aux_points)
 
@@ -101,6 +115,14 @@ class ConjugateCurve:
         )
 
     def _eval_curve(self) -> tuple[np.ndarray, np.ndarray]:
-        x_min = min(p[0] for p in self.aux_points)
-        x_eval = np.linspace(x_min, self.pt_plait[0], 2000)
-        return x_eval, np.asarray(self.eval(x_eval), dtype=float)
+        # Parametric PCHIP by arc length in tie-line order (y is monotone in this order)
+        all_pts = self.aux_points + [self.pt_plait]
+        xs = np.array([p[0] for p in all_pts])
+        ys = np.array([p[1] for p in all_pts])
+        ds = np.sqrt(np.diff(xs) ** 2 + np.diff(ys) ** 2)
+        t = np.concatenate([[0.0], np.cumsum(ds)])
+        t_eval = np.linspace(0.0, t[-1], 2000)
+        return (
+            np.asarray(PchipInterpolator(t, xs)(t_eval), dtype=float),
+            np.asarray(PchipInterpolator(t, ys)(t_eval), dtype=float),
+        )

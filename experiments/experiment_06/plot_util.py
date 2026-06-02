@@ -11,16 +11,21 @@ import plotly.graph_objects as go
 
 try:
     from .conjugate import ConjugateCurve
-    from .equilibrium import EquilibriumSystem
+    from .equilibrium import EquilibriumSystem, _DEFAULT_LABELS
     from .hunter_nash import Step
     from .lever_rule import find_E1_prime, find_M_and_P, mixing_point
     from .ternary import xy_to_comp
 except ImportError:
     from conjugate import ConjugateCurve
-    from equilibrium import EquilibriumSystem
+    from equilibrium import EquilibriumSystem, _DEFAULT_LABELS
     from hunter_nash import Step
     from lever_rule import find_E1_prime, find_M_and_P, mixing_point
     from ternary import xy_to_comp
+
+
+def _lb(system: EquilibriumSystem) -> dict:
+    """Return the component labels dict from a system, falling back to defaults."""
+    return getattr(system, "labels", _DEFAULT_LABELS)
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -61,14 +66,15 @@ def _valid_mask(xs: np.ndarray, ys: np.ndarray) -> np.ndarray:
 # Base layout
 # ---------------------------------------------------------------------------
 
-def _layout(title: str) -> dict:
+def _layout(title: str, system: EquilibriumSystem | None = None) -> dict:
+    lb = _lb(system) if system else _DEFAULT_LABELS
     return dict(
         title=dict(text=title, x=0.5, font=dict(size=15)),
         ternary=dict(
             sum=100,
-            aaxis=dict(title="Propionic Acid (wt%)", min=0.0, ticks="outside", linewidth=2, dtick=10),
-            baxis=dict(title="Water (wt%)",           min=0.0, ticks="outside", linewidth=2, dtick=10),
-            caxis=dict(title="N-Bromopropane (wt%)",  min=0.0, ticks="outside", linewidth=2, dtick=10),
+            aaxis=dict(title=f"{lb['solute']['name']} (wt%)",  min=0.0, ticks="outside", linewidth=2, dtick=10),
+            baxis=dict(title=f"{lb['solvent']['name']} (wt%)", min=0.0, ticks="outside", linewidth=2, dtick=10),
+            caxis=dict(title=f"{lb['diluent']['name']} (wt%)", min=0.0, ticks="outside", linewidth=2, dtick=10),
         ),
         width=750, height=700,
         legend=dict(x=0.01, y=0.99, bgcolor="rgba(255,255,255,0.8)"),
@@ -80,13 +86,15 @@ def _layout(title: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
+    lb = _lb(system)
+    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['diluent']['abbr']
     mask = _valid_mask(system.x_smooth, system.y_smooth)
     a, b, c = _arr_to_ternary(system.x_smooth[mask], system.y_smooth[mask])
     curve = go.Scatterternary(
         a=a, b=b, c=c,
         mode="lines", name="Equilibrium curve",
         line=dict(color="black", width=2.5),
-        hovertemplate="PA:%{a:.1f}%  W:%{b:.1f}%  BP:%{c:.1f}%<extra>Equil. curve</extra>",
+        hovertemplate=f"{s}:%{{a:.1f}}%  {sv}:%{{b:.1f}}%  {d}:%{{c:.1f}}%<extra>Equil. curve</extra>",
     )
     a_pts = system.equil_data[:, 1].tolist()
     b_pts = system.equil_data[:, 2].tolist()
@@ -95,12 +103,14 @@ def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
         a=a_pts, b=b_pts, c=c_pts,
         mode="markers", name="Equil. data",
         marker=dict(color="black", size=7),
-        hovertemplate="PA:%{a:.2f}%  W:%{b:.2f}%  BP:%{c:.2f}%<extra>Equil. data</extra>",
+        hovertemplate=f"{s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%  {d}:%{{c:.2f}}%<extra>Equil. data</extra>",
     )
     return [curve, pts]
 
 
 def _tie_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
+    lb = _lb(system)
+    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['diluent']['abbr']
     traces = []
     for i, ((x1, y1), (x2, y2)) in enumerate(system.tie_coords):
         a1, b1, c1 = _to_ternary(x1, y1)
@@ -112,7 +122,7 @@ def _tie_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
             marker=dict(size=5, color="steelblue"),
             name="Tie lines" if i == 0 else None,
             showlegend=(i == 0),
-            hovertemplate="PA:%{a:.2f}%  W:%{b:.2f}%  BP:%{c:.2f}%<extra>Tie line</extra>",
+            hovertemplate=f"{s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%  {d}:%{{c:.2f}}%<extra>Tie line</extra>",
         ))
     return traces
 
@@ -123,7 +133,10 @@ def _point_trace(
     color: str,
     symbol: str = "circle",
     size: int = 9,
+    labels: dict | None = None,
 ) -> go.Scatterternary:
+    lb = labels or _DEFAULT_LABELS
+    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['diluent']['abbr']
     a, b, c = _to_ternary(*pt)
     wpa, wbp, ww = xy_to_comp(*pt)
     return go.Scatterternary(
@@ -134,7 +147,7 @@ def _point_trace(
         text=[label],
         textposition="top center",
         hovertemplate=(
-            f"<b>{label}</b><br>PA:{wpa:.2f}%  W:{ww:.2f}%  BP:{wbp:.2f}%<extra></extra>"
+            f"<b>{label}</b><br>{s}:{wpa:.2f}%  {sv}:{ww:.2f}%  {d}:{wbp:.2f}%<extra></extra>"
         ),
     )
 
@@ -193,8 +206,9 @@ def _cart_layout(
     )
 
 
-def _cart_triangle_traces() -> list:
+def _cart_triangle_traces(system: EquilibriumSystem) -> list:
     """Triangle border, vertex labels, and 10%-interval gridlines."""
+    lb = _lb(system)
     traces: list = []
 
     # Border
@@ -208,9 +222,9 @@ def _cart_triangle_traces() -> list:
 
     # Vertex labels (offset from vertices for readability)
     for text, x, y in [
-        ("Solute (Propionic Acid)", 50,   _PA_V[1] + 3),
-        ("Solvent (Water)",         -10,  -5),
-        ("Carrier (N-Bromopropane)", 110, -5),
+        (f"Solute ({lb['solute']['name']})",   50,   _PA_V[1] + 3),
+        (f"Solvent ({lb['solvent']['name']})",  -10,  -5),
+        (f"Carrier ({lb['diluent']['name']})",  110,  -5),
     ]:
         traces.append(go.Scatter(
             x=[x], y=[y], mode="text",
@@ -284,7 +298,10 @@ def _cart_tie_traces(system: EquilibriumSystem) -> list:
 def _cart_point_trace(
     pt: tuple[float, float], label: str, color: str,
     symbol: str = "circle", size: int = 9,
+    labels: dict | None = None,
 ) -> go.Scatter:
+    lb = labels or _DEFAULT_LABELS
+    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['diluent']['abbr']
     x, y = pt
     wpa, wbp, ww = xy_to_comp(x, y)
     return go.Scatter(
@@ -295,7 +312,7 @@ def _cart_point_trace(
         text=[label],
         textposition="top center",
         hovertemplate=(
-            f"<b>{label}</b><br>PA:{wpa:.2f}%  BP:{wbp:.2f}%  W:{ww:.2f}%<extra></extra>"
+            f"<b>{label}</b><br>{s}:{wpa:.2f}%  {d}:{wbp:.2f}%  {sv}:{ww:.2f}%<extra></extra>"
         ),
     )
 
@@ -327,7 +344,7 @@ def fig_ternary_equilibrium(system: EquilibriumSystem) -> go.Figure:
     """Fig 1 — Ternary diagram with equilibrium curve and tie lines."""
     traces = _equil_traces(system) + _tie_traces(system)
     fig = go.Figure(data=traces)
-    fig.update_layout(**_layout("LLE Ternary Diagram"))
+    fig.update_layout(**_layout("LLE Ternary Diagram", system))
     return fig
 
 
@@ -341,12 +358,12 @@ def fig_conjugate_curve(
     intersection points and conjugate curve below the triangle base are visible.
     """
     traces = (
-        _cart_triangle_traces()
+        _cart_triangle_traces(system)
         + _cart_equil_traces(system)
         + _cart_tie_traces(system)
     )
 
-    # Conjugate curve — full range, no triangle mask
+    # Conjugate curve — full range including extrapolation below triangle
     traces.append(go.Scatter(
         x=conjugate.x_curve, y=conjugate.y_curve,
         mode="lines", name="Conjugate curve",
@@ -372,7 +389,6 @@ def fig_conjugate_curve(
         ))
 
     # Dashed auxiliary lines from each tie-line endpoint → intersection point
-    # aux_points[0] = baseline; aux_points[1:] align with tie_coords
     for (pt_L, pt_R), pt_aux in zip(system.tie_coords, conjugate.aux_points[1:]):
         for pt_end in (pt_L, pt_R):
             traces.append(go.Scatter(
@@ -383,7 +399,8 @@ def fig_conjugate_curve(
             ))
 
     traces.append(_cart_point_trace(
-        conjugate.pt_plait, "Plait pt.", "darkorange", symbol="star", size=14
+        conjugate.pt_plait, "Plait pt.", "darkorange", symbol="star", size=14,
+        labels=_lb(system),
     ))
 
     fig = go.Figure(data=traces)
@@ -410,15 +427,16 @@ def fig_hunter_nash(
     Uses go.Scatter (Cartesian) so the operating lines can extend to P even
     when P lies outside the ternary triangle.
     """
-    traces = _cart_triangle_traces() + _cart_equil_traces(system)
+    lb = _lb(system)
+    traces = _cart_triangle_traces(system) + _cart_equil_traces(system)
 
     # Key stream and operating points
     traces += [
-        _cart_point_trace(pt_R0,  "R₀",    "royalblue"),
-        _cart_point_trace(pt_Rn,  "Rₙ",    "royalblue"),
-        _cart_point_trace(pt_En1, "Eₙ₊₁",  "crimson"),
-        _cart_point_trace(pt_E1,  "E₁",    "crimson"),
-        _cart_point_trace(pt_P,   "P",      "saddlebrown", symbol="diamond", size=11),
+        _cart_point_trace(pt_R0,  "R₀",    "royalblue",  labels=lb),
+        _cart_point_trace(pt_Rn,  "Rₙ",    "royalblue",  labels=lb),
+        _cart_point_trace(pt_En1, "Eₙ₊₁",  "crimson",    labels=lb),
+        _cart_point_trace(pt_E1,  "E₁",    "crimson",    labels=lb),
+        _cart_point_trace(pt_P,   "P",      "saddlebrown", symbol="diamond", size=11, labels=lb),
     ]
 
     # Operating lines through P (extend outside triangle)
@@ -467,16 +485,17 @@ def fig_interpolated_tie_lines(
     N_theory: int,
 ) -> go.Figure:
     """Fig 2(b) — Interpolated tie lines via conjugate curve (Cartesian, extrapolation visible)."""
-    traces = _cart_triangle_traces() + _cart_equil_traces(system)
+    traces = _cart_triangle_traces(system) + _cart_equil_traces(system)
 
-    # Conjugate curve — full range, no mask
+    # Conjugate curve — full range, no triangle mask
     traces.append(go.Scatter(
         x=conjugate.x_curve, y=conjugate.y_curve,
         mode="lines", name="Conjugate curve",
         line=dict(color="darkorange", width=2),
     ))
     traces.append(_cart_point_trace(
-        conjugate.pt_plait, "Plait pt.", "darkorange", symbol="star", size=14
+        conjugate.pt_plait, "Plait pt.", "darkorange", symbol="star", size=14,
+        labels=_lb(system),
     ))
 
     for s in steps[:N_theory]:
@@ -530,19 +549,20 @@ def fig_lever_rule(
     pt_R0_actual : if provided, also plots the actual experimental R0 separately
                    (used in Fig 6 where a hypothetical feed composition is shown)
     """
+    lb = _lb(system)
     traces = _equil_traces(system)
 
     # Always show actual experiment stream points
     if pt_R0_actual is not None:
         traces.append(_point_trace(pt_R0_actual, "R₀ (exp.)", "royalblue",
-                                   symbol="circle-open", size=9))
+                                   symbol="circle-open", size=9, labels=lb))
     traces += [
-        _point_trace(pt_R0,  "R₀",    "royalblue"),
-        _point_trace(pt_Rn,  "Rₙ",    "royalblue"),
-        _point_trace(pt_E1,  "E₁",    "crimson"),
-        _point_trace(pt_En1, "Eₙ₊₁",  "crimson"),
-        _point_trace(pt_M,   "M",     "purple",     symbol="diamond-open", size=10),
-        _point_trace(pt_Mp,  "M'",    "saddlebrown", symbol="diamond",     size=10),
+        _point_trace(pt_R0,  "R₀",    "royalblue",   labels=lb),
+        _point_trace(pt_Rn,  "Rₙ",    "royalblue",   labels=lb),
+        _point_trace(pt_E1,  "E₁",    "crimson",     labels=lb),
+        _point_trace(pt_En1, "Eₙ₊₁",  "crimson",     labels=lb),
+        _point_trace(pt_M,   "M",     "purple",     symbol="diamond-open", size=10, labels=lb),
+        _point_trace(pt_Mp,  "M'",    "saddlebrown", symbol="diamond",     size=10, labels=lb),
     ]
 
     # E1–Rn and En1–R0 lines (locating M)
@@ -552,11 +572,11 @@ def fig_lever_rule(
     ]
 
     if pt_E1p is not None:
-        traces.append(_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11))
+        traces.append(_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11, labels=lb))
         traces.append(_line_trace(pt_Rn, pt_E1p, "Rₙ–E₁'", "saddlebrown", width=1.2))
 
     fig = go.Figure(data=traces)
-    fig.update_layout(**_layout(title))
+    fig.update_layout(**_layout(title, system))
     return fig
 
 
@@ -581,16 +601,17 @@ def fig_lever_rule_interactive(
     """
     frac_vals = np.linspace(0.40, 0.97, n_steps)   # solvent mass fraction
 
+    lb = _lb(system)
     # ── Static traces (triangle + equilibrium + fixed stream points) ─────────
     static = (
-        _cart_triangle_traces()
+        _cart_triangle_traces(system)
         + _cart_equil_traces(system)
         + [
-            _cart_point_trace(pt_R0,  "R₀",    "royalblue"),
-            _cart_point_trace(pt_Rn,  "Rₙ",    "royalblue"),
-            _cart_point_trace(pt_E1,  "E₁",    "crimson"),
-            _cart_point_trace(pt_En1, "Eₙ₊₁",  "crimson"),
-            _cart_point_trace(pt_M,   "M",      "purple", symbol="diamond-open", size=10),
+            _cart_point_trace(pt_R0,  "R₀",    "royalblue",  labels=lb),
+            _cart_point_trace(pt_Rn,  "Rₙ",    "royalblue",  labels=lb),
+            _cart_point_trace(pt_E1,  "E₁",    "crimson",    labels=lb),
+            _cart_point_trace(pt_En1, "Eₙ₊₁",  "crimson",    labels=lb),
+            _cart_point_trace(pt_M,   "M",      "purple", symbol="diamond-open", size=10, labels=lb),
             _cart_line_trace(pt_E1,  pt_Rn,  "E₁–Rₙ",    "purple", width=1),
             _cart_line_trace(pt_En1, pt_R0,  "Eₙ₊₁–R₀",  "purple", width=1),
         ]
@@ -600,9 +621,9 @@ def fig_lever_rule_interactive(
     def _dynamic(frac: float) -> list:
         pt_Mp  = mixing_point(pt_R0, pt_En1, mass_A=1 - frac, mass_B=frac)
         pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
-        mp_tr  = _cart_point_trace(pt_Mp, "M'", "saddlebrown", symbol="diamond", size=10)
+        mp_tr  = _cart_point_trace(pt_Mp, "M'", "saddlebrown", symbol="diamond", size=10, labels=lb)
         if pt_E1p is not None:
-            e1p_tr  = _cart_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11)
+            e1p_tr  = _cart_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11, labels=lb)
             line_tr = _cart_line_trace(pt_Rn, pt_E1p, "Rₙ–E₁'", "saddlebrown", width=1.5)
         else:
             e1p_tr  = go.Scatter(x=[], y=[], mode="markers", showlegend=False, hoverinfo="skip")
@@ -680,16 +701,17 @@ def fig_lever_rule_interactive_feed(
     """
     wpa_vals = np.linspace(wpa_range[0], wpa_range[1], n_steps)
 
+    lb = _lb(system)
     # ── Static traces ─────────────────────────────────────────────────────────
     static = (
-        _cart_triangle_traces()
+        _cart_triangle_traces(system)
         + _cart_equil_traces(system)
         + [
-            _cart_point_trace(pt_Rn,        "Rₙ",         "royalblue"),
-            _cart_point_trace(pt_E1,        "E₁",         "crimson"),
-            _cart_point_trace(pt_En1,       "Eₙ₊₁",       "crimson"),
+            _cart_point_trace(pt_Rn,        "Rₙ",         "royalblue",  labels=lb),
+            _cart_point_trace(pt_E1,        "E₁",         "crimson",    labels=lb),
+            _cart_point_trace(pt_En1,       "Eₙ₊₁",       "crimson",    labels=lb),
             _cart_point_trace(pt_R0_actual, "R₀ (exp.)",  "royalblue",
-                              symbol="circle-open", size=9),
+                              symbol="circle-open", size=9, labels=lb),
             _cart_line_trace(pt_E1, pt_Rn, "E₁–Rₙ", "purple", width=1),
         ]
     )
@@ -704,12 +726,12 @@ def fig_lever_rule_interactive_feed(
         pt_Mp  = mixing_point(pt_R0, pt_En1, mass_A=mass_R0, mass_B=mass_En1)
         pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
 
-        r0_tr   = _cart_point_trace(pt_R0, "R₀",  "royalblue")
+        r0_tr   = _cart_point_trace(pt_R0, "R₀",  "royalblue",   labels=lb)
         en_r0   = _cart_line_trace(pt_En1, pt_R0, "Eₙ₊₁–R₀", "purple", width=1)
-        m_tr    = _cart_point_trace(pt_M,  "M",   "purple", symbol="diamond-open", size=10)
-        mp_tr   = _cart_point_trace(pt_Mp, "M'",  "saddlebrown", symbol="diamond", size=10)
+        m_tr    = _cart_point_trace(pt_M,  "M",   "purple", symbol="diamond-open", size=10, labels=lb)
+        mp_tr   = _cart_point_trace(pt_Mp, "M'",  "saddlebrown", symbol="diamond", size=10, labels=lb)
         if pt_E1p is not None:
-            e1p_tr  = _cart_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11)
+            e1p_tr  = _cart_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11, labels=lb)
             line_tr = _cart_line_trace(pt_Rn, pt_E1p, "Rₙ–E₁'", "saddlebrown", width=1.5)
         else:
             e1p_tr  = go.Scatter(x=[], y=[], mode="markers", showlegend=False, hoverinfo="skip")

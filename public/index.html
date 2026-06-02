@@ -238,11 +238,11 @@
       <div class="field">
         <div class="field-label">V<sub>Rn</sub> — Raffinate <span class="hint">undiluted</span></div>
         <div class="field-body">
-          <input class="field-input" id="V_RN" type="number" value="0.64" min="0.01" max="5" step="0.01" />
+          <input class="field-input" id="V_RN" type="number" value="0.64" min="0.01" max="20" step="0.01" />
           <span class="field-unit">mL</span>
         </div>
-        <input class="field-slider" id="s-V_RN" type="range" value="0.64" min="0.01" max="5" step="0.01" />
-        <div class="range-ends"><span>0.01</span><span>5</span></div>
+        <input class="field-slider" id="s-V_RN" type="range" value="0.64" min="0.01" max="20" step="0.01" />
+        <div class="range-ends"><span>0.01</span><span>20</span></div>
       </div>
     </div>
 
@@ -961,6 +961,12 @@ async function applySystem() {
     pyodide.globals.set('_sys_rho_o',  p.rho_solute);
     pyodide.globals.set('_sys_rho_d',  p.rho_diluent);
     pyodide.globals.set('_sys_mw_o',   p.mw_solute);
+    const comps = sysData.components || {};
+    pyodide.globals.set('_sys_labels', pyodide.toPy({
+      solute:  { name: comps.solute?.name  || 'Solute',  abbr: comps.solute?.abbr  || 'S'  },
+      solvent: { name: comps.solvent?.name || 'Solvent', abbr: comps.solvent?.abbr || 'Sv' },
+      diluent: { name: comps.diluent?.name || 'Diluent', abbr: comps.diluent?.abbr || 'D'  },
+    }));
 
     await pyodide.runPythonAsync(`
 import numpy as np, builtins as _b, config as _cfg, equilibrium as _eq_mod
@@ -973,7 +979,8 @@ for _mod in (_cfg, _eq_mod):
     _mod.RHO_PA = float(_sys_rho_o)
     _mod.RHO_W  = float(_sys_rho_s)
     _mod.MW_PA  = float(_sys_mw_o)
-_system    = EquilibriumSystem(equil_data=equil, tie_data=ties)
+_lbs = {k: dict(v) for k, v in dict(_sys_labels).items()}
+_system    = EquilibriumSystem(equil_data=equil, tie_data=ties, labels=_lbs)
 _conjugate = ConjugateCurve(_system)
 _b._esystem    = _system
 _b._econjugate = _conjugate

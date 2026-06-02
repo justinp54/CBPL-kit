@@ -14,12 +14,20 @@ except ImportError:
     from ternary import xy_to_comp
 
 
+_DEFAULT_LABELS: dict = {
+    "solute":  {"name": "Propionic Acid",  "abbr": "PA"},
+    "solvent": {"name": "Water",            "abbr": "W"},
+    "diluent": {"name": "n-Bromopropane",  "abbr": "BP"},
+}
+
+
 @dataclass
 class EquilibriumSystem:
     """Cubic-spline equilibrium curve, tie-line coordinates, and point-lookup helpers."""
 
     equil_data: np.ndarray = field(default_factory=lambda: EQUIL_DATA.copy())
     tie_data: list[tuple[float, float]] = field(default_factory=lambda: list(TIE_DATA))
+    labels: dict = field(default_factory=lambda: {k: dict(v) for k, v in _DEFAULT_LABELS.items()})
 
     def __post_init__(self) -> None:
         # Cartesian coords from equilibrium data columns [wbp, wpa, ww]
@@ -49,6 +57,8 @@ class EquilibriumSystem:
         self.y_smooth: np.ndarray = np.maximum(y_dense, 0.0)
 
         self.x_intercepts: list[float] = self._find_x_intercepts(x_dense, y_dense)
+        # Approximate plait-point x (spline maximum) used to split left/right branches
+        self.x_plait_approx: float = float(x_dense[int(np.argmax(y_dense))])
         self.tie_coords: list[tuple[tuple[float, float], tuple[float, float]]] = (
             self._build_tie_coords()
         )
@@ -92,7 +102,7 @@ class EquilibriumSystem:
             #   (b) near-plait-point → function barely touches zero (no sign
             #       change) → fall back to the minimum-|f| point on the scan.
             y_target = np.sqrt(3) / 2.0 * wpa_target
-            lo, hi = (0.0, 50.0) if left else (50.0, 100.0)
+            lo, hi = (0.0, self.x_plait_approx) if left else (self.x_plait_approx, 100.0)
             x_scan = np.linspace(lo, hi, 5000)
             f_vals = np.array([float(self.spline(x)) - y_target for x in x_scan])
 
@@ -138,13 +148,21 @@ class EquilibriumSystem:
             data = yaml.safe_load(f)
         equil = np.array(data["equilibrium_data"], dtype=float)
         ties = [tuple(float(v) for v in row) for row in data["tie_lines"]]
-        return cls(equil_data=equil, tie_data=ties)
+        comps = data.get("components", {})
+        lbs = {
+            role: {
+                "name": comps.get(role, {}).get("name", _DEFAULT_LABELS[role]["name"]),
+                "abbr": comps.get(role, {}).get("abbr", _DEFAULT_LABELS[role]["abbr"]),
+            }
+            for role in ("solute", "solvent", "diluent")
+        }
+        return cls(equil_data=equil, tie_data=ties, labels=lbs)
 
     def find_curve_point_by_concentration(
         self, target_c: float, left: bool
     ) -> tuple[tuple[float, float], tuple[float, float, float], float]:
         """Find the point on the equilibrium curve whose PA concentration equals target_c."""
-        bounds = (0.0, 50.0) if left else (50.0, 100.0)
+        bounds = (0.0, self.x_plait_approx) if left else (self.x_plait_approx, 100.0)
         res = minimize_scalar(
             lambda x: abs(
                 self.molar_concentration_pa(x, float(self.spline(x))) - target_c

@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.optimize import brentq, minimize_scalar
+from scipy.optimize import brentq
 
 try:
     from .equilibrium import EquilibriumSystem
@@ -61,8 +61,11 @@ class HunterNashSolver:
             if pt_R[1] <= y_Rn + 1e-6:
                 return steps, i
             next_E = self._R_to_E(pt_R)
-            if abs(next_E[0] - current_E[0]) + abs(next_E[1] - current_E[1]) < 1e-4:
-                break  # solver converged to a fixed point (separation limit reached)
+            if abs(next_E[0] - current_E[0]) + abs(next_E[1] - current_E[1]) < 0.05:
+                # Separation limit: last step barely advances — exclude it
+                if len(steps) > 1:
+                    steps = steps[:-1]
+                break
             current_E = next_E
 
         return steps, len(steps)
@@ -72,15 +75,7 @@ class HunterNashSolver:
     ) -> tuple[tuple[float, float], tuple[float, float]]:
         xE, yE = pt_E
         m1 = -np.sqrt(3)
-        line_m1 = lambda x: m1 * (x - xE) + yE
-
-        res = minimize_scalar(
-            lambda x: abs(float(self.conjugate.eval(x)) - line_m1(x)),
-            bounds=(self.conjugate.x_anchor, self.conjugate.pt_plait[0]),
-            method="bounded",
-        )
-        x_inter = float(res.x)
-        y_inter = float(line_m1(x_inter))
+        x_inter, y_inter = self.conjugate.intersect_line(m1, xE, yE)
 
         m2 = np.sqrt(3)
         line_m2 = lambda x: m2 * (x - x_inter) + y_inter
