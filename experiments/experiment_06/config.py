@@ -19,7 +19,7 @@ _p    = _d["properties"]
 EQUIL_DATA: np.ndarray               = np.array(_d["equilibrium_data"], dtype=float)
 TIE_DATA:   list[tuple[float, float]] = [tuple(float(v) for v in r) for r in _d["tie_lines"]]
 
-RHO_BP: float = float(_p["rho_diluent"])   # g/mL  — n-BP (feed carrier) density
+RHO_BP: float = float(_p["rho_carrier"])   # g/mL  — n-BP (feed carrier) density
 RHO_PA: float = float(_p["rho_solute"])    # g/mL  — solute density
 RHO_W:  float = float(_p["rho_solvent"])   # g/mL  — Water (extracting solvent) density
 MW_PA:  float = float(_p["mw_solute"])     # g/mol — solute molar mass (NaOH titration)

@@ -74,7 +74,7 @@ def _layout(title: str, system: EquilibriumSystem | None = None) -> dict:
             sum=100,
             aaxis=dict(title=f"{lb['solute']['name']} (wt%)",  min=0.0, ticks="outside", linewidth=2, dtick=10),
             baxis=dict(title=f"{lb['solvent']['name']} (wt%)", min=0.0, ticks="outside", linewidth=2, dtick=10),
-            caxis=dict(title=f"{lb['diluent']['name']} (wt%)", min=0.0, ticks="outside", linewidth=2, dtick=10),
+            caxis=dict(title=f"{lb['carrier']['name']} (wt%)", min=0.0, ticks="outside", linewidth=2, dtick=10),
         ),
         width=750, height=700,
         legend=dict(x=0.01, y=0.99, bgcolor="rgba(255,255,255,0.8)"),
@@ -87,7 +87,7 @@ def _layout(title: str, system: EquilibriumSystem | None = None) -> dict:
 
 def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
     lb = _lb(system)
-    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['diluent']['abbr']
+    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['carrier']['abbr']
     mask = _valid_mask(system.x_smooth, system.y_smooth)
     a, b, c = _arr_to_ternary(system.x_smooth[mask], system.y_smooth[mask])
     curve = go.Scatterternary(
@@ -110,7 +110,7 @@ def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
 
 def _tie_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
     lb = _lb(system)
-    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['diluent']['abbr']
+    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['carrier']['abbr']
     traces = []
     for i, ((x1, y1), (x2, y2)) in enumerate(system.tie_coords):
         a1, b1, c1 = _to_ternary(x1, y1)
@@ -136,7 +136,7 @@ def _point_trace(
     labels: dict | None = None,
 ) -> go.Scatterternary:
     lb = labels or _DEFAULT_LABELS
-    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['diluent']['abbr']
+    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['carrier']['abbr']
     a, b, c = _to_ternary(*pt)
     wpa, wbp, ww = xy_to_comp(*pt)
     return go.Scatterternary(
@@ -224,7 +224,7 @@ def _cart_triangle_traces(system: EquilibriumSystem) -> list:
     for text, x, y in [
         (f"Solute ({lb['solute']['name']})",   50,   _PA_V[1] + 3),
         (f"Solvent ({lb['solvent']['name']})",  -10,  -5),
-        (f"Carrier ({lb['diluent']['name']})",  110,  -5),
+        (f"Carrier ({lb['carrier']['name']})",  110,  -5),
     ]:
         traces.append(go.Scatter(
             x=[x], y=[y], mode="text",
@@ -301,7 +301,7 @@ def _cart_point_trace(
     labels: dict | None = None,
 ) -> go.Scatter:
     lb = labels or _DEFAULT_LABELS
-    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['diluent']['abbr']
+    s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['carrier']['abbr']
     x, y = pt
     wpa, wbp, ww = xy_to_comp(x, y)
     return go.Scatter(

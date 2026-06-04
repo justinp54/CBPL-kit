@@ -101,7 +101,7 @@
     .n-val   { font-size: 48px; font-weight: 700; color: #fff; line-height: 1; }
     .n-sub   { font-size: 10.5px; color: #7dd3fc; margin-top: 5px; }
     .comp-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #cbd5e1; }
-    .comp-table th { color: #475569; font-weight: 600; padding: 3px 4px; text-align: center; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .comp-table th { color: #94a3b8; font-weight: 600; padding: 3px 4px; text-align: center; border-bottom: 1px solid rgba(255,255,255,.07); }
     .comp-table th:first-child { text-align: left; }
     .comp-table td { padding: 4px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
     .comp-table td:first-child { font-family: 'Inter', sans-serif; font-weight: 600; color: #e2e8f0; text-align: left; }
@@ -112,7 +112,15 @@
     .toggle-btn:hover { color: #94a3b8; }
     #stages-detail { display: none; margin-top: 8px; }
     #stages-detail.show { display: block; }
-    .flows-text { font-size: 10.5px; color: #475569; margin-top: 10px; line-height: 1.8; }
+    .flows-text { font-size: 10.5px; color: #94a3b8; margin-top: 10px; line-height: 1.8; }
+    .dil-compact { display:flex; align-items:center; gap:8px; margin-top:5px; }
+    .dil-num { width:44px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:5px; color:#cbd5e1; font-size:11px; font-family:'JetBrains Mono',monospace; text-align:right; padding:3px 5px; outline:none; }
+    .dil-num:focus { border-color:#3b82f6; }
+    .dil-unit { font-size:11px; color:#94a3b8; flex-shrink:0; }
+    .dil-tag { font-size:9px; color:#94a3b8; white-space:nowrap; flex-shrink:0; }
+    .dil-sld { flex:1; -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:rgba(255,255,255,.12); outline:none; cursor:pointer; accent-color:#3b82f6; }
+    .dil-sld::-webkit-slider-thumb { -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:#3b82f6; cursor:pointer; box-shadow:0 0 0 3px rgba(59,130,246,.2); transition:box-shadow .15s; }
+    .dil-sld::-webkit-slider-thumb:hover { box-shadow:0 0 0 5px rgba(59,130,246,.3); }
     .flows-text strong { color: #94a3b8; }
 
     /* ── Main ── */
@@ -216,33 +224,51 @@
       <div class="section-label">Titration Volumes</div>
 
       <div class="field">
-        <div class="field-label">V<sub>R0</sub> — Feed <span class="hint">10× diluted</span></div>
+        <div class="field-label">V<sub>R0</sub> — Feed</div>
         <div class="field-body">
           <input class="field-input" id="V_R0" type="number" value="10.78" min="0.5" max="40" step="0.01" />
           <span class="field-unit">mL</span>
         </div>
         <input class="field-slider" id="s-V_R0" type="range" value="10.78" min="0.5" max="40" step="0.01" />
         <div class="range-ends"><span>0.5</span><span>40</span></div>
+        <div class="dil-compact">
+          <span class="dil-tag">f</span>
+          <input class="dil-num" id="dil-R0" type="number" value="10" min="1" max="20" step="1" oninput="syncDil('R0','num')" />
+          <span class="dil-unit">×</span>
+          <input class="dil-sld" id="s-dil-R0" type="range" value="10" min="1" max="20" step="1" oninput="syncDil('R0','slider')" />
+        </div>
       </div>
 
       <div class="field">
-        <div class="field-label">V<sub>E1</sub> — First Extract <span class="hint">10× diluted</span></div>
+        <div class="field-label">V<sub>E1</sub> — First Extract</div>
         <div class="field-body">
           <input class="field-input" id="V_E1" type="number" value="3.80" min="0.1" max="20" step="0.01" />
           <span class="field-unit">mL</span>
         </div>
         <input class="field-slider" id="s-V_E1" type="range" value="3.80" min="0.1" max="20" step="0.01" />
         <div class="range-ends"><span>0.1</span><span>20</span></div>
+        <div class="dil-compact">
+          <span class="dil-tag">f</span>
+          <input class="dil-num" id="dil-E1" type="number" value="10" min="1" max="20" step="1" oninput="syncDil('E1','num')" />
+          <span class="dil-unit">×</span>
+          <input class="dil-sld" id="s-dil-E1" type="range" value="10" min="1" max="20" step="1" oninput="syncDil('E1','slider')" />
+        </div>
       </div>
 
       <div class="field">
-        <div class="field-label">V<sub>Rn</sub> — Raffinate <span class="hint">undiluted</span></div>
+        <div class="field-label">V<sub>Rn</sub> — Raffinate</div>
         <div class="field-body">
           <input class="field-input" id="V_RN" type="number" value="0.64" min="0.01" max="20" step="0.01" />
           <span class="field-unit">mL</span>
         </div>
         <input class="field-slider" id="s-V_RN" type="range" value="0.64" min="0.01" max="20" step="0.01" />
         <div class="range-ends"><span>0.01</span><span>20</span></div>
+        <div class="dil-compact">
+          <span class="dil-tag">f</span>
+          <input class="dil-num" id="dil-Rn" type="number" value="1" min="1" max="20" step="1" oninput="syncDil('Rn','num')" />
+          <span class="dil-unit">×</span>
+          <input class="dil-sld" id="s-dil-Rn" type="range" value="1" min="1" max="20" step="1" oninput="syncDil('Rn','slider')" />
+        </div>
       </div>
     </div>
 
@@ -286,13 +312,13 @@
         <div class="n-sub" id="n-sub"></div>
       </div>
       <table class="comp-table">
-        <thead><tr><th>Stream</th><th>PA%</th><th>BP%</th><th>W%</th></tr></thead>
+        <thead id="stream-thead"><tr><th>Stream</th><th>PA%</th><th>BP%</th><th>W%</th></tr></thead>
         <tbody id="stream-tbody"></tbody>
       </table>
       <button class="toggle-btn" id="stage-toggle" onclick="toggleStages()">▶ Stage breakdown</button>
       <div id="stages-detail">
         <table class="comp-table">
-          <thead><tr><th>#</th><th></th><th>PA%</th><th>BP%</th><th>W%</th></tr></thead>
+          <thead id="stages-thead"><tr><th>#</th><th></th><th>PA%</th><th>BP%</th><th>W%</th></tr></thead>
           <tbody id="stages-tbody"></tbody>
         </table>
       </div>
@@ -379,9 +405,9 @@
             <span class="sys-msg" id="sys-msg"></span>
           </div>
           <p class="sys-note">
-            Required fields: <code>equilibrium_data</code> (rows of [wSolvent%, wSolute%, wDiluent%]),
+            Required fields: <code>equilibrium_data</code> (rows of [wSolvent%, wSolute%, wCarrier%]),
             <code>tie_lines</code> (rows of [wSolute% left, wSolute% right]),
-            and <code>properties</code> (rho_solvent, rho_solute, rho_diluent, mw_solute).
+            and <code>properties</code> (rho_solvent, rho_solute, rho_carrier, mw_solute).
             See the <strong>Guide</strong> tab for the full format.
           </p>
         </div>
@@ -401,6 +427,15 @@ let rendered  = {};
 let activeTab = 'guide';
 let debTimer  = null;
 let computing = false;
+let _lbls = { solute:{abbr:'PA'}, carrier:{abbr:'BP'}, solvent:{abbr:'W'} };
+
+function syncDil(id, src) {
+  const num = document.getElementById('dil-' + id);
+  const sld = document.getElementById('s-dil-' + id);
+  if (src === 'num') sld.value = num.value;
+  else num.value = sld.value;
+  debounce();
+}
 
 // ── Progress bar helper ────────────────────────────────────────────────────
 function setProgress(pct, label) {
@@ -531,7 +566,7 @@ const PY_COMPUTE = `
 import json
 from config import RHO_BP, RHO_PA, RHO_W, MW_PA, FLOW_SOLVENT_ML_MIN, FLOW_FEED_ML_MIN
 
-def _c(v, x10): return 0.05 * v * (10.0 if x10 else 1.0)
+def _c(v, dil): return 0.05 * v * float(dil)
 def _r(v):      return round(float(v), 2)
 def _comp(t):   return {'wpa': _r(t[0]), 'wbp': _r(t[1]), 'ww': _r(t[2])}
 
@@ -539,9 +574,9 @@ def _comp(t):   return {'wpa': _r(t[0]), 'wbp': _r(t[1]), 'ww': _r(t[2])}
 system    = _system
 conjugate = _conjugate
 
-c_R0 = _c(config.V_R0, True)
-c_E1 = _c(config.V_E1, True)
-c_Rn = _c(config.V_RN, False)
+c_R0 = _c(config.V_R0, _dil_R0)
+c_E1 = _c(config.V_E1, _dil_E1)
+c_Rn = _c(config.V_RN, _dil_Rn)
 
 denom  = c_R0 * MW_PA + RHO_BP * (1000.0 - c_R0 * MW_PA / RHO_PA)
 wpa_R0 = c_R0 * MW_PA / denom * 100.0
@@ -738,6 +773,9 @@ async function calculate(requestedKeys) {
       config.FLOW_FEED_ML_MIN    = _flow_feed
     `);
 
+    pyodide.globals.set('_dil_R0', parseInt(document.getElementById('dil-R0').value));
+    pyodide.globals.set('_dil_E1', parseInt(document.getElementById('dil-E1').value));
+    pyodide.globals.set('_dil_Rn', parseInt(document.getElementById('dil-Rn').value));
     pyodide.globals.set('_requested_keys', toFetch);
     const json = await pyodide.runPythonAsync(PY_COMPUTE);
     const data = JSON.parse(json);
@@ -868,11 +906,20 @@ function restoreExplorerFrame(key, frameIdx) {
 }
 
 // ── Results panel ──────────────────────────────────────────────────────────
+function updateTableHeaders() {
+  const s = _lbls.solute.abbr, c = _lbls.carrier.abbr, sv = _lbls.solvent.abbr;
+  document.getElementById('stream-thead').innerHTML =
+    `<tr><th>Stream</th><th>${s}%</th><th>${c}%</th><th>${sv}%</th></tr>`;
+  document.getElementById('stages-thead').innerHTML =
+    `<tr><th>#</th><th></th><th>${s}%</th><th>${c}%</th><th>${sv}%</th></tr>`;
+}
+updateTableHeaders();
+
 function showResults(data) {
   document.getElementById('n-val').textContent   = data.N_theory.toFixed(1);
   document.getElementById('badge-n').textContent = 'N=' + data.N_theory.toFixed(1);
   document.getElementById('n-sub').textContent   =
-    `Plait pt · PA ${data.plait_point.wpa}% · BP ${data.plait_point.wbp}%`;
+    `Plait pt · ${_lbls.solute.abbr} ${data.plait_point.wpa}% · ${_lbls.carrier.abbr} ${data.plait_point.wbp}%`;
 
   const streams = [
     {name:'R₀',   cls:'R', d:data.stream_points.R0 },
@@ -949,8 +996,8 @@ async function applySystem() {
   }
 
   const p = sysData.properties;
-  if ([p.rho_solvent, p.rho_solute, p.rho_diluent, p.mw_solute].some(v => !v)) {
-    setSysMsg('properties must include rho_solvent, rho_solute, rho_diluent, mw_solute.', 'error'); return;
+  if ([p.rho_solvent, p.rho_solute, p.rho_carrier, p.mw_solute].some(v => !v)) {
+    setSysMsg('properties must include rho_solvent, rho_solute, rho_carrier, mw_solute.', 'error'); return;
   }
 
   setSysMsg('Building system…', '');
@@ -959,14 +1006,20 @@ async function applySystem() {
     pyodide.globals.set('_sys_ties',   pyodide.toPy(sysData.tie_lines));
     pyodide.globals.set('_sys_rho_s',  p.rho_solvent);
     pyodide.globals.set('_sys_rho_o',  p.rho_solute);
-    pyodide.globals.set('_sys_rho_d',  p.rho_diluent);
+    pyodide.globals.set('_sys_rho_d',  p.rho_carrier);
     pyodide.globals.set('_sys_mw_o',   p.mw_solute);
     const comps = sysData.components || {};
     pyodide.globals.set('_sys_labels', pyodide.toPy({
       solute:  { name: comps.solute?.name  || 'Solute',  abbr: comps.solute?.abbr  || 'S'  },
       solvent: { name: comps.solvent?.name || 'Solvent', abbr: comps.solvent?.abbr || 'Sv' },
-      diluent: { name: comps.diluent?.name || 'Diluent', abbr: comps.diluent?.abbr || 'D'  },
+      carrier: { name: comps.carrier?.name || 'Carrier', abbr: comps.carrier?.abbr || 'D'  },
     }));
+    _lbls = {
+      solute:  { abbr: comps.solute?.abbr  || 'PA' },
+      carrier: { abbr: comps.carrier?.abbr || 'BP' },
+      solvent: { abbr: comps.solvent?.abbr || 'W'  },
+    };
+    updateTableHeaders();
 
     await pyodide.runPythonAsync(`
 import numpy as np, builtins as _b, config as _cfg, equilibrium as _eq_mod
@@ -988,8 +1041,14 @@ _b._eready     = False
 `);
 
     cache = {}; rendered = {}; explorerReady = false;
+    ['fig3','fig1','fig2a','fig2b','fig4','fig_sf','fig_feed'].forEach(k => {
+      const el = document.getElementById('plot-' + k);
+      if (el) el.innerHTML = '';
+    });
     document.getElementById('results-panel').classList.remove('show');
-    document.getElementById('empty').style.display = 'flex';
+    if (activeTab !== 'guide' && activeTab !== 'system') {
+      document.getElementById('empty').style.display = 'flex';
+    }
     setSysMsg('System applied — click Calculate to update figures.', 'success');
 
   } catch (e) {

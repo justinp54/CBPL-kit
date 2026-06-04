@@ -17,7 +17,7 @@ except ImportError:
 _DEFAULT_LABELS: dict = {
     "solute":  {"name": "Propionic Acid",  "abbr": "PA"},
     "solvent": {"name": "Water",            "abbr": "W"},
-    "diluent": {"name": "n-Bromopropane",  "abbr": "BP"},
+    "carrier": {"name": "n-Bromopropane",  "abbr": "BP"},
 }
 
 
@@ -154,7 +154,7 @@ class EquilibriumSystem:
                 "name": comps.get(role, {}).get("name", _DEFAULT_LABELS[role]["name"]),
                 "abbr": comps.get(role, {}).get("abbr", _DEFAULT_LABELS[role]["abbr"]),
             }
-            for role in ("solute", "solvent", "diluent")
+            for role in ("solute", "solvent", "carrier")
         }
         return cls(equil_data=equil, tie_data=ties, labels=lbs)
 

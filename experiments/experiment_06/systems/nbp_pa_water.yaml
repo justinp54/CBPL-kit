@@ -4,15 +4,15 @@ abbr: "n-BP / PA / W"
 # Component roles in the Hunter-Nash ternary diagram:
 #   solvent  – left-vertex component, extracting solvent (water-rich phase, E₁/Eₙ₊₁ side)
 #   solute   – transferred species (top axis, measured by acid-base titration)
-#   diluent  – right-vertex component, feed carrier    (BP-rich phase, R₀/Rₙ side)
+#   carrier  – right-vertex component, feed carrier    (BP-rich phase, R₀/Rₙ side)
 components:
   solvent: { name: "Water",           abbr: "W"  }
   solute:  { name: "Propionic Acid",  abbr: "PA" }
-  diluent: { name: "n-Bromopropane", abbr: "BP" }
+  carrier: { name: "n-Bromopropane", abbr: "BP" }
 
 # Equilibrium (binodal) data
-# Each row: [wDiluent%, wSolute%, wSolvent%]  (= [wBP%, wPA%, wW%], must sum to 100)
-# Order: left vertex → plait point → right vertex (increasing n-BP / diluent content)
+# Each row: [wCarrier%, wSolute%, wSolvent%]  (= [wBP%, wPA%, wW%], must sum to 100)
+# Order: left vertex → plait point → right vertex (increasing n-BP / carrier content)
 equilibrium_data:
   - [  5.100,  9.490, 85.410]
   - [  8.370, 36.650, 54.980]
@@ -22,7 +22,7 @@ equilibrium_data:
   - [ 84.180,  9.350,  6.470]
 
 # Tie-line data
-# Each row: [wSolute% in solvent-rich phase, wSolute% in diluent-rich phase]
+# Each row: [wSolute% in solvent-rich phase, wSolute% in carrier-rich phase]
 #            (= [wPA% in water-rich / extract side, wPA% in BP-rich / raffinate side])
 # Must be strictly increasing in both columns.
 tie_lines:
@@ -37,5 +37,5 @@ tie_lines:
 properties:
   rho_solvent: 1.000   # g/mL  — Water density
   rho_solute:  0.993   # g/mL  — Propionic Acid density at 25 °C
-  rho_diluent: 1.354   # g/mL  — n-Bromopropane density at 25 °C
+  rho_carrier: 1.354   # g/mL  — n-Bromopropane density at 25 °C
   mw_solute:   74.08   # g/mol — Propionic Acid molar mass (for NaOH titration → mol/L)
