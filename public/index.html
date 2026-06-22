@@ -65,23 +65,23 @@
     aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
 
     .section { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.07); }
-    .section-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #64748b; margin-bottom: 12px; }
+    .section-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #94a3b8; margin-bottom: 12px; }
 
     .field { margin-bottom: 12px; }
     .field:last-child { margin-bottom: 0; }
-    .field-label { font-size: 11.5px; font-weight: 500; color: #94a3b8; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-    .field-label .hint { font-size: 10px; color: #475569; font-weight: 400; }
+    .field-label { font-size: 11.5px; font-weight: 500; color: #a8b8c8; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+    .field-label .hint { font-size: 10px; color: #94a3b8; font-weight: 400; }
     .field-body { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
     .field-input { flex: 1; background: rgba(15,39,68,.6); border: 1px solid rgba(255,255,255,.12); border-radius: 7px; color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500; padding: 7px 10px; outline: none; transition: border-color .15s, background .15s; width: 100%; text-align: right; }
     .field-input:focus { border-color: #3b82f6; background: rgba(15,39,68,.9); }
     .field-input:hover { border-color: rgba(255,255,255,.22); }
     .field-input:disabled { opacity: .4; cursor: not-allowed; }
-    .field-unit { font-size: 11.5px; color: #64748b; white-space: nowrap; min-width: 28px; }
+    .field-unit { font-size: 11.5px; color: #94a3b8; white-space: nowrap; min-width: 28px; }
     .field-slider { width: 100%; -webkit-appearance: none; appearance: none; height: 3px; border-radius: 2px; background: rgba(255,255,255,.12); outline: none; cursor: pointer; accent-color: #3b82f6; }
     .field-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #3b82f6; cursor: pointer; box-shadow: 0 0 0 3px rgba(59,130,246,.2); transition: box-shadow .15s; }
     .field-slider::-webkit-slider-thumb:hover { box-shadow: 0 0 0 5px rgba(59,130,246,.3); }
     .field-slider:disabled { opacity: .3; cursor: not-allowed; }
-    .range-ends { display: flex; justify-content: space-between; font-size: 9.5px; color: #334155; margin-top: 2px; }
+    .range-ends { display: flex; justify-content: space-between; font-size: 9.5px; color: #94a3b8; margin-top: 2px; }
 
     .btn-calc { width: 100%; padding: 10px; border: none; border-radius: 8px; background: var(--blue); color: #fff; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s, box-shadow .15s, transform .1s; }
     .btn-calc:hover:not(:disabled) { background: #1d4ed8; box-shadow: 0 4px 14px rgba(37,99,235,.45); }
@@ -96,7 +96,7 @@
     /* Results */
     #results-panel { display: none; }
     #results-panel.show { display: block; }
-    .n-card { background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%); border-radius: 10px; padding: 14px 16px; text-align: center; margin-bottom: 12px; }
+    .n-card { background: #0c4a6e; border-radius: 10px; padding: 14px 16px; text-align: center; margin-bottom: 12px; }
     .n-label { font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #7dd3fc; margin-bottom: 3px; }
     .n-val   { font-size: 48px; font-weight: 700; color: #fff; line-height: 1; }
     .n-sub   { font-size: 10.5px; color: #7dd3fc; margin-top: 5px; }
@@ -108,8 +108,8 @@
     .comp-table tr { border-bottom: 1px solid rgba(255,255,255,.04); }
     .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
     .dot-R { background: #3b82f6; } .dot-E { background: #ef4444; }
-    .toggle-btn { background: none; border: none; color: #475569; font-size: 11px; cursor: pointer; padding: 6px 0 0; display: flex; align-items: center; gap: 4px; }
-    .toggle-btn:hover { color: #94a3b8; }
+    .toggle-btn { background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; padding: 6px 0 0; display: flex; align-items: center; gap: 4px; }
+    .toggle-btn:hover { color: #cbd5e1; }
     #stages-detail { display: none; margin-top: 8px; }
     #stages-detail.show { display: block; }
     .flows-text { font-size: 10.5px; color: #94a3b8; margin-top: 10px; line-height: 1.8; }
@@ -132,6 +132,7 @@
     .tab-btn.active { color: var(--blue); border-color: var(--blue); font-weight: 600; }
     .n-badge { display: inline-block; background: var(--blue-lt); color: var(--blue); font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 10px; margin-left: 5px; }
     .tab-btn.active .n-badge { background: var(--blue); color: #fff; }
+    .tab-sep { width: 1.5px; height: 22px; background: #94a3b8; align-self: center; flex-shrink: 0; margin: 0 6px; opacity: .5; }
 
     .figure-area { flex: 1; position: relative; overflow: hidden; background: var(--surface); }
     .plot-pane { width: 100%; height: 100%; display: none; }
@@ -195,14 +196,80 @@
     .guide-content pre { background: #0f172a; border-radius: 8px; padding: 16px 20px; margin: 12px 0 16px; overflow-x: auto; }
     .guide-content pre code { background: none; border: none; color: #e2e8f0; font-size: 12px; padding: 0; }
     .guide-content strong { font-weight: 600; color: var(--navy-md); }
-    .guide-content blockquote { border-left: 3px solid var(--blue); padding: 8px 14px; margin: 12px 0; background: var(--blue-lt); border-radius: 0 6px 6px 0; font-size: 12.5px; color: #1e40af; }
+    .guide-content blockquote { padding: 10px 14px; margin: 12px 0; background: var(--blue-lt); border: 1px solid #bfdbfe; border-radius: 6px; font-size: 12.5px; color: #1e40af; }
     .guide-content blockquote p { margin: 0; }
     .guide-content hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+    /* ── Explorer bar ── */
+    .explorer-bar { display: none; position: absolute; top: 0; left: 0; right: 0; z-index: 5; background: #fff; border-bottom: 2px solid #dbeafe; padding: 10px 20px; align-items: center; gap: 16px; }
+    .explorer-sub { display: none; align-items: center; gap: 10px; width: 100%; }
+    .explorer-label { font-size: 12px; font-weight: 600; color: var(--navy-md); white-space: nowrap; }
+    .explorer-unit { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .explorer-hint { font-size: 12px; color: #94a3b8; white-space: nowrap; }
+    .explorer-slider { flex: 1; accent-color: var(--blue); }
+    .explorer-num { width: 58px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--navy-md); text-align: right; outline: none; }
+    .explorer-num:focus-visible { outline: 2px solid #60a5fa; outline-offset: 1px; }
+    #feed-num { width: 62px; }
+
+    /* ── Skip link ── */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--blue); color: #fff; padding: 8px 16px; z-index: 50; font-size: 13px; font-weight: 600; border-radius: 0 0 6px 0; transition: top .15s; }
+    .skip-link:focus { top: 0; }
+
+    /* ── Focus styles ── */
+    .tab-btn:focus-visible, .btn-calc:focus-visible, .toggle-btn:focus-visible, .menu-toggle:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+    .field-input:focus-visible, .field-slider:focus-visible, .dil-num:focus-visible, .dil-sld:focus-visible { outline: 2px solid #60a5fa; outline-offset: 1px; }
+    .btn-apply:focus-visible, .sys-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+    /* ── Responsive ── */
+    .menu-toggle { display: none; background: none; border: none; color: #cbd5e1; font-size: 22px; cursor: pointer; padding: 4px 6px; border-radius: 6px; flex-shrink: 0; line-height: 1; }
+    .menu-toggle:hover { background: rgba(255,255,255,.1); }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; top: var(--header-h); background: rgba(0,0,0,.45); z-index: 29; }
+    .sidebar-backdrop.show { display: block; }
+
+    @media (max-width: 767px) {
+      .menu-toggle { display: flex; align-items: center; justify-content: center; }
+      header h1 { font-size: 13px; }
+      header .madeby { display: none; }
+      header .sub { display: none; }
+
+      aside {
+        position: fixed; top: var(--header-h); left: 0; bottom: 0;
+        z-index: 30; width: 295px;
+        transform: translateX(-100%);
+        transition: transform .25s cubic-bezier(.4,0,.2,1);
+      }
+      aside.open { transform: translateX(0); }
+
+      main { width: 100%; }
+      .tab-btn { font-size: 11.5px; padding: 9px 10px 7px; }
+      .explorer-bar { padding: 8px 12px; gap: 8px; }
+      .explorer-num { width: 50px; font-size: 12px; }
+      .explorer-label { font-size: 11px; }
+      .explorer-unit, .explorer-hint { font-size: 11px; }
+      .guide-pane, .system-pane { padding: 20px 16px; }
+      .guide-content, .system-content { max-width: 100%; }
+      .sys-textarea { height: 260px; }
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+      :root { --sidebar-w: 260px; }
+      header .madeby .sid { display: none; }
+      header .sub { display: none; }
+      .guide-pane, .system-pane { padding: 28px 32px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      aside { transition: none; }
+      .spinner, .ld-ring { animation: none; }
+      .progress-bar { transition: none; }
+    }
   </style>
 </head>
 <body>
 
+<a href="#main-content" class="skip-link">Skip to content</a>
+
 <header>
+  <button class="menu-toggle" id="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">☰</button>
   <span class="badge">SNU CBE</span>
   <h1>LLE Hunter-Nash Simulator</h1>
   <div class="madeby">
@@ -226,7 +293,7 @@
       <div class="field">
         <div class="field-label">V<sub>R0</sub> — Feed</div>
         <div class="field-body">
-          <input class="field-input" id="V_R0" type="number" value="10.78" min="0.5" max="40" step="0.01" />
+          <input class="field-input" id="V_R0" type="number" value="10.78" min="0.5" max="40" step="0.01" aria-label="VR0 Feed titration volume mL" />
           <span class="field-unit">mL</span>
         </div>
         <input class="field-slider" id="s-V_R0" type="range" value="10.78" min="0.5" max="40" step="0.01" />
@@ -242,7 +309,7 @@
       <div class="field">
         <div class="field-label">V<sub>E1</sub> — First Extract</div>
         <div class="field-body">
-          <input class="field-input" id="V_E1" type="number" value="3.80" min="0.1" max="20" step="0.01" />
+          <input class="field-input" id="V_E1" type="number" value="3.80" min="0.1" max="20" step="0.01" aria-label="VE1 First Extract titration volume mL" />
           <span class="field-unit">mL</span>
         </div>
         <input class="field-slider" id="s-V_E1" type="range" value="3.80" min="0.1" max="20" step="0.01" />
@@ -258,7 +325,7 @@
       <div class="field">
         <div class="field-label">V<sub>Rn</sub> — Raffinate</div>
         <div class="field-body">
-          <input class="field-input" id="V_RN" type="number" value="0.64" min="0.01" max="20" step="0.01" />
+          <input class="field-input" id="V_RN" type="number" value="0.64" min="0.01" max="20" step="0.01" aria-label="VRn Raffinate titration volume mL" />
           <span class="field-unit">mL</span>
         </div>
         <input class="field-slider" id="s-V_RN" type="range" value="0.64" min="0.01" max="20" step="0.01" />
@@ -278,7 +345,7 @@
       <div class="field">
         <div class="field-label">Solvent (Water)</div>
         <div class="field-body">
-          <input class="field-input" id="flow_solvent" type="number" value="100" min="5" max="500" step="1" />
+          <input class="field-input" id="flow_solvent" type="number" value="100" min="5" max="500" step="1" aria-label="Solvent flow rate mL per min" />
           <span class="field-unit">mL/min</span>
         </div>
         <input class="field-slider" id="s-flow_solvent" type="range" value="100" min="5" max="500" step="1" />
@@ -288,7 +355,7 @@
       <div class="field">
         <div class="field-label">Feed</div>
         <div class="field-body">
-          <input class="field-input" id="flow_feed" type="number" value="40" min="5" max="300" step="1" />
+          <input class="field-input" id="flow_feed" type="number" value="40" min="5" max="300" step="1" aria-label="Feed flow rate mL per min" />
           <span class="field-unit">mL/min</span>
         </div>
         <input class="field-slider" id="s-flow_feed" type="range" value="40" min="5" max="300" step="1" />
@@ -325,39 +392,40 @@
       <div class="flows-text" id="flows-text"></div>
     </div>
   </aside>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
   <!-- Main -->
-  <main>
-    <nav class="tab-bar">
-      <button class="tab-btn active" id="tab-guide"    onclick="switchTab('guide')">Guide</button>
-      <button class="tab-btn"        id="tab-system"   onclick="switchTab('system')">System ✦</button>
-      <button class="tab-btn"        id="tab-fig3"     onclick="switchTab('fig3')">Hunter-Nash <span class="n-badge" id="badge-n">N=?</span></button>
-      <button class="tab-btn"        id="tab-fig1"     onclick="switchTab('fig1')">Equilibrium</button>
-      <button class="tab-btn"        id="tab-fig2a"    onclick="switchTab('fig2a')">Conjugate Curve</button>
-      <button class="tab-btn"        id="tab-fig2b"    onclick="switchTab('fig2b')">Tie Lines</button>
-      <button class="tab-btn"        id="tab-fig4"     onclick="switchTab('fig4')">Lever Rule</button>
-      <button class="tab-btn"        id="tab-fig_sf"   onclick="switchTab('fig_sf')">S:F Explorer ✦</button>
-      <button class="tab-btn"        id="tab-fig_feed" onclick="switchTab('fig_feed')">Feed Explorer ✦</button>
+  <main id="main-content">
+    <nav class="tab-bar" role="tablist" aria-label="Analysis views">
+      <button class="tab-btn active" id="tab-guide"    role="tab" aria-selected="true"  aria-controls="plot-guide"    onclick="switchTab('guide')">Guide</button>
+      <button class="tab-btn"        id="tab-system"   role="tab" aria-selected="false" aria-controls="plot-system"   onclick="switchTab('system')">System ✦</button>
+      <span class="tab-sep" role="separator" aria-hidden="true"></span>
+      <button class="tab-btn"        id="tab-fig1"     role="tab" aria-selected="false" aria-controls="plot-fig1"     onclick="switchTab('fig1')">Equilibrium</button>
+      <button class="tab-btn"        id="tab-fig2a"    role="tab" aria-selected="false" aria-controls="plot-fig2a"    onclick="switchTab('fig2a')">Conjugate Curve</button>
+      <button class="tab-btn"        id="tab-fig2b"    role="tab" aria-selected="false" aria-controls="plot-fig2b"    onclick="switchTab('fig2b')">Tie Lines</button>
+      <span class="tab-sep" role="separator" aria-hidden="true"></span>
+      <button class="tab-btn"        id="tab-fig3"     role="tab" aria-selected="false" aria-controls="plot-fig3"     onclick="switchTab('fig3')">Hunter-Nash <span class="n-badge" id="badge-n">N=?</span></button>
+      <button class="tab-btn"        id="tab-fig4"     role="tab" aria-selected="false" aria-controls="plot-fig4"     onclick="switchTab('fig4')">Lever Rule</button>
+      <button class="tab-btn"        id="tab-fig_sf"   role="tab" aria-selected="false" aria-controls="plot-fig_sf"   onclick="switchTab('fig_sf')">S:F Explorer ✦</button>
+      <button class="tab-btn"        id="tab-fig_feed" role="tab" aria-selected="false" aria-controls="plot-fig_feed" onclick="switchTab('fig_feed')">Feed Explorer ✦</button>
     </nav>
 
     <div class="figure-area">
       <!-- Real-time explorer control bar -->
-      <div id="explorer-bar" style="display:none; position:absolute; top:0; left:0; right:0; z-index:5; background:#fff; border-bottom:2px solid #dbeafe; padding:10px 20px; display:none; align-items:center; gap:16px;">
-        <div id="sf-bar" style="display:none; align-items:center; gap:10px; width:100%;">
-          <span style="font-size:12px;font-weight:600;color:#1a3a5c;white-space:nowrap;">S:F Ratio</span>
-          <input type="range" id="sf-slider" min="0.40" max="0.97" step="0.01" value="0.70" style="flex:1;accent-color:#2563eb;" />
-          <span style="font-size:12px;color:#64748b;white-space:nowrap;">Solvent</span>
-          <input type="number" id="sf-num" value="70" min="40" max="97" step="1"
-            style="width:58px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-weight:600;color:#1e3a5c;text-align:right;outline:none;" />
-          <span style="font-size:12px;color:#64748b;">%</span>
-          <span style="font-size:12px;color:#94a3b8;white-space:nowrap;" id="sf-feed-label">Feed 30%</span>
+      <div id="explorer-bar" class="explorer-bar">
+        <div id="sf-bar" class="explorer-sub">
+          <span class="explorer-label">S:F Ratio</span>
+          <input type="range" id="sf-slider" class="explorer-slider" min="0.40" max="0.97" step="0.01" value="0.70" aria-label="Solvent to Feed ratio" />
+          <span class="explorer-unit">Solvent</span>
+          <input type="number" id="sf-num" class="explorer-num" value="70" min="40" max="97" step="1" aria-label="Solvent percentage" />
+          <span class="explorer-unit">%</span>
+          <span class="explorer-hint" id="sf-feed-label">Feed 30%</span>
         </div>
-        <div id="feed-bar" style="display:none; align-items:center; gap:10px; width:100%;">
-          <span style="font-size:12px;font-weight:600;color:#1a3a5c;white-space:nowrap;">Feed PA</span>
-          <input type="range" id="feed-slider" min="10" max="55" step="0.5" value="33" style="flex:1;accent-color:#2563eb;" />
-          <input type="number" id="feed-num" value="33.0" min="10" max="55" step="0.5"
-            style="width:62px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-weight:600;color:#1e3a5c;text-align:right;outline:none;" />
-          <span style="font-size:12px;color:#64748b;">wt%</span>
+        <div id="feed-bar" class="explorer-sub">
+          <span class="explorer-label">Feed PA</span>
+          <input type="range" id="feed-slider" class="explorer-slider" min="10" max="55" step="0.5" value="33" aria-label="Feed PA weight percent" />
+          <input type="number" id="feed-num" class="explorer-num" value="33.0" min="10" max="55" step="0.5" aria-label="Feed PA value" />
+          <span class="explorer-unit">wt%</span>
         </div>
       </div>
 
@@ -383,14 +451,14 @@
         <p>Enter your titration volumes and click <strong>Calculate</strong>.</p>
       </div>
 
-      <div class="plot-pane" id="plot-fig3"></div>
-      <div class="plot-pane"        id="plot-fig1"></div>
-      <div class="plot-pane"        id="plot-fig2a"></div>
-      <div class="plot-pane"        id="plot-fig2b"></div>
-      <div class="plot-pane"        id="plot-fig4"></div>
-      <div class="plot-pane"        id="plot-fig_sf"></div>
-      <div class="plot-pane"        id="plot-fig_feed"></div>
-      <div class="plot-pane system-pane" id="plot-system">
+      <div class="plot-pane" id="plot-fig3"     role="tabpanel" aria-labelledby="tab-fig3"></div>
+      <div class="plot-pane" id="plot-fig1"     role="tabpanel" aria-labelledby="tab-fig1"></div>
+      <div class="plot-pane" id="plot-fig2a"    role="tabpanel" aria-labelledby="tab-fig2a"></div>
+      <div class="plot-pane" id="plot-fig2b"    role="tabpanel" aria-labelledby="tab-fig2b"></div>
+      <div class="plot-pane" id="plot-fig4"     role="tabpanel" aria-labelledby="tab-fig4"></div>
+      <div class="plot-pane" id="plot-fig_sf"   role="tabpanel" aria-labelledby="tab-fig_sf"></div>
+      <div class="plot-pane" id="plot-fig_feed" role="tabpanel" aria-labelledby="tab-fig_feed"></div>
+      <div class="plot-pane system-pane" id="plot-system" role="tabpanel" aria-labelledby="tab-system">
         <div class="system-content">
           <h2>System Configuration</h2>
           <p>Paste or edit a YAML system definition below, then click <strong>Apply System</strong>.<br>
@@ -412,12 +480,20 @@
           </p>
         </div>
       </div>
-      <div class="plot-pane guide-pane active" id="plot-guide"></div>
+      <div class="plot-pane guide-pane active" id="plot-guide" role="tabpanel" aria-labelledby="tab-guide"></div>
     </div>
   </main>
 </div>
 
 <script>
+// ── Sidebar toggle (mobile) ───────────────────────────────────────────────
+function toggleSidebar() {
+  const aside = document.querySelector('aside');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const open = aside.classList.toggle('open');
+  backdrop.classList.toggle('show', open);
+}
+
 // ── State ─────────────────────────────────────────────────────────────────
 const FIELDS = ['V_R0','V_E1','V_RN','flow_solvent','flow_feed'];
 let pyodide   = null;
@@ -856,9 +932,11 @@ function renderFig(key) {
 function switchTab(key) {
   document.getElementById('plot-' + activeTab).classList.remove('active');
   document.getElementById('tab-'  + activeTab).classList.remove('active');
+  document.getElementById('tab-'  + activeTab).setAttribute('aria-selected', 'false');
   activeTab = key;
   document.getElementById('plot-' + key).classList.add('active');
   document.getElementById('tab-'  + key).classList.add('active');
+  document.getElementById('tab-'  + key).setAttribute('aria-selected', 'true');
 
   const bar      = document.getElementById('explorer-bar');
   const sfBar    = document.getElementById('sf-bar');
