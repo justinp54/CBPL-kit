@@ -1,6 +1,10 @@
 # oh-my-claudecode
 .omc/
 
+# impeccable
+.impeccable/
+PRODUCT.md
+
 #python
 __pycache__/
 *.pyc
