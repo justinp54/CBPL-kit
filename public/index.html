@@ -206,6 +206,25 @@
     .guide-content blockquote { padding: 10px 14px; margin: 12px 0; background: var(--blue-lt); border: 1px solid #b8dde9; border-radius: 6px; font-size: 12.5px; color: #0f5f7a; }
     .guide-content blockquote p { margin: 0; }
     .guide-content hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+    /* ── Data panel (beside chart) ── */
+    .plot-with-panel { width: 100%; height: 100%; }
+    .plot-with-panel.active { display: flex; }
+    .plot-with-panel .plot-chart { flex: 1; min-width: 0; }
+    .data-panel { width: 340px; flex-shrink: 0; overflow-y: auto; border-left: 1px solid var(--border); background: var(--surface); padding: 14px 12px; font-size: 11.5px; display: none; }
+    .data-panel.has-data { display: block; }
+    .data-panel-title, .data-panel-heading { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+    .data-panel-note { font-size: 10px; color: var(--muted); margin-top: 12px; line-height: 1.5; }
+    .data-panel table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+    .data-panel thead th { font-size: 9.5px; font-weight: 600; color: #1878a8; text-align: right; padding: 4px 5px 6px; border-bottom: 1.5px solid var(--border); white-space: nowrap; }
+    .data-panel thead th:first-child { text-align: center; width: 28px; }
+    .data-panel tbody td { padding: 4px 5px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text); border-bottom: 1px solid #f0f1f3; }
+    .data-panel tbody td:first-child { text-align: center; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; color: var(--muted); }
+    .data-panel tbody tr:hover { background: var(--blue-lt); }
+    .data-panel .phase-header { font-size: 9px; font-weight: 600; color: var(--muted); text-align: center; padding: 6px 0 2px; letter-spacing: .02em; }
+
+    @media (max-width: 1023px) { .data-panel { display: none; } .plot-with-panel { display: block; } }
+
     /* ── Explorer bar ── */
     .explorer-bar { display: none; position: absolute; top: 0; left: 0; right: 0; z-index: 5; background: #fff; border-bottom: 2px solid var(--blue-lt); padding: 10px 20px; align-items: center; gap: 16px; }
     .explorer-sub { display: none; align-items: center; gap: 10px; width: 100%; }
@@ -463,7 +482,14 @@
       </div>
 
       <div class="plot-pane" id="plot-fig3"     role="tabpanel" aria-labelledby="tab-fig3"></div>
-      <div class="plot-pane" id="plot-fig1"     role="tabpanel" aria-labelledby="tab-fig1"></div>
+      <div class="plot-pane plot-with-panel" id="plot-fig1" role="tabpanel" aria-labelledby="tab-fig1">
+        <div class="plot-chart" id="chart-fig1"></div>
+        <div class="data-panel" id="panel-fig1">
+          <div class="data-panel-heading">Tie Line Compositions</div>
+          <table id="tieline-table"><thead></thead><tbody></tbody></table>
+          <div class="data-panel-note">Full 3-component compositions at each tie line endpoint, derived from the equilibrium curve.</div>
+        </div>
+      </div>
       <div class="plot-pane" id="plot-fig2a"    role="tabpanel" aria-labelledby="tab-fig2a"></div>
       <div class="plot-pane" id="plot-fig2b"    role="tabpanel" aria-labelledby="tab-fig2b"></div>
       <div class="plot-pane" id="plot-fig4"     role="tabpanel" aria-labelledby="tab-fig4"></div>
@@ -650,15 +676,43 @@ import json
 _sf = {}
 _sf['fig1']  = plot_util.fig_ternary_equilibrium(_system).to_json()
 _sf['fig2a'] = plot_util.fig_conjugate_curve(_system, _conjugate).to_json()
+
+# Extract tie line full compositions from pre-computed tie_coords
+from ternary import xy_to_comp as _xyc
+_tl_comps = []
+for (_ptL, _ptR) in _system.tie_coords:
+    _cL = _xyc(*_ptL)
+    _cR = _xyc(*_ptR)
+    _tl_comps.append({'left': [round(_cL[0],2), round(_cL[1],2), round(_cL[2],2)],
+                      'right': [round(_cR[0],2), round(_cR[1],2), round(_cR[2],2)]})
+_sf['tie_comps'] = _tl_comps
+
 json.dumps(_sf)
 `);
     const figs = JSON.parse(json);
     for (const [k, v] of Object.entries(figs)) {
+      if (k === 'tie_comps') continue;
       cache[k] = JSON.parse(v);
       rendered[k] = false;
     }
-    if (activeTab === 'fig1' || activeTab === 'fig2a') renderFig(activeTab);
+    if (activeTab === 'fig1' || activeTab === 'fig2a') {
+      document.getElementById('empty').style.display = 'none';
+      renderFig(activeTab);
+    }
+    if (figs.tie_comps) populateTieLineTable(figs.tie_comps);
   } catch (e) { console.error('System fig render:', e); }
+}
+
+function populateTieLineTable(comps) {
+  const s = _lbls.solute.abbr, c = _lbls.carrier.abbr, sv = _lbls.solvent.abbr;
+  const thead = document.querySelector('#tieline-table thead');
+  const tbody = document.querySelector('#tieline-table tbody');
+  thead.innerHTML = `<tr><th>#</th><th colspan="3">Solvent-rich (left)</th><th colspan="3">Carrier-rich (right)</th></tr>
+    <tr><th></th><th>${s}%</th><th>${c}%</th><th>${sv}%</th><th>${s}%</th><th>${c}%</th><th>${sv}%</th></tr>`;
+  tbody.innerHTML = comps.map((t, i) =>
+    `<tr><td>${i+1}</td><td>${t.left[0]}</td><td>${t.left[1]}</td><td>${t.left[2]}</td><td>${t.right[0]}</td><td>${t.right[1]}</td><td>${t.right[2]}</td></tr>`
+  ).join('');
+  document.getElementById('panel-fig1').classList.add('has-data');
 }
 
 // ── Input sync ─────────────────────────────────────────────────────────────
@@ -979,7 +1033,7 @@ const PLOTLY_CFG = { responsive: true, scrollZoom: true };
 
 function renderFig(key) {
   if (!cache[key] || rendered[key]) return;
-  const el  = document.getElementById('plot-' + key);
+  const el = document.getElementById('chart-' + key) || document.getElementById('plot-' + key);
   const fig = cache[key];
   Plotly.react(el, fig.data, patchedLayout(fig.layout), PLOTLY_CFG);
   if (fig.frames?.length) Plotly.addFrames(el, fig.frames);
@@ -1030,9 +1084,14 @@ function switchTab(key) {
     document.getElementById('plot-fig_feed').style.paddingTop = '0';
     if (key === 'guide')  { document.getElementById('empty').style.display = 'none'; loadGuide(); return; }
     if (key === 'system') { document.getElementById('empty').style.display = 'none'; loadSystemTab(); return; }
-    if (cache[key]) renderFig(key);
-    else if (pyReady && cache['fig3']) calculate([key]);
-    else if (pyReady) document.getElementById('empty').style.display = 'flex';
+    if (cache[key]) {
+      document.getElementById('empty').style.display = 'none';
+      renderFig(key);
+    } else if (pyReady && cache['fig3']) {
+      calculate([key]);
+    } else if (pyReady && !TABS_AUTO_COLLAPSE.has(key)) {
+      document.getElementById('empty').style.display = 'flex';
+    }
   }
 }
 
