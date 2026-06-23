@@ -57,10 +57,16 @@
     header .sub { color: #8a95a2; font-size: 11px; margin-left: auto; white-space: nowrap; }
 
     /* ── Layout ── */
-    .layout { display: flex; flex: 1; overflow: hidden; }
 
     /* ── Sidebar ── */
-    aside { width: var(--sidebar-w); background: var(--navy-md); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+    aside { width: var(--sidebar-w); background: var(--navy-md); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; transition: width .2s cubic-bezier(.4,0,.2,1); }
+    aside.collapsed { width: 0; min-width: 0; overflow: hidden; }
+
+    /* ── Sidebar collapse toggle ── */
+    .collapse-btn { position: absolute; left: var(--sidebar-w); top: 50%; transform: translateY(-50%); width: 20px; height: 44px; background: var(--navy-md); border: 1px solid rgba(255,255,255,.1); border-left: none; border-radius: 0 5px 5px 0; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 6; transition: left .2s cubic-bezier(.4,0,.2,1); padding: 0; }
+    .collapse-btn:hover { color: #e2e8f0; background: var(--navy); }
+    .collapse-btn.is-collapsed { left: 0; }
+    .layout { display: flex; flex: 1; overflow: hidden; position: relative; }
     aside::-webkit-scrollbar { width: 4px; }
     aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
 
@@ -238,6 +244,8 @@
         transition: transform .25s cubic-bezier(.4,0,.2,1);
       }
       aside.open { transform: translateX(0); }
+      aside.collapsed { width: 295px; } /* mobile uses drawer, not collapse */
+      .collapse-btn { display: none; }
 
       main { width: 100%; }
       .tab-btn { font-size: 11.5px; padding: 9px 10px 7px; }
@@ -259,6 +267,7 @@
 
     @media (prefers-reduced-motion: reduce) {
       aside { transition: none; }
+      .collapse-btn { transition: none; }
       .spinner, .ld-ring { animation: none; }
       .progress-bar { transition: none; }
     }
@@ -392,6 +401,7 @@
       <div class="flows-text" id="flows-text"></div>
     </div>
   </aside>
+  <button class="collapse-btn" id="collapse-btn" onclick="toggleSidebarCollapse()" aria-label="Toggle sidebar">◀</button>
   <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
   <!-- Main -->
@@ -402,9 +412,9 @@
       <span class="tab-sep" role="separator" aria-hidden="true"></span>
       <button class="tab-btn"        id="tab-fig1"     role="tab" aria-selected="false" aria-controls="plot-fig1"     onclick="switchTab('fig1')">Equilibrium</button>
       <button class="tab-btn"        id="tab-fig2a"    role="tab" aria-selected="false" aria-controls="plot-fig2a"    onclick="switchTab('fig2a')">Conjugate Curve</button>
-      <button class="tab-btn"        id="tab-fig2b"    role="tab" aria-selected="false" aria-controls="plot-fig2b"    onclick="switchTab('fig2b')">Tie Lines</button>
       <span class="tab-sep" role="separator" aria-hidden="true"></span>
       <button class="tab-btn"        id="tab-fig3"     role="tab" aria-selected="false" aria-controls="plot-fig3"     onclick="switchTab('fig3')">Hunter-Nash <span class="n-badge" id="badge-n">N=?</span></button>
+      <button class="tab-btn"        id="tab-fig2b"    role="tab" aria-selected="false" aria-controls="plot-fig2b"    onclick="switchTab('fig2b')">Tie Lines</button>
       <button class="tab-btn"        id="tab-fig4"     role="tab" aria-selected="false" aria-controls="plot-fig4"     onclick="switchTab('fig4')">Lever Rule</button>
       <button class="tab-btn"        id="tab-fig_sf"   role="tab" aria-selected="false" aria-controls="plot-fig_sf"   onclick="switchTab('fig_sf')" title="Interactive solvent-to-feed ratio explorer">S:F Explorer ✦</button>
       <button class="tab-btn"        id="tab-fig_feed" role="tab" aria-selected="false" aria-controls="plot-fig_feed" onclick="switchTab('fig_feed')" title="Interactive feed composition explorer">Feed Explorer ✦</button>
@@ -492,6 +502,26 @@ function toggleSidebar() {
   const backdrop = document.getElementById('sidebar-backdrop');
   const open = aside.classList.toggle('open');
   backdrop.classList.toggle('show', open);
+}
+
+// ── Sidebar collapse (desktop) ────────────────────────────────────────────
+const TABS_NEED_SIDEBAR = new Set(['fig3','fig2b','fig4','fig_sf','fig_feed']);
+const TABS_AUTO_COLLAPSE = new Set(['fig1','fig2a']);
+let sidebarManualOverride = false;
+
+function setSidebarCollapsed(collapsed) {
+  const aside = document.querySelector('aside');
+  const btn = document.getElementById('collapse-btn');
+  aside.classList.toggle('collapsed', collapsed);
+  btn.classList.toggle('is-collapsed', collapsed);
+  btn.textContent = collapsed ? '▶' : '◀';
+}
+
+function toggleSidebarCollapse() {
+  const aside = document.querySelector('aside');
+  const collapsed = !aside.classList.contains('collapsed');
+  setSidebarCollapsed(collapsed);
+  sidebarManualOverride = true;
 }
 
 // ── State ─────────────────────────────────────────────────────────────────
@@ -583,10 +613,13 @@ async function initPyodide() {
     setProgress(100, 'Ready!');
     pyReady = true;
 
-    // Hide init overlay; only show empty state on plot tabs
+    // Auto-render system figures (no titration data needed)
+    await renderSystemFigs();
+
+    // Hide init overlay; only show empty state on extraction tabs
     setTimeout(() => {
       document.getElementById('init-overlay').classList.add('hide');
-      if (activeTab !== 'guide' && activeTab !== 'system') {
+      if (!['guide','system','fig1','fig2a'].includes(activeTab) && Object.keys(cache).length === 0) {
         document.getElementById('empty').style.display = 'flex';
       }
     }, 400);
@@ -606,6 +639,25 @@ async function initPyodide() {
     document.getElementById('progress-bar').style.background = '#dc2626';
     console.error(err);
   }
+}
+
+// ── Auto-render system figures (Equilibrium + Conjugate) ──────────────────
+async function renderSystemFigs() {
+  try {
+    const json = await pyodide.runPythonAsync(`
+import json
+_sf = {}
+_sf['fig1']  = plot_util.fig_ternary_equilibrium(_system).to_json()
+_sf['fig2a'] = plot_util.fig_conjugate_curve(_system, _conjugate).to_json()
+json.dumps(_sf)
+`);
+    const figs = JSON.parse(json);
+    for (const [k, v] of Object.entries(figs)) {
+      cache[k] = JSON.parse(v);
+      rendered[k] = false;
+    }
+    if (activeTab === 'fig1' || activeTab === 'fig2a') renderFig(activeTab);
+  } catch (e) { console.error('System fig render:', e); }
 }
 
 // ── Input sync ─────────────────────────────────────────────────────────────
@@ -943,6 +995,18 @@ function switchTab(key) {
   document.getElementById('tab-'  + key).classList.add('active');
   document.getElementById('tab-'  + key).setAttribute('aria-selected', 'true');
 
+  if (!sidebarManualOverride && window.innerWidth >= 768) {
+    const hasData = Object.keys(cache).length > 0;
+    if (TABS_AUTO_COLLAPSE.has(key)) {
+      setSidebarCollapsed(true);
+    } else if (TABS_NEED_SIDEBAR.has(key)) {
+      setSidebarCollapsed(false);
+    } else if (hasData) {
+      setSidebarCollapsed(true);
+    }
+  }
+  sidebarManualOverride = false;
+
   const bar      = document.getElementById('explorer-bar');
   const sfBar    = document.getElementById('sf-bar');
   const feedBar  = document.getElementById('feed-bar');
@@ -1132,7 +1196,8 @@ _b._eready     = False
     if (activeTab !== 'guide' && activeTab !== 'system') {
       document.getElementById('empty').style.display = 'flex';
     }
-    setSysMsg('System applied — click Calculate to update figures.', 'success');
+    await renderSystemFigs();
+    setSysMsg('System applied — click Calculate to update extraction figures.', 'success');
 
   } catch (e) {
     setSysMsg('Failed to build system: ' + e.message, 'error');
