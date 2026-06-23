@@ -175,6 +175,34 @@
     .system-content > p { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
     .sys-actions-top { display: flex; gap: 8px; margin-bottom: 10px; }
     .sys-textarea { width: 100%; height: 400px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.65; background: #0f172a; color: #e2e8f0; border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; outline: none; resize: vertical; tab-size: 2; }
+    .sys-select-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .sys-select { flex: 1; padding: 8px 10px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; font-weight: 500; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
+    .sys-select:focus { border-color: var(--blue); }
+    .sys-form { margin-bottom: 16px; }
+    .sys-form-section { margin-bottom: 14px; }
+    .sys-form-label { font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 6px; }
+    .sys-form-grid { display: grid; gap: 6px; }
+    .sys-form-grid.cols-3 { grid-template-columns: 1fr 1fr 80px; }
+    .sys-form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .sys-form-grid .col-header { font-size: 10px; font-weight: 600; color: var(--muted); padding: 0 2px 2px; }
+    .sys-form-input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; color: var(--text); background: var(--surface); outline: none; }
+    .sys-form-input:focus { border-color: var(--blue); }
+    .sys-form-input.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; text-align: right; }
+    .sys-form-row-label { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; padding: 0 2px; }
+    .sys-editable { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px; }
+    .sys-editable th { font-size: 10px; font-weight: 600; color: var(--blue); padding: 4px 6px; border-bottom: 1.5px solid var(--border); text-align: right; }
+    .sys-editable th:first-child { text-align: center; width: 32px; color: var(--muted); }
+    .sys-editable td { padding: 2px; }
+    .sys-editable td:first-child { text-align: center; font-size: 10px; color: var(--muted); font-weight: 600; padding: 4px; }
+    .sys-editable input { width: 100%; padding: 4px 6px; border: 1px solid var(--border); border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right; color: var(--text); outline: none; background: var(--surface); }
+    .sys-editable input:focus { border-color: var(--blue); }
+    .sys-row-actions { display: flex; gap: 4px; margin-top: 6px; }
+    .sys-row-btn { padding: 4px 10px; font-size: 11px; font-weight: 500; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--muted); cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; }
+    .sys-row-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .sys-advanced { margin-bottom: 12px; }
+    .sys-advanced summary { font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; padding: 6px 0; }
+    .sys-advanced summary:hover { color: var(--text); }
+    .sys-advanced .sys-actions-top { margin-top: 8px; }
     .sys-textarea:focus { border-color: var(--blue); }
     .sys-footer { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
     .btn-apply { padding: 9px 22px; background: var(--blue); color: #fff; border: none; border-radius: 7px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background .15s; }
@@ -498,13 +526,73 @@
       <div class="plot-pane system-pane" id="plot-system" role="tabpanel" aria-labelledby="tab-system">
         <div class="system-content">
           <h2>System Configuration</h2>
-          <p>Paste or edit a YAML system definition below, then click <strong>Apply System</strong>.<br>
-             After applying, click <strong>Calculate</strong> in the sidebar to rebuild all figures with the new system.</p>
-          <div class="sys-actions-top">
-            <button class="sys-btn" onclick="resetSystem()">Reset to Default</button>
+          <p>Select a system or edit the YAML definition below.</p>
+          <div class="sys-select-row">
+            <select class="sys-select" id="sys-select" onchange="loadSystemFromSelect()">
+              <option value="">Loading systems…</option>
+            </select>
             <a class="sys-btn" id="sys-download" href="/systems/nbp_pa_water.yaml" download="nbp_pa_water.yaml">Download YAML</a>
           </div>
-          <textarea class="sys-textarea" id="sys-yaml" spellcheck="false" autocomplete="off"></textarea>
+          <div class="sys-form" id="sys-form">
+            <div class="sys-form-section">
+              <div class="sys-form-label">Components</div>
+              <div class="sys-form-grid cols-3">
+                <span class="col-header">Role</span><span class="col-header">Name</span><span class="col-header">Abbr</span>
+                <span class="sys-form-row-label">Solvent</span>
+                <input class="sys-form-input" id="sf-solvent-name" placeholder="e.g. Water" />
+                <input class="sys-form-input" id="sf-solvent-abbr" placeholder="W" />
+                <span class="sys-form-row-label">Solute</span>
+                <input class="sys-form-input" id="sf-solute-name" placeholder="e.g. Propionic Acid" />
+                <input class="sys-form-input" id="sf-solute-abbr" placeholder="PA" />
+                <span class="sys-form-row-label">Carrier</span>
+                <input class="sys-form-input" id="sf-carrier-name" placeholder="e.g. n-Bromopropane" />
+                <input class="sys-form-input" id="sf-carrier-abbr" placeholder="BP" />
+              </div>
+            </div>
+            <div class="sys-form-section">
+              <div class="sys-form-label">Physical Properties</div>
+              <div class="sys-form-grid cols-2">
+                <span class="col-header">Property</span><span class="col-header">Value</span>
+                <span class="sys-form-row-label">ρ solvent (g/mL)</span>
+                <input class="sys-form-input mono" id="sf-rho-solvent" type="number" step="0.001" />
+                <span class="sys-form-row-label">ρ solute (g/mL)</span>
+                <input class="sys-form-input mono" id="sf-rho-solute" type="number" step="0.001" />
+                <span class="sys-form-row-label">ρ carrier (g/mL)</span>
+                <input class="sys-form-input mono" id="sf-rho-carrier" type="number" step="0.001" />
+                <span class="sys-form-row-label">MW solute (g/mol)</span>
+                <input class="sys-form-input mono" id="sf-mw-solute" type="number" step="0.01" />
+              </div>
+            </div>
+            <div class="sys-form-section">
+              <div class="sys-form-label">Equilibrium Data <span style="font-weight:400;color:var(--muted)">(wt%: Carrier, Solute, Solvent)</span></div>
+              <table class="sys-editable" id="sf-equil-table">
+                <thead><tr><th>#</th><th>Carrier%</th><th>Solute%</th><th>Solvent%</th></tr></thead>
+                <tbody id="sf-equil-tbody"></tbody>
+              </table>
+              <div class="sys-row-actions">
+                <button class="sys-row-btn" onclick="addEquilRow()">+ Add row</button>
+                <button class="sys-row-btn" onclick="removeEquilRow()">− Remove last</button>
+              </div>
+            </div>
+            <div class="sys-form-section">
+              <div class="sys-form-label">Tie Lines <span style="font-weight:400;color:var(--muted)">(wSolute% at each phase boundary)</span></div>
+              <table class="sys-editable" id="sf-tie-table">
+                <thead><tr><th>#</th><th>Solvent-rich</th><th>Carrier-rich</th></tr></thead>
+                <tbody id="sf-tie-tbody"></tbody>
+              </table>
+              <div class="sys-row-actions">
+                <button class="sys-row-btn" onclick="addTieRow()">+ Add row</button>
+                <button class="sys-row-btn" onclick="removeTieRow()">− Remove last</button>
+              </div>
+            </div>
+          </div>
+          <details class="sys-advanced" id="sys-advanced">
+            <summary>Advanced — Edit YAML</summary>
+            <div class="sys-actions-top">
+              <button class="sys-btn" onclick="resetSystem()">Reset to Default</button>
+            </div>
+            <textarea class="sys-textarea" id="sys-yaml" spellcheck="false" autocomplete="off"></textarea>
+          </details>
           <div class="sys-footer">
             <button class="btn-apply" onclick="applySystem()">Apply System</button>
             <span class="sys-msg" id="sys-msg"></span>
@@ -1160,23 +1248,126 @@ function toggleStages() {
 // ── System configuration ───────────────────────────────────────────────────
 let defaultSystemYaml = '';
 let systemTabLoaded   = false;
+let systemList        = [];
+let currentSystemFile = 'nbp_pa_water.yaml';
 
 async function loadSystemTab() {
   if (systemTabLoaded) return;
   systemTabLoaded = true;
   try {
-    const resp = await fetch('/systems/nbp_pa_water.yaml');
+    const listResp = await fetch('/systems/index.json');
+    if (listResp.ok) {
+      systemList = await listResp.json();
+      const sel = document.getElementById('sys-select');
+      sel.innerHTML = systemList.map(s =>
+        `<option value="${s.file}"${s.file === currentSystemFile ? ' selected' : ''}>${s.name} (${s.abbr})</option>`
+      ).join('');
+    }
+  } catch (e) { console.error('System list:', e); }
+  try {
+    const resp = await fetch('/systems/' + currentSystemFile);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     defaultSystemYaml = await resp.text();
     document.getElementById('sys-yaml').value = defaultSystemYaml;
+    populateFormFromYaml(defaultSystemYaml);
   } catch (e) {
-    setSysMsg('Failed to load default system YAML: ' + e.message, 'error');
+    setSysMsg('Failed to load system YAML: ' + e.message, 'error');
+  }
+}
+
+async function loadSystemFromSelect() {
+  const sel = document.getElementById('sys-select');
+  const file = sel.value;
+  if (!file) return;
+  try {
+    const resp = await fetch('/systems/' + file);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const yaml = await resp.text();
+    currentSystemFile = file;
+    defaultSystemYaml = yaml;
+    document.getElementById('sys-yaml').value = yaml;
+    document.getElementById('sys-download').href = '/systems/' + file;
+    document.getElementById('sys-download').download = file;
+    setSysMsg('', '');
+    applySystem();
+  } catch (e) {
+    setSysMsg('Failed to load: ' + e.message, 'error');
   }
 }
 
 function resetSystem() {
   document.getElementById('sys-yaml').value = defaultSystemYaml;
+  populateFormFromYaml(defaultSystemYaml);
   setSysMsg('', '');
+}
+
+function populateFormFromYaml(yamlText) {
+  try {
+    const d = jsyaml.load(yamlText);
+    const c = d.components || {};
+    document.getElementById('sf-solvent-name').value = c.solvent?.name || '';
+    document.getElementById('sf-solvent-abbr').value = c.solvent?.abbr || '';
+    document.getElementById('sf-solute-name').value  = c.solute?.name || '';
+    document.getElementById('sf-solute-abbr').value  = c.solute?.abbr || '';
+    document.getElementById('sf-carrier-name').value = c.carrier?.name || '';
+    document.getElementById('sf-carrier-abbr').value = c.carrier?.abbr || '';
+    const p = d.properties || {};
+    document.getElementById('sf-rho-solvent').value = p.rho_solvent || '';
+    document.getElementById('sf-rho-solute').value  = p.rho_solute || '';
+    document.getElementById('sf-rho-carrier').value = p.rho_carrier || '';
+    document.getElementById('sf-mw-solute').value   = p.mw_solute || '';
+    const eqTbody = document.getElementById('sf-equil-tbody');
+    eqTbody.innerHTML = (d.equilibrium_data || []).map((row, i) =>
+      `<tr><td>${i+1}</td>${row.map(v => `<td><input value="${v}" type="number" step="0.01" /></td>`).join('')}</tr>`
+    ).join('');
+    const tieTbody = document.getElementById('sf-tie-tbody');
+    tieTbody.innerHTML = (d.tie_lines || []).map((row, i) =>
+      `<tr><td>${i+1}</td>${row.map(v => `<td><input value="${v}" type="number" step="0.01" /></td>`).join('')}</tr>`
+    ).join('');
+  } catch (e) { console.error('Form populate:', e); }
+}
+
+function collectFormToYaml() {
+  const obj = {
+    name: document.getElementById('sf-solute-name').value + ' system',
+    components: {
+      solvent: { name: document.getElementById('sf-solvent-name').value, abbr: document.getElementById('sf-solvent-abbr').value },
+      solute:  { name: document.getElementById('sf-solute-name').value,  abbr: document.getElementById('sf-solute-abbr').value },
+      carrier: { name: document.getElementById('sf-carrier-name').value, abbr: document.getElementById('sf-carrier-abbr').value },
+    },
+    properties: {
+      rho_solvent: parseFloat(document.getElementById('sf-rho-solvent').value),
+      rho_solute:  parseFloat(document.getElementById('sf-rho-solute').value),
+      rho_carrier: parseFloat(document.getElementById('sf-rho-carrier').value),
+      mw_solute:   parseFloat(document.getElementById('sf-mw-solute').value),
+    },
+    equilibrium_data: [...document.getElementById('sf-equil-tbody').rows].map(r =>
+      [...r.querySelectorAll('input')].map(inp => parseFloat(inp.value))
+    ),
+    tie_lines: [...document.getElementById('sf-tie-tbody').rows].map(r =>
+      [...r.querySelectorAll('input')].map(inp => parseFloat(inp.value))
+    ),
+  };
+  return jsyaml.dump(obj);
+}
+
+function addEquilRow() {
+  const tbody = document.getElementById('sf-equil-tbody');
+  const n = tbody.rows.length + 1;
+  tbody.insertAdjacentHTML('beforeend', `<tr><td>${n}</td><td><input value="" type="number" step="0.01" /></td><td><input value="" type="number" step="0.01" /></td><td><input value="" type="number" step="0.01" /></td></tr>`);
+}
+function removeEquilRow() {
+  const tbody = document.getElementById('sf-equil-tbody');
+  if (tbody.rows.length > 0) tbody.deleteRow(-1);
+}
+function addTieRow() {
+  const tbody = document.getElementById('sf-tie-tbody');
+  const n = tbody.rows.length + 1;
+  tbody.insertAdjacentHTML('beforeend', `<tr><td>${n}</td><td><input value="" type="number" step="0.01" /></td><td><input value="" type="number" step="0.01" /></td></tr>`);
+}
+function removeTieRow() {
+  const tbody = document.getElementById('sf-tie-tbody');
+  if (tbody.rows.length > 0) tbody.deleteRow(-1);
 }
 
 function setSysMsg(text, type) {
@@ -1188,7 +1379,14 @@ function setSysMsg(text, type) {
 async function applySystem() {
   if (!pyReady) { setSysMsg('Still loading — please wait for initialization to finish.', 'error'); return; }
 
-  const yamlText = document.getElementById('sys-yaml').value.trim();
+  const advancedOpen = document.getElementById('sys-advanced').open;
+  let yamlText;
+  if (advancedOpen) {
+    yamlText = document.getElementById('sys-yaml').value.trim();
+  } else {
+    yamlText = collectFormToYaml();
+    document.getElementById('sys-yaml').value = yamlText;
+  }
   setSysMsg('', '');
 
   let sysData;
