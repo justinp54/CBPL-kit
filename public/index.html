@@ -446,20 +446,20 @@
         <div class="init-title">LLE Hunter-Nash Simulator</div>
         <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
         <div class="progress-label" id="progress-label">Loading Python runtime…</div>
-        <div class="init-sub">First load takes ~20 seconds · cached on subsequent visits</div>
+        <div class="init-sub">First load ≈ 20 s · cached after first visit</div>
       </div>
 
       <!-- Compute loading -->
       <div id="loading">
         <div class="ld-ring"></div>
         <div class="ld-text" id="ld-text">Computing…</div>
-        <div class="ld-sub">Running in browser · no server needed</div>
+        <div class="ld-sub">All calculations run locally in your browser</div>
       </div>
 
       <div id="empty" style="display:none">
-        <div class="ico">⬡</div>
-        <h2>Ready</h2>
-        <p>Enter your titration volumes and click <strong>Calculate</strong>.</p>
+        <div class="ico">△</div>
+        <h2>Ready to analyze</h2>
+        <p>Enter titration volumes in the sidebar, then press <strong>Calculate</strong>.</p>
       </div>
 
       <div class="plot-pane" id="plot-fig3"     role="tabpanel" aria-labelledby="tab-fig3"></div>
@@ -930,7 +930,7 @@ async function calculate(requestedKeys) {
 
   } catch (err) {
     const box = document.getElementById('error-box');
-    box.textContent = '⚠ ' + err.message;
+    box.textContent = 'Calculation failed — check your input values. (' + err.message + ')';
     box.classList.add('show');
     document.getElementById('empty').style.display = 'flex';
     console.error(err);
@@ -1031,7 +1031,7 @@ function switchTab(key) {
     if (key === 'guide')  { document.getElementById('empty').style.display = 'none'; loadGuide(); return; }
     if (key === 'system') { document.getElementById('empty').style.display = 'none'; loadSystemTab(); return; }
     if (cache[key]) renderFig(key);
-    else if (pyReady && Object.keys(cache).length > 0) calculate([key]);
+    else if (pyReady && cache['fig3']) calculate([key]);
     else if (pyReady) document.getElementById('empty').style.display = 'flex';
   }
 }
@@ -1127,7 +1127,7 @@ function setSysMsg(text, type) {
 }
 
 async function applySystem() {
-  if (!pyReady) { setSysMsg('Python runtime not ready yet.', 'error'); return; }
+  if (!pyReady) { setSysMsg('Still loading — please wait for initialization to finish.', 'error'); return; }
 
   const yamlText = document.getElementById('sys-yaml').value.trim();
   setSysMsg('', '');
@@ -1198,7 +1198,7 @@ _b._eready     = False
       document.getElementById('empty').style.display = 'flex';
     }
     await renderSystemFigs();
-    setSysMsg('System applied — click Calculate to update extraction figures.', 'success');
+    setSysMsg('System applied. Press Calculate to run extraction analysis.', 'success');
 
   } catch (e) {
     setSysMsg('Failed to build system: ' + e.message, 'error');

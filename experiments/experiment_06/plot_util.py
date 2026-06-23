@@ -459,7 +459,7 @@ def fig_hunter_nash(
             textfont=dict(size=10),
             customdata=[[wpa_E, s.comp_E[1], s.comp_E[2]],
                         [wpa_R, s.comp_R[1], s.comp_R[2]]],
-            hovertemplate="PA:%{customdata[0]:.2f}%  BP:%{customdata[1]:.2f}%  W:%{customdata[2]:.2f}%<extra>%{text}</extra>",
+            hovertemplate=f"{lb['solute']['abbr']}:%{{customdata[0]:.2f}}%  {lb['carrier']['abbr']}:%{{customdata[1]:.2f}}%  {lb['solvent']['abbr']}:%{{customdata[2]:.2f}}%<extra>%{{text}}</extra>",
             name="Stages" if i == 1 else None,
             showlegend=(i == 1),
         ))
