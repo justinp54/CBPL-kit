@@ -1122,10 +1122,13 @@ const PLOTLY_CFG = { responsive: true, scrollZoom: true };
 function renderFig(key) {
   if (!cache[key] || rendered[key]) return;
   const el = document.getElementById('chart-' + key) || document.getElementById('plot-' + key);
+  if (!el) return;
+  document.getElementById('empty').style.display = 'none';
   const fig = cache[key];
   Plotly.react(el, fig.data, patchedLayout(fig.layout), PLOTLY_CFG);
   if (fig.frames?.length) Plotly.addFrames(el, fig.frames);
   rendered[key] = true;
+  requestAnimationFrame(() => Plotly.Plots.resize(el));
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────
@@ -1286,6 +1289,7 @@ async function loadSystemFromSelect() {
     currentSystemFile = file;
     defaultSystemYaml = yaml;
     document.getElementById('sys-yaml').value = yaml;
+    populateFormFromYaml(yaml);
     document.getElementById('sys-download').href = '/systems/' + file;
     document.getElementById('sys-download').download = file;
     setSysMsg('', '');
@@ -1348,7 +1352,7 @@ function collectFormToYaml() {
       [...r.querySelectorAll('input')].map(inp => parseFloat(inp.value))
     ),
   };
-  return jsyaml.dump(obj);
+  return jsyaml.dump(obj, { flowLevel: 2 });
 }
 
 function addEquilRow() {
@@ -1447,9 +1451,10 @@ _b._eready     = False
 
     cache = {}; rendered = {}; explorerReady = false;
     ['fig3','fig1','fig2a','fig2b','fig4','fig_sf','fig_feed'].forEach(k => {
-      const el = document.getElementById('plot-' + k);
+      const el = document.getElementById('chart-' + k) || document.getElementById('plot-' + k);
       if (el) el.innerHTML = '';
     });
+    document.getElementById('panel-fig1')?.classList.remove('has-data');
     document.getElementById('results-panel').classList.remove('show');
     if (activeTab !== 'guide' && activeTab !== 'system') {
       document.getElementById('empty').style.display = 'flex';
