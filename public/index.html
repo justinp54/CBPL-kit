@@ -1104,7 +1104,6 @@ function getDefaultKeys() {
 function patchedLayout(layout) {
   const patched = { ...layout };
   if (patched.ternary) {
-    // Move legend outside to the right — frees up the full ternary area
     patched.margin = { l: 40, r: 130, t: 40, b: 10 };
     patched.legend = {
       x: 1.02, y: 1, xanchor: 'left', yanchor: 'top',
@@ -1131,7 +1130,7 @@ function renderFig(key) {
   if (!el) return;
   document.getElementById('empty').style.display = 'none';
   const fig = cache[key];
-  Plotly.react(el, fig.data, patchedLayout(fig.layout), PLOTLY_CFG);
+  Plotly.newPlot(el, fig.data, patchedLayout(fig.layout), PLOTLY_CFG);
   if (fig.frames?.length) Plotly.addFrames(el, fig.frames);
   rendered[key] = true;
   requestAnimationFrame(() => Plotly.Plots.resize(el));
@@ -1458,7 +1457,7 @@ _b._eready     = False
     cache = {}; rendered = {}; explorerReady = false;
     ['fig3','fig1','fig2a','fig2b','fig4','fig_sf','fig_feed'].forEach(k => {
       const el = document.getElementById('chart-' + k) || document.getElementById('plot-' + k);
-      if (el) el.innerHTML = '';
+      if (el) { try { Plotly.purge(el); } catch(e) {} }
     });
     document.getElementById('panel-fig1')?.classList.remove('has-data');
     document.getElementById('results-panel').classList.remove('show');
