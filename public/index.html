@@ -777,8 +777,9 @@ _tl_comps = []
 for (_ptL, _ptR) in _system.tie_coords:
     _cL = _xyc(*_ptL)
     _cR = _xyc(*_ptR)
-    _tl_comps.append({'left': [round(_cL[0],2), round(_cL[1],2), round(_cL[2],2)],
-                      'right': [round(_cR[0],2), round(_cR[1],2), round(_cR[2],2)]})
+    _clamp = lambda v: round(max(0.0, v), 2)
+    _tl_comps.append({'left': [_clamp(_cL[0]), _clamp(_cL[1]), _clamp(_cL[2])],
+                      'right': [_clamp(_cR[0]), _clamp(_cR[1]), _clamp(_cR[2])]})
 _sf['tie_comps'] = _tl_comps
 
 json.dumps(_sf)
@@ -1077,7 +1078,7 @@ async function calculate(requestedKeys) {
 
   } catch (err) {
     const box = document.getElementById('error-box');
-    box.textContent = 'Calculation failed — check your input values. (' + err.message + ')';
+    box.textContent = 'Calculation failed: check your input values. (' + err.message + ')';
     box.classList.add('show');
     document.getElementById('empty').style.display = 'flex';
     console.error(err);
@@ -1386,7 +1387,7 @@ function setSysMsg(text, type) {
 }
 
 async function applySystem() {
-  if (!pyReady) { setSysMsg('Still loading — please wait for initialization to finish.', 'error'); return; }
+  if (!pyReady) { setSysMsg('Still loading. Please wait for initialization to finish.', 'error'); return; }
 
   const advancedOpen = document.getElementById('sys-advanced').open;
   let yamlText;
