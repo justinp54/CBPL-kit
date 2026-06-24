@@ -175,38 +175,45 @@
     .system-content > p { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
     .sys-actions-top { display: flex; gap: 8px; margin-bottom: 10px; }
     .sys-textarea { width: 100%; height: 400px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.65; background: #0f172a; color: #e2e8f0; border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; outline: none; resize: vertical; tab-size: 2; }
-    .sys-select-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .sys-select-row { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
     .sys-select { flex: 1; padding: 8px 10px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; font-weight: 500; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
     .sys-select:focus { border-color: var(--blue); }
-    .sys-form { margin-bottom: 16px; }
-    .sys-form-section { margin-bottom: 14px; }
-    .sys-form-label { font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 6px; }
-    .sys-form-grid { display: grid; gap: 6px; }
-    .sys-form-grid.cols-3 { grid-template-columns: 1fr 1fr 80px; }
-    .sys-form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .sys-form { margin-bottom: 20px; }
+    .sys-form-section { margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .sys-form-section:last-child { border-bottom: none; }
+    .sys-form-label { font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 8px; }
+    .sys-form-grid { display: grid; gap: 6px 8px; align-items: center; }
+    .sys-form-grid.cols-3 { grid-template-columns: 80px 1fr 72px; }
+    .sys-form-grid.cols-2 { grid-template-columns: 140px 1fr; }
     .sys-form-grid .col-header { font-size: 10px; font-weight: 600; color: var(--muted); padding: 0 2px 2px; }
-    .sys-form-input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; color: var(--text); background: var(--surface); outline: none; }
+    .sys-form-input { padding: 7px 9px; border: 1px solid var(--border); border-radius: 4px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; color: var(--text); background: var(--surface); outline: none; transition: border-color .15s; }
     .sys-form-input:focus { border-color: var(--blue); }
+    .sys-form-input:hover { border-color: #b0b8c4; }
     .sys-form-input.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; text-align: right; }
     .sys-form-row-label { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; padding: 0 2px; }
     .sys-editable { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px; }
-    .sys-editable th { font-size: 10px; font-weight: 600; color: var(--blue); padding: 4px 6px; border-bottom: 1.5px solid var(--border); text-align: right; }
+    .sys-editable th { font-size: 10px; font-weight: 600; color: var(--blue); padding: 5px 6px; border-bottom: 1.5px solid var(--border); text-align: right; }
     .sys-editable th:first-child { text-align: center; width: 32px; color: var(--muted); }
     .sys-editable td { padding: 2px; }
     .sys-editable td:first-child { text-align: center; font-size: 10px; color: var(--muted); font-weight: 600; padding: 4px; }
-    .sys-editable input { width: 100%; padding: 4px 6px; border: 1px solid var(--border); border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right; color: var(--text); outline: none; background: var(--surface); }
+    .sys-editable tr:hover td { background: rgba(24,120,168,.03); }
+    .sys-editable input { width: 100%; padding: 5px 7px; border: 1px solid var(--border); border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right; color: var(--text); outline: none; background: var(--surface); transition: border-color .15s; }
     .sys-editable input:focus { border-color: var(--blue); }
-    .sys-row-actions { display: flex; gap: 4px; margin-top: 6px; }
-    .sys-row-btn { padding: 4px 10px; font-size: 11px; font-weight: 500; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--muted); cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; }
+    .sys-editable input:hover { border-color: #b0b8c4; }
+    .sys-row-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .sys-row-btn { padding: 5px 12px; font-size: 11px; font-weight: 500; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--muted); cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; transition: border-color .15s, color .15s; }
     .sys-row-btn:hover { border-color: var(--blue); color: var(--blue); }
-    .sys-advanced { margin-bottom: 12px; }
-    .sys-advanced summary { font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; padding: 6px 0; }
+    .sys-advanced { margin-top: 4px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 6px; padding: 0; }
+    .sys-advanced summary { font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; padding: 10px 14px; }
     .sys-advanced summary:hover { color: var(--text); }
-    .sys-advanced .sys-actions-top { margin-top: 8px; }
+    .sys-advanced[open] summary { border-bottom: 1px solid var(--border); }
+    .sys-advanced .sys-actions-top { margin: 10px 14px 8px; }
+    .sys-advanced .sys-textarea { margin: 0 14px 14px; width: calc(100% - 28px); height: 300px; }
     .sys-textarea:focus { border-color: var(--blue); }
     .sys-footer { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-    .btn-apply { padding: 9px 22px; background: var(--blue); color: #fff; border: none; border-radius: 7px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-apply { padding: 9px 22px; background: var(--blue); color: #fff; border: none; border-radius: 5px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background .15s; letter-spacing: .01em; }
     .btn-apply:hover { background: #14698f; }
+    .btn-apply:focus-visible { outline: 2px solid #5abade; outline-offset: 2px; }
     .sys-btn { padding: 7px 14px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 7px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; transition: border-color .15s; }
     .sys-btn:hover { border-color: #94a3b8; }
     .sys-msg { font-size: 12.5px; margin-top: 0; }
