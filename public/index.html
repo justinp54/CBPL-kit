@@ -662,7 +662,6 @@ function syncDil(id, src) {
   const sld = document.getElementById('s-dil-' + id);
   if (src === 'num') sld.value = num.value;
   else num.value = sld.value;
-  debounce();
 }
 
 // ── Progress bar helper ────────────────────────────────────────────────────
@@ -823,7 +822,7 @@ FIELDS.forEach(f => {
   num.disabled = true;
   sld.disabled = true;
 
-  sld.addEventListener('input', () => { num.value = sld.value; scheduleRecalc(); });
+  sld.addEventListener('input', () => { num.value = sld.value; });
   num.addEventListener('input', () => { sld.value = num.value; });
   num.addEventListener('change', () => {
     let v = parseFloat(num.value);
@@ -831,7 +830,6 @@ FIELDS.forEach(f => {
     if (isNaN(v)) v = parseFloat(num.defaultValue);
     v = Math.max(lo, Math.min(hi, v));
     num.value = v; sld.value = v;
-    scheduleRecalc();
   });
 });
 
