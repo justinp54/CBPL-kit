@@ -1,56 +1,39 @@
-name: "Water / Acetic acid / Isopropyl ether"
-abbr: "W / AcOH / IPE"
-
-# Component roles in the Hunter-Nash ternary diagram:
-#   solvent  – left-vertex component, extracting solvent (water-rich phase, E₁/Eₙ₊₁ side)
-#   solute   – transferred species (top axis, measured by acid-base titration)
-#   carrier  – right-vertex component, feed carrier    (BP-rich phase, R₀/Rₙ side)
+name: Water / Acetic acid / Isopropyl ether
 components:
-  solvent: { name: "Isopropyl ether",           abbr: "IPE"  }
-  solute:  { name: "Acetic acid",  abbr: "AcOH" }
-  carrier: { name: "Water", abbr: "W" }
-
-# Equilibrium (binodal) data
-# Each row: [wCarrier%, wSolute%, wSolvent%]  (= [wBP%, wPA%, wW%], must sum to 100)
-# Order: left vertex → plait point → right vertex (increasing n-BP / carrier content)
-equilibrium_data:
-- [0.5, 0.18, 99.32]
-- [0.7, 0.37, 98.93]
-- [0.8, 0.79, 98.41]
-- [1, 1.93, 97.07]
-- [1.9, 4.82, 93.28]
-- [3.9, 11.4, 84.7]
-- [6.9, 21.6, 71.5]
-- [10.8, 31.1, 58.1]
-- [15.1, 36.2, 48.7]
-- [37.1, 46.4, 16.5]
-- [45.1, 44.3, 10.6]
-- [58.9, 36.7, 4.4]
-- [71.1, 25.5, 3.4]
-- [84.4, 13.3, 2.3]
-- [91.68, 6.42, 1.9]
-- [95.51, 2.89, 1.6]
-- [97.09, 1.41, 1.5]
-- [98.11, 0.69, 1.2]
-
-# Tie-line data
-# Each row: [wSolute% in solvent-rich phase, wSolute% in carrier-rich phase]
-#            (= [wPA% in water-rich / extract side, wPA% in BP-rich / raffinate side])
-# Must be strictly increasing in both columns.
-tie_lines:
-- [0.18, 0.69]
-- [0.37, 1.41]
-- [0.79, 2.89]
-- [1.93, 6.42]
-- [4.82, 13.3]
-- [11.4, 25.5]
-- [21.6, 36.7]
-- [31.1, 44.3]
-- [36.2, 46.4]
-
-# Physical properties
+  solvent: {name: Isopropyl ether, abbr: IPE}
+  solute: {name: Acetic acid, abbr: AcOH}
+  carrier: {name: Water, abbr: W}
 properties:
-  rho_solvent: 0.725   # g/mL  — ipe density
-  rho_solute:  1.049   # g/mL  — Acetic Acid density at 25 °C
-  rho_carrier: 1.000   # g/mL  — n-Bromopropane density at 25 °C
-  mw_solute:   60.05   # g/mol — Propionic Acid molar mass (for NaOH titration → mol/L)
+  rho_solvent: 0.725
+  rho_solute: 1.049
+  rho_carrier: 1.0
+  mw_solute: 60.05
+equilibrium_data:
+  - [0.5, 0.18, 99.32]
+  - [0.7, 0.37, 98.93]
+  - [0.8, 0.79, 98.41]
+  - [1, 1.93, 97.07]
+  - [1.9, 4.82, 93.28]
+  - [3.9, 11.4, 84.7]
+  - [6.9, 21.6, 71.5]
+  - [10.8, 31.1, 58.1]
+  - [15.1, 36.2, 48.7]
+  - [37.1, 46.4, 16.5]
+  - [45.1, 44.3, 10.6]
+  - [58.9, 36.7, 4.4]
+  - [71.1, 25.5, 3.4]
+  - [84.4, 13.3, 2.3]
+  - [91.68, 6.42, 1.9]
+  - [95.51, 2.89, 1.6]
+  - [97.09, 1.41, 1.5]
+  - [98.11, 0.69, 1.2]
+tie_lines:
+  - [0.18, 0.69]
+  - [0.37, 1.41]
+  - [0.79, 2.89]
+  - [1.93, 6.42]
+  - [4.82, 13.3]
+  - [11.4, 25.5]
+  - [21.6, 36.7]
+  - [31.1, 44.3]
+  - [36.2, 46.4]
