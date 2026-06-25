@@ -1349,7 +1349,30 @@ function validateForm() {
         errors.push(`Tie line row ${i+1}, column ${j+1}: empty or invalid value.`);
     });
   });
+  const eqRows = [...document.getElementById('sf-equil-tbody').rows];
+  if (eqRows.length >= 2 && errors.length === 0) {
+    const carrierVals = eqRows.map(r => parseFloat(r.querySelectorAll('input')[0].value));
+    for (let i = 1; i < carrierVals.length; i++) {
+      if (carrierVals[i] < carrierVals[i-1]) {
+        errors.push('SORT:Equilibrium data is not sorted by increasing carrier%. Click "Sort" to fix.');
+        break;
+      }
+    }
+  }
   return errors;
+}
+
+function sortEquilData() {
+  const tbody = document.getElementById('sf-equil-tbody');
+  const rows = [...tbody.rows].map(r => {
+    const inputs = r.querySelectorAll('input');
+    return [parseFloat(inputs[0].value), parseFloat(inputs[1].value), parseFloat(inputs[2].value)];
+  });
+  rows.sort((a, b) => a[0] - b[0]);
+  tbody.innerHTML = rows.map((row, i) =>
+    `<tr><td>${i+1}</td>${row.map(v => `<td><input value="${v}" type="number" step="0.01" /></td>`).join('')}</tr>`
+  ).join('');
+  setSysMsg('Equilibrium data sorted by carrier%.', 'success');
 }
 
 function collectFormToYaml() {
@@ -1411,6 +1434,13 @@ async function applySystem() {
   } else {
     const formErrors = validateForm();
     if (formErrors.length > 0) {
+      const sortErr = formErrors.find(e => e.startsWith('SORT:'));
+      if (sortErr) {
+        const msg = document.getElementById('sys-msg');
+        msg.className = 'sys-msg error';
+        msg.innerHTML = sortErr.slice(5) + ' <button class="sys-row-btn" onclick="sortEquilData()" style="margin-left:6px">Sort</button>';
+        return;
+      }
       setSysMsg(formErrors[0], 'error');
       return;
     }
@@ -1433,6 +1463,16 @@ async function applySystem() {
   const p = sysData.properties;
   if ([p.rho_solvent, p.rho_solute, p.rho_carrier, p.mw_solute].some(v => !v)) {
     setSysMsg('properties must include rho_solvent, rho_solute, rho_carrier, mw_solute.', 'error'); return;
+  }
+
+  const eqData = sysData.equilibrium_data;
+  if (eqData.length >= 2) {
+    for (let i = 1; i < eqData.length; i++) {
+      if (eqData[i][0] < eqData[i-1][0]) {
+        setSysMsg('Equilibrium data is not sorted by increasing carrier%. Please sort before applying.', 'error');
+        return;
+      }
+    }
   }
 
   setSysMsg('Building system…', '');
