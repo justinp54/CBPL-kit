@@ -593,7 +593,7 @@
               </div>
             </div>
           </div>
-          <details class="sys-advanced" id="sys-advanced">
+          <details class="sys-advanced" id="sys-advanced" ontoggle="if(this.open) document.getElementById('sys-yaml').value = collectFormToYaml()">
             <summary>Advanced — Edit YAML</summary>
             <div class="sys-actions-top">
               <button class="sys-btn" onclick="resetSystem()">Reset to Default</button>
@@ -653,7 +653,6 @@ let pyReady   = false;
 let cache     = {};
 let rendered  = {};
 let activeTab = 'guide';
-let debTimer  = null;
 let computing = false;
 let _lbls = { solute:{abbr:'PA'}, carrier:{abbr:'BP'}, solvent:{abbr:'W'} };
 
@@ -774,10 +773,10 @@ _sf['fig2a'] = plot_util.fig_conjugate_curve(_system, _conjugate).to_json()
 # Extract tie line full compositions from pre-computed tie_coords
 from ternary import xy_to_comp as _xyc
 _tl_comps = []
+_clamp = lambda v: round(max(0.0, v), 2)
 for (_ptL, _ptR) in _system.tie_coords:
     _cL = _xyc(*_ptL)
     _cR = _xyc(*_ptR)
-    _clamp = lambda v: round(max(0.0, v), 2)
     _tl_comps.append({'left': [_clamp(_cL[0]), _clamp(_cL[1]), _clamp(_cL[2])],
                       'right': [_clamp(_cR[0]), _clamp(_cR[1]), _clamp(_cR[2])]})
 _sf['tie_comps'] = _tl_comps
@@ -811,12 +810,6 @@ function populateTieLineTable(comps) {
 }
 
 // ── Input sync ─────────────────────────────────────────────────────────────
-function scheduleRecalc() {
-  if (!pyReady) return;
-  clearTimeout(debTimer);
-  debTimer = setTimeout(() => { if (!computing) calculate(); }, 250);
-}
-
 FIELDS.forEach(f => {
   const num = document.getElementById(f);
   const sld = document.getElementById('s-' + f);
@@ -1336,6 +1329,29 @@ function populateFormFromYaml(yamlText) {
   } catch (e) { console.error('Form populate:', e); }
 }
 
+function validateForm() {
+  const errors = [];
+  ['sf-solvent-name','sf-solute-name','sf-carrier-name'].forEach(id => {
+    if (!document.getElementById(id).value.trim()) errors.push('Component name is empty.');
+  });
+  ['sf-rho-solvent','sf-rho-solute','sf-rho-carrier','sf-mw-solute'].forEach(id => {
+    if (isNaN(parseFloat(document.getElementById(id).value))) errors.push(`Property "${id.replace('sf-','')}" is empty or invalid.`);
+  });
+  [...document.getElementById('sf-equil-tbody').rows].forEach((r, i) => {
+    [...r.querySelectorAll('input')].forEach((inp, j) => {
+      if (inp.value === '' || isNaN(parseFloat(inp.value)))
+        errors.push(`Equilibrium row ${i+1}, column ${j+1}: empty or invalid value.`);
+    });
+  });
+  [...document.getElementById('sf-tie-tbody').rows].forEach((r, i) => {
+    [...r.querySelectorAll('input')].forEach((inp, j) => {
+      if (inp.value === '' || isNaN(parseFloat(inp.value)))
+        errors.push(`Tie line row ${i+1}, column ${j+1}: empty or invalid value.`);
+    });
+  });
+  return errors;
+}
+
 function collectFormToYaml() {
   const obj = {
     name: document.getElementById('sf-solute-name').value + ' system',
@@ -1393,6 +1409,11 @@ async function applySystem() {
   if (advancedOpen) {
     yamlText = document.getElementById('sys-yaml').value.trim();
   } else {
+    const formErrors = validateForm();
+    if (formErrors.length > 0) {
+      setSysMsg(formErrors[0], 'error');
+      return;
+    }
     yamlText = collectFormToYaml();
     document.getElementById('sys-yaml').value = yamlText;
   }
