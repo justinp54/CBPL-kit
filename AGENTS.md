@@ -1,6 +1,6 @@
 # CBPL-kit — Agent Operating Rules
 
-This is the authoritative guide for AI coding assistants working in this repository.
+Authoritative guide for AI coding assistants working in this repository.
 
 ## Project Overview
 
@@ -8,34 +8,30 @@ CBPL-kit provides interactive simulation tools for SNU CBE lab experiments.
 
 - **Web app**: `cbpl-kit.vercel.app` — Pyodide (Python runs in browser, no server)
 - **Python package**: `experiments/experiment_NN/` — importable modules + Jupyter notebooks
-- **Current scope**: Experiment 06 (LLE Hunter-Nash). Experiments 04, 05 exist as Python modules only.
+- **Current scope**: Experiment 06 (LLE Hunter-Nash) is the main web app. Experiments 04, 05 exist as Python modules only.
 
 ## Repository Layout
 
 ```
-experiments/
-  experiment_06/     ← Python computation modules (source of truth)
-    config.py        ← all experimental constants (V_R0, V_E1, V_RN, flow rates, EQUIL_DATA)
-    equilibrium.py   ← EquilibriumSystem dataclass
-    conjugate.py     ← ConjugateCurve dataclass
-    hunter_nash.py   ← HunterNashSolver, Step dataclasses
-    lever_rule.py    ← find_M_and_P, mixing_point, find_E1_prime
-    ternary.py       ← comp_to_xy, xy_to_comp
-    plot_util.py     ← Plotly figure builders (fig_*)
-    main.py          ← orchestration, StreamPoints dataclass
-    demo.ipynb       ← Jupyter walkthrough
 public/
-  index.html         ← Single-page web app (Pyodide)
-  exp06/             ← COPY of experiment_06 Python files for browser serving
-api/
-  compute.py         ← Legacy Vercel serverless handler (kept as fallback)
-dev_server.py        ← Local development server
+  index.html           ← HTML structure only (307 lines)
+  css/style.css        ← All CSS (teal-blue palette, IBM Plex Sans)
+  js/app.js            ← All JS logic (Pyodide, Plotly, forms)
+  exp06/               ← Python modules (browser serving copy)
+  systems/             ← YAML system definition files
+    index.json         ← Dropdown manifest
+  docs/guide.md        ← Guide tab markdown
+experiments/
+  experiment_04/       ← Python only (no web integration)
+  experiment_05/       ← Python only (no web integration)
+  experiment_06/       ← Python module source + Jupyter notebooks
+    systems/           ← YAML (must stay in sync with public/systems/)
+dev_server.py          ← Local dev server (port 8080)
 ```
 
 ## Critical: File Sync Rule
 
-`public/exp06/` is a copy of `experiments/experiment_06/` Python files.  
-**After editing any `.py` file under `experiments/experiment_06/`, always copy:**
+`public/exp06/` and `experiments/experiment_06/` Python files must always be identical.
 
 ```bash
 cp experiments/experiment_06/{config,ternary,equilibrium,conjugate,hunter_nash,lever_rule,plot_util}.py public/exp06/
@@ -43,110 +39,85 @@ cp experiments/experiment_06/{config,ternary,equilibrium,conjugate,hunter_nash,l
 
 Forgetting this means the web app uses stale code while the Python package is updated.
 
-## Coding Conventions (see CBPL_PATTERNS.md for full detail)
+## Common Tasks
 
-1. **ASCII-only Python source** — no Korean or other non-ASCII in `.py` files.
-2. **Plot functions return `go.Figure`** — never call `.show()` or save inside a plot function.
-3. **Config is module-level constants** — users override via `import config; config.V_E1 = 3.95`.
-4. **Dataclasses with `__post_init__`** — build expensive objects (splines, polynomials) once at construction.
-5. **Pure functions** — no global state in calculation modules.
-6. **Type hints required** on all public functions.
-7. **`Path` over `os`** everywhere for file I/O.
+### Adding a YAML system
+
+1. Create YAML file in `public/systems/` (follow existing format)
+2. Add entry to `public/systems/index.json`
+3. Copy to `experiments/experiment_06/systems/`
+4. git push
+
+### Modifying the System tab
+
+- HTML structure: `public/index.html` (`.sys-*` class elements)
+- Styles: `public/css/style.css` (`.sys-select`, `.sys-form-*`, `.sys-editable`, etc.)
+- JS logic: `public/js/app.js` (`loadSystemTab`, `applySystem`, `validateForm`, `collectFormToYaml`)
+
+### Modifying tab labels or UI copy
+
+- Tab labels: `public/index.html` (`.tab-btn` elements)
+- Error/status messages: `public/js/app.js` (`setSysMsg` call sites)
+- Guide content: `public/docs/guide.md` (markdown)
+
+### Modifying Python computation
+
+- Modules: edit `public/exp06/*.py`, then sync to `experiments/experiment_06/`
+- Charts: `plot_util.py` `fig_*()` functions
+- **Warning**: `_layout()` and `_cart_layout()` are shared — override per-chart via `fig.update_layout()` only
+
+## Coding Conventions
+
+1. **ASCII-only Python source** — no Korean or non-ASCII in `.py` files
+2. **Plot functions return `go.Figure`** — never call `.show()` inside
+3. **Dataclasses with `__post_init__`** — build expensive objects (splines, polynomials) once at construction
+4. **Pure functions** — no global state in calculation modules
+5. **Type hints required** on all public functions
+6. **No dead code** — delete commented-out code, no `# TODO` in user-facing text
+7. **No comments** unless the WHY is non-obvious (a constraint, a workaround, a subtle invariant)
+
+## Hard Guardrails
+
+### Confirm before modifying
+- `requirements.txt` — check Pyodide compatibility first
+- `vercel.json` — routing changes can break the deployed site
+- `plot_util.py` `_layout()` / `_cart_layout()` — shared functions, never modify for a single chart
+
+### Never rename
+Python internal variables: `wpa`, `wbp`, `ww`, `RHO_PA`, `RHO_BP`, `RHO_W`, `MW_PA`.
+Use `"carrier"` key and `labels.abbr` only in YAML and UI.
+
+### Numerical correctness
+Any algorithm change must be validated against legacy output in `experiments/experiment_06/legacy/`.
+Do not change scipy solver bounds, tolerances, or polynomial degrees without understanding impact.
 
 ## How to Add a New Experiment
 
-1. Create `experiments/experiment_NN/` with `config.py`, computation modules, `plot_util.py`, `__init__.py`.
-2. Follow the pattern in `experiments/experiment_06/` (see `CBPL_PATTERNS.md`).
-3. Copy Python files to `public/expNN/`.
-4. Create `public/expNN/index.html` based on `public/index.html` — change only the module paths and Python computation code.
-5. Update `vercel.json` rewrite to exclude `/expNN` from SPA redirect.
+1. Create `experiments/experiment_NN/` following exp06 patterns (`config.py`, computation modules, `plot_util.py`)
+2. Copy Python files to `public/expNN/`
+3. Create `public/expNN/index.html` — share `public/css/style.css` for design consistency
+4. Update `vercel.json` rewrite to exclude `/expNN` from SPA redirect
+5. Later: `public/index.html` becomes a landing page (ROADMAP Phase 7)
 
 ## Web App Architecture (Pyodide)
 
-The web app runs Python in the browser via WebAssembly:
-- `initPyodide()` fetches `.py` files from `/exp06/`, writes to Pyodide's virtual filesystem, imports modules.
-- `calculate()` sets config globals in Python, runs the computation, returns Plotly JSON.
-- `computeExplorer('sf'|'feed')` computes a single frame (~20ms) for real-time slider interaction.
-- Equilibrium system (`_system`, `_conjugate`) is built once and cached in Python builtins.
+- `initPyodide()` fetches `.py` files from `/exp06/`, writes to Pyodide virtual filesystem, imports modules
+- `renderSystemFigs()` auto-renders Equilibrium + Conjugate charts on system load (no Calculate needed)
+- `calculate()` sets config globals in Python, runs computation, returns Plotly JSON
+- `computeExplorer('sf'|'feed')` computes a single frame for real-time slider interaction
+- Sidebar auto-collapses on ternary tabs, auto-expands on extraction tabs
+- System switching uses `Plotly.purge()` before `Plotly.newPlot()` to avoid stale chart state
 
 ## Local Development
 
 ```bash
-python dev_server.py 8080   # serves public/ + legacy experiments/ paths
-# Open http://localhost:8080
+python dev_server.py        # http://localhost:8080
+# Ctrl+Shift+R in browser (hard refresh)
 ```
 
-## Code Style & Quality Tools
+## Git Rules
 
-### Recommended: ruff (linter + formatter)
-
-```bash
-pip install ruff
-ruff check experiments/     # lint
-ruff format experiments/    # format (black-compatible)
-```
-
-Key rules enforced (see `pyproject.toml`):
-- **E/W** — PEP 8 style
-- **F** — Pyflakes (unused imports, undefined names)
-- **I** — isort (import ordering: stdlib → third-party → local)
-- **N** — naming conventions (functions snake_case, classes PascalCase)
-- **UP** — use modern Python syntax (`list[float]` over `List[float]`, etc.)
-
-### Type hints
-All public functions must have type annotations.  
-Use `float | None` (Python 3.10+ union) not `Optional[float]`.  
-Use `npt.NDArray[np.float64]` for numpy array parameters.
-
-### Naming
-- Functions: `snake_case` — `find_M_and_P`, `comp_to_xy`
-- Classes: `PascalCase` — `EquilibriumSystem`, `ConjugateCurve`
-- Constants in `config.py`: `UPPER_CASE` — `EQUIL_DATA`, `V_R0`
-- Private helpers: prefix `_` — `_line_coeffs`, `_titration_c`
-
-### Comments
-Write **no comments** unless the WHY is non-obvious (a constraint, a workaround, a subtle invariant).  
-Do not comment WHAT the code does — well-named identifiers already do that.
-
-### Docstrings
-One-line docstrings on classes and public functions only.  
-No multi-paragraph docstrings. No parameter lists in docstrings.
-
----
-
-## Standard Workflow
-
-When uncertain, choose the safest action — prefer explaining the design over making risky patches.
-
-1. Reuse existing modules and utilities before writing new code.
-2. For any non-trivial change, verify the computation result matches the legacy file (`experiments/experiment_06/legacy/`) before committing.
-3. If you cannot run the code in the current environment, instruct the developer to run it and paste failures — do not claim it was tested.
-4. Provide a brief summary of what changed and why at the end of any patch.
-
-## Hard Guardrails
-
-### Never modify without explicit instruction
-- `requirements.txt` — Pyodide compatibility must be verified first
-- `vercel.json` — routing changes can break the deployed site
-- `public/index.html` — test locally before committing
-
-### Code quality
-- No `# type: ignore`, `# noqa`, or suppression comments — fix the root cause instead.
-- No dead code left as comments — delete it cleanly.
-- No placeholder strings like `"coming soon"` or `"TODO"` in user-facing text.
-- Keep functions short and single-purpose. If a function is doing two things, split it.
-
-### Import discipline
-- New modules should use unconditional top-level imports.
-- The existing `try/except ImportError` pattern in `experiments/` is a legacy compatibility shim — do not extend it to new files.
-- Do not use `sys.path` manipulation outside of `dev_server.py` and `api/compute.py`.
-
-### Numerical correctness
-- Any algorithm change in the computation modules must be validated against the legacy output in `experiments/experiment_06/legacy/Exp_6_LLE_Hunter_Nash_revised.py`.
-- Do not change scipy solver bounds, tolerances, or polynomial degrees without understanding the impact on the conjugate curve and plait point.
-
-## Constraints
-
-- Do not modify `requirements.txt` without checking Pyodide compatibility — packages must be installable via `micropip` or available as Pyodide built-ins.
-- Do not add `try/except` import blocks in new modules — use proper package structure.
-- Keep `public/exp06/` in sync with `experiments/experiment_06/` at every commit.
+- Confirm with user before committing
+- Commit messages: short, conventional prefix (feat, fix, chore, docs)
+- No Co-Authored-By needed
+- Vercel Hobby: only repo owner triggers deploys (teammate push requires owner empty commit)
