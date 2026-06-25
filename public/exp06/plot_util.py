@@ -221,15 +221,16 @@ def _cart_triangle_traces(system: EquilibriumSystem) -> list:
     ))
 
     # Vertex labels (offset from vertices for readability)
-    for text, x, y in [
-        (f"Solute ({lb['solute']['name']})",   50,   _PA_V[1] + 3),
-        (f"Solvent ({lb['solvent']['name']})",  -10,  -5),
-        (f"Carrier ({lb['carrier']['name']})",  110,  -5),
-    ]:
+    _vlabels = [
+        (f"Solute ({lb['solute']['name']})",   50,   _PA_V[1] + 3, "middle center"),
+        (f"Solvent ({lb['solvent']['name']})",  -10,  -5, "middle center"),
+        (f"Carrier ({lb['carrier']['name']})",  118,  -5, "middle left"),
+    ]
+    for text, x, y, tpos in _vlabels:
         traces.append(go.Scatter(
             x=[x], y=[y], mode="text",
             text=[f"<b>{text}</b>"],
-            textposition="middle center",
+            textposition=tpos,
             textfont=dict(size=11),
             showlegend=False, hoverinfo="skip",
         ))
@@ -473,8 +474,13 @@ def fig_hunter_nash(
     fig.update_layout(**_cart_layout(
         f"Hunter-Nash  (N = {N_theory:.1f} theoretical stages)",
         x_range=(min(pt_P[0] - pad, -pad), 118),
-        y_range=(min(pt_P[1] - pad, -pad), 100),
+        y_range=(min(pt_P[1] - pad, -pad), 88),
     ))
+    fig.update_layout(
+        margin=dict(l=10, r=60, t=40, b=30),
+        legend=dict(x=1.0, y=1.0, xanchor="right", yanchor="top",
+                    font=dict(size=9), bgcolor="rgba(255,255,255,0.9)"),
+    )
     return fig
 
 
