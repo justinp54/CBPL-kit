@@ -783,3 +783,65 @@ def fig_lever_rule_interactive_feed(
     )
     fig.update_layout(height=850)
     return fig
+
+
+def fig_correlation(corr, model):
+    """
+    corr  : one entry from compute_correlations() — keys x,y,x_fit,y_fit,a,b,r2
+    model : 'ot' | 'hand' | 'bachman'
+    """
+    _META = {
+        'ot': {
+            'title': 'Othmer-Tobias Correlation',
+            'xlabel': 'ln[(1−w₃₃)/w₃₃]',
+            'ylabel': 'ln[(1−w₁₁)/w₁₁]',
+        },
+        'hand': {
+            'title': 'Hand Correlation',
+            'xlabel': 'ln(w₂₃/w₃₃)',
+            'ylabel': 'ln(w₂₁/w₁₁)',
+        },
+        'bachman': {
+            'title': 'Bachman Correlation',
+            'xlabel': 'w₁₁/w₃₃',
+            'ylabel': 'w₁₁',
+        },
+    }
+    m = _META[model]
+    a, b, r2 = corr['a'], corr['b'], corr['r2']
+    sign = '+' if b >= 0 else '−'
+    eq_str = f'y = {a} {sign} {abs(b)}×x<br>R² = {r2}'
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=corr['x'], y=corr['y'],
+        mode='markers',
+        marker=dict(color='#1878a8', size=6, line=dict(width=0.5, color='white')),
+        name='Tie-line data',
+        showlegend=False,
+    ))
+    fig.add_trace(go.Scatter(
+        x=corr['x_fit'], y=corr['y_fit'],
+        mode='lines',
+        line=dict(color='#dc2626', width=1.5, dash='dash'),
+        name='Linear fit',
+        showlegend=False,
+    ))
+    fig.update_layout(
+        title=dict(text=m['title'], font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text=m['xlabel'], font=dict(size=9)), tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4),
+        yaxis=dict(title=dict(text=m['ylabel'], font=dict(size=9)), tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4),
+        margin=dict(l=40, r=10, t=28, b=36),
+        height=180,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        annotations=[dict(
+            x=0.97, y=0.97, xref='paper', yref='paper',
+            text=eq_str, showarrow=False, align='right',
+            xanchor='right', yanchor='top',
+            font=dict(size=8, color='#0f2744'),
+            bgcolor='rgba(255,255,255,0.85)',
+            bordercolor='#d0d5dd', borderwidth=1, borderpad=3,
+        )],
+    )
+    return fig

@@ -49,7 +49,19 @@ class EquilibriumSystem:
                 "Remove the duplicate point or replace with a more distinct composition."
             )
 
-        self.spline = make_interp_spline(self.x_equil, self.y_equil, k=3)
+        # Add axis-intercept anchors (y=0) estimated by linear extrapolation from
+        # the two boundary data points on each side. This prevents the cubic spline
+        # from curling upward outside the data range, which would create false roots
+        # during tie-line inversion and a visually incorrect equilibrium curve.
+        _sl = (self.y_equil[1] - self.y_equil[0]) / (self.x_equil[1] - self.x_equil[0])
+        _sr = (self.y_equil[-1] - self.y_equil[-2]) / (self.x_equil[-1] - self.x_equil[-2])
+        _xl = float(np.clip(self.x_equil[0] - self.y_equil[0] / _sl,
+                            0.0, self.x_equil[0] - 0.1)) if _sl > 1e-9 else 0.0
+        _xr = float(np.clip(self.x_equil[-1] - self.y_equil[-1] / _sr,
+                            self.x_equil[-1] + 0.1, 100.0)) if _sr < -1e-9 else 100.0
+        _x_fit = np.concatenate([[_xl], self.x_equil, [_xr]])
+        _y_fit  = np.concatenate([[0.0], self.y_equil, [0.0]])
+        self.spline = make_interp_spline(_x_fit, _y_fit, k=3)
 
         x_dense = np.linspace(0.0, 100.0, 10_000)
         y_dense = self.spline(x_dense)

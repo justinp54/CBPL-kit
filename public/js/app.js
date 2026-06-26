@@ -74,6 +74,7 @@ async function initPyodide() {
       'exp06/hunter_nash.py',
       'exp06/lever_rule.py',
       'exp06/plot_util.py',
+      'exp06/correlation.py',
     ];
 
     pyodide.runPython(`
@@ -161,11 +162,19 @@ for (_ptL, _ptR) in _system.tie_coords:
                       'right': [_clamp(_cR[0]), _clamp(_cR[1]), _clamp(_cR[2])]})
 _sf['tie_comps'] = _tl_comps
 
+from correlation import compute_correlations
+_corr = compute_correlations(_system)
+_sf['fig_corr_ot']      = plot_util.fig_correlation(_corr['ot'],      'ot').to_json()
+_sf['fig_corr_hand']    = plot_util.fig_correlation(_corr['hand'],    'hand').to_json()
+_sf['fig_corr_bachman'] = plot_util.fig_correlation(_corr['bachman'], 'bachman').to_json()
+_sf['corr_stats']       = _corr
+
 json.dumps(_sf)
 `);
     const figs = JSON.parse(json);
     for (const [k, v] of Object.entries(figs)) {
       if (k === 'tie_comps') continue;
+      if (k === 'corr_stats') continue;
       cache[k] = JSON.parse(v);
       rendered[k] = false;
     }
@@ -174,6 +183,7 @@ json.dumps(_sf)
       renderFig(activeTab);
     }
     if (figs.tie_comps) populateTieLineTable(figs.tie_comps);
+    if (figs.corr_stats) populateCorrelationPanel(figs.corr_stats);
   } catch (e) { console.error('System fig render:', e); }
 }
 
@@ -187,6 +197,44 @@ function populateTieLineTable(comps) {
     `<tr><td>${i+1}</td><td>${t.left[0]}</td><td>${t.left[1]}</td><td>${t.left[2]}</td><td>${t.right[0]}</td><td>${t.right[1]}</td><td>${t.right[2]}</td></tr>`
   ).join('');
   document.getElementById('panel-fig1').classList.add('has-data');
+}
+
+// ── Correlation panel ──────────────────────────────────────────────────────
+let _corrStats = null;
+let _corrActive = 'ot';
+
+function populateCorrelationPanel(stats) {
+  _corrStats = stats;
+  _renderCorrChart(_corrActive);
+  _updateCorrStats(_corrActive);
+}
+
+function switchCorrTab(model) {
+  _corrActive = model;
+  document.querySelectorAll('.corr-tab').forEach(b => {
+    const sel = b.dataset.model === model;
+    b.classList.toggle('active', sel);
+    b.setAttribute('aria-selected', sel);
+  });
+  _renderCorrChart(model);
+  _updateCorrStats(model);
+}
+
+function _renderCorrChart(model) {
+  const key = 'fig_corr_' + model;
+  const el = document.getElementById('corr-chart');
+  if (!el || !cache[key]) return;
+  const w = el.offsetWidth || 350;
+  const layout = { ...cache[key].layout, width: w, autosize: false };
+  Plotly.react(el, cache[key].data, layout, { displayModeBar: false });
+}
+
+function _updateCorrStats(model) {
+  const el = document.getElementById('corr-stats');
+  if (!el || !_corrStats) return;
+  const d = _corrStats[model];
+  const sign = d.b >= 0 ? '+' : '−';
+  el.innerHTML = `a = ${d.a} &nbsp; b = ${d.b} &nbsp; R² = ${d.r2}`;
 }
 
 // ── Input sync ─────────────────────────────────────────────────────────────
@@ -896,11 +944,21 @@ _b._eready     = False
 `);
 
     cache = {}; rendered = {}; explorerReady = false;
-    ['fig3','fig1','fig2a','fig2b','fig4','fig_sf','fig_feed'].forEach(k => {
+    ['fig3','fig1','fig2a','fig2b','fig4','fig_sf','fig_feed',
+     'fig_corr_ot','fig_corr_hand','fig_corr_bachman'].forEach(k => {
       const el = document.getElementById('chart-' + k) || document.getElementById('plot-' + k);
       if (el) { try { Plotly.purge(el); } catch(e) {} }
     });
     document.getElementById('panel-fig1')?.classList.remove('has-data');
+    const _ce = document.getElementById('corr-chart');
+    if (_ce) { try { Plotly.purge(_ce); } catch(e) {} }
+    _corrStats = null;
+    _corrActive = 'ot';
+    document.querySelectorAll('.corr-tab').forEach(b => {
+      const sel = b.dataset.model === 'ot';
+      b.classList.toggle('active', sel);
+      b.setAttribute('aria-selected', sel);
+    });
     document.getElementById('results-panel').classList.remove('show');
     if (activeTab !== 'guide' && activeTab !== 'system') {
       document.getElementById('empty').style.display = 'flex';
