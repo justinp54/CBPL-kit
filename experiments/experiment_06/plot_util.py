@@ -808,40 +808,58 @@ def fig_correlation(corr, model):
         },
     }
     m = _META[model]
-    a, b, r2 = corr['a'], corr['b'], corr['r2']
-    sign = '+' if b >= 0 else '−'
-    eq_str = f'y = {a} {sign} {abs(b)}×x<br>R² = {r2}'
+    _axis = dict(tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4,
+                 showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=corr['x'], y=corr['y'],
         mode='markers',
         marker=dict(color='#1878a8', size=6, line=dict(width=0.5, color='white')),
-        name='Tie-line data',
         showlegend=False,
     ))
     fig.add_trace(go.Scatter(
         x=corr['x_fit'], y=corr['y_fit'],
         mode='lines',
         line=dict(color='#dc2626', width=1.5, dash='dash'),
-        name='Linear fit',
         showlegend=False,
     ))
     fig.update_layout(
         title=dict(text=m['title'], font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text=m['xlabel'], font=dict(size=9)), tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4),
-        yaxis=dict(title=dict(text=m['ylabel'], font=dict(size=9)), tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4),
+        xaxis=dict(title=dict(text=m['xlabel'], font=dict(size=9)), **_axis),
+        yaxis=dict(title=dict(text=m['ylabel'], font=dict(size=9)), **_axis),
         margin=dict(l=40, r=10, t=28, b=36),
-        height=180,
+        height=220,
         plot_bgcolor='white',
         paper_bgcolor='white',
-        annotations=[dict(
-            x=0.97, y=0.97, xref='paper', yref='paper',
-            text=eq_str, showarrow=False, align='right',
-            xanchor='right', yanchor='top',
-            font=dict(size=8, color='#0f2744'),
-            bgcolor='rgba(255,255,255,0.85)',
-            bordercolor='#d0d5dd', borderwidth=1, borderpad=3,
-        )],
+    )
+    return fig
+
+
+def fig_selectivity(sel):
+    """
+    sel: dict with keys w23, d1, d2, s (lists from compute_correlations selectivity)
+    Plots S = D2/D1 vs w23 (solute mass fraction in solvent-rich phase).
+    """
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=sel['w21'], y=sel['s'],
+        mode='markers',
+        marker=dict(color='#1878a8', size=6, symbol='circle',
+                    line=dict(width=0.5, color='white')),
+        showlegend=False,
+    ))
+    fig.update_layout(
+        title=dict(text='Separation Factor S vs w₂₁', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text='w₂₁ (solute, carrier-rich)', font=dict(size=9)),
+                   tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4,
+                   showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
+        yaxis=dict(title=dict(text='S', font=dict(size=9)),
+                   tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4, rangemode='tozero',
+                   showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
+        margin=dict(l=30, r=10, t=28, b=36),
+        height=200,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
     )
     return fig

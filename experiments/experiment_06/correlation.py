@@ -20,16 +20,18 @@ def compute_correlations(system):
     """
     _eps = 1e-9
 
-    w11_arr, w21_arr, w23_arr, w33_arr = [], [], [], []
+    w11_arr, w13_arr, w21_arr, w23_arr, w33_arr = [], [], [], [], []
     for pt_L, pt_R in system.tie_coords:
         cL = xy_to_comp(*pt_L)   # returns (wpa%, wbp%, ww%) = (solute, carrier, solvent)
         cR = xy_to_comp(*pt_R)   # pt_L = solvent-rich, pt_R = carrier-rich
         w11_arr.append(max(_eps, cR[1] / 100))  # wbp in carrier-rich = w11
+        w13_arr.append(max(_eps, cL[1] / 100))  # wbp in solvent-rich = w13
         w21_arr.append(max(_eps, cR[0] / 100))  # wpa in carrier-rich = w21
         w23_arr.append(max(_eps, cL[0] / 100))  # wpa in solvent-rich = w23
         w33_arr.append(max(_eps, cL[2] / 100))  # ww  in solvent-rich = w33
 
     w11 = np.array(w11_arr)
+    w13 = np.array(w13_arr)
     w21 = np.array(w21_arr)
     w23 = np.array(w23_arr)
     w33 = np.array(w33_arr)
@@ -61,8 +63,20 @@ def compute_correlations(system):
     x_bach = w11 / w33
     y_bach = w11.copy()
 
+    # Selectivity: D1 = w13/w11 (carrier), D2 = w23/w21 (solute), S = D2/D1
+    d1 = w13 / w11
+    d2 = w23 / w21
+    s  = d2 / d1
+
     return {
-        'ot':      _fit(x_ot,   y_ot),
-        'hand':    _fit(x_hand, y_hand),
-        'bachman': _fit(x_bach, y_bach),
+        'ot':         _fit(x_ot,   y_ot),
+        'hand':       _fit(x_hand, y_hand),
+        'bachman':    _fit(x_bach, y_bach),
+        'selectivity': {
+            'w21': np.round(w21, 6).tolist(),
+            'w23': np.round(w23, 6).tolist(),
+            'd1':  np.round(d1,  4).tolist(),
+            'd2':  np.round(d2,  4).tolist(),
+            's':   np.round(s,   4).tolist(),
+        },
     }

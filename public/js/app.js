@@ -45,7 +45,7 @@ function syncDil(id, src) {
 
 // ── Progress bar helper ────────────────────────────────────────────────────
 function setProgress(pct, label) {
-  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-bar').style.transform = `scaleX(${pct / 100})`;
   document.getElementById('progress-label').textContent = label;
 }
 
@@ -167,7 +167,9 @@ _corr = compute_correlations(_system)
 _sf['fig_corr_ot']      = plot_util.fig_correlation(_corr['ot'],      'ot').to_json()
 _sf['fig_corr_hand']    = plot_util.fig_correlation(_corr['hand'],    'hand').to_json()
 _sf['fig_corr_bachman'] = plot_util.fig_correlation(_corr['bachman'], 'bachman').to_json()
+_sf['fig_selectivity']  = plot_util.fig_selectivity(_corr['selectivity']).to_json()
 _sf['corr_stats']       = _corr
+_sf['sel_stats']        = _corr['selectivity']
 
 json.dumps(_sf)
 `);
@@ -175,6 +177,7 @@ json.dumps(_sf)
     for (const [k, v] of Object.entries(figs)) {
       if (k === 'tie_comps') continue;
       if (k === 'corr_stats') continue;
+      if (k === 'sel_stats') continue;
       cache[k] = JSON.parse(v);
       rendered[k] = false;
     }
@@ -184,18 +187,43 @@ json.dumps(_sf)
     }
     if (figs.tie_comps) populateTieLineTable(figs.tie_comps);
     if (figs.corr_stats) populateCorrelationPanel(figs.corr_stats);
+    if (figs.sel_stats) populateSelectivityPanel(figs.sel_stats);
   } catch (e) { console.error('System fig render:', e); }
 }
 
 function populateTieLineTable(comps) {
-  const s = _lbls.solute.abbr, c = _lbls.carrier.abbr, sv = _lbls.solvent.abbr;
   const thead = document.querySelector('#tieline-table thead');
   const tbody = document.querySelector('#tieline-table tbody');
-  thead.innerHTML = `<tr><th>#</th><th colspan="3">Solvent-rich (left)</th><th colspan="3">Carrier-rich (right)</th></tr>
-    <tr><th></th><th>${s}%</th><th>${c}%</th><th>${sv}%</th><th>${s}%</th><th>${c}%</th><th>${sv}%</th></tr>`;
-  tbody.innerHTML = comps.map((t, i) =>
-    `<tr><td>${i+1}</td><td>${t.left[0]}</td><td>${t.left[1]}</td><td>${t.left[2]}</td><td>${t.right[0]}</td><td>${t.right[1]}</td><td>${t.right[2]}</td></tr>`
-  ).join('');
+  // Column order matches paper: carrier(w1x), solute(w2x), solvent(w3x) per phase
+  // left[]  = solvent-rich: [0]=solute(w23), [1]=carrier(w13), [2]=solvent(w33)
+  // right[] = carrier-rich: [0]=solute(w21), [1]=carrier(w11), [2]=solvent(w31)
+  const ca = _lbls.carrier.abbr, so = _lbls.solute.abbr, sv = _lbls.solvent.abbr;
+  const th = (abbr, sub) => `<th>${abbr}<span class="col-sub">${sub}</span></th>`;
+  thead.innerHTML = `
+    <tr>
+      <th>#</th>
+      <th colspan="3">Solvent-rich phase</th>
+      <th colspan="3">Carrier-rich phase</th>
+      <th>D₁</th><th>D₂</th><th>S</th>
+    </tr>
+    <tr>
+      <th></th>
+      ${th(ca,'100w₁₃')}${th(so,'100w₂₃')}${th(sv,'100w₃₃')}
+      ${th(ca,'100w₁₁')}${th(so,'100w₂₁')}${th(sv,'100w₃₁')}
+      <th></th><th></th><th></th>
+    </tr>`;
+  const eps = 1e-9;
+  tbody.innerHTML = comps.map((t, i) => {
+    const d1 = Math.max(eps, t.left[1]) / Math.max(eps, t.right[1]);   // w13/w11
+    const d2 = Math.max(eps, t.left[0]) / Math.max(eps, t.right[0]);   // w23/w21
+    const sv = d2 / d1;
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${t.left[1]}</td><td>${t.left[0]}</td><td>${t.left[2]}</td>
+      <td>${t.right[1]}</td><td>${t.right[0]}</td><td>${t.right[2]}</td>
+      <td>${d1.toFixed(3)}</td><td>${d2.toFixed(3)}</td><td>${sv.toFixed(3)}</td>
+    </tr>`;
+  }).join('');
   document.getElementById('panel-fig1').classList.add('has-data');
 }
 
@@ -229,12 +257,48 @@ function _renderCorrChart(model) {
   Plotly.react(el, cache[key].data, layout, { displayModeBar: false });
 }
 
+const _CORR_FORMULA = {
+  ot:      { label: 'Othmer-Tobias', latex: '\\ln\\dfrac{1-w_{11}}{w_{11}} = a + b\\cdot\\ln\\dfrac{1-w_{33}}{w_{33}}' },
+  hand:    { label: 'Hand',          latex: '\\ln\\dfrac{w_{21}}{w_{11}} = a + b\\cdot\\ln\\dfrac{w_{23}}{w_{33}}' },
+  bachman: { label: 'Bachman',       latex: 'w_{11} = a + b\\cdot\\dfrac{w_{11}}{w_{33}}' },
+};
+
+const _SEL_LATEX = 'S = \\dfrac{D_2}{D_1},\\quad D_1 = \\dfrac{w_{13}}{w_{11}},\\quad D_2 = \\dfrac{w_{23}}{w_{21}}';
+
+function _katex(latex, display = true) {
+  if (window.katex) return katex.renderToString(latex, { displayMode: display, throwOnError: false });
+  return `<code>${latex}</code>`;
+}
+
 function _updateCorrStats(model) {
   const el = document.getElementById('corr-stats');
   if (!el || !_corrStats) return;
   const d = _corrStats[model];
-  const sign = d.b >= 0 ? '+' : '−';
-  el.innerHTML = `a = ${d.a} &nbsp; b = ${d.b} &nbsp; R² = ${d.r2}`;
+  const f = _CORR_FORMULA[model];
+  el.innerHTML = `
+    <div class="fml-label">${f.label} Model</div>
+    <div class="fml-eq">${_katex(f.latex)}</div>
+    <div class="fml-params">a = ${d.a} &nbsp;&nbsp; b = ${d.b} &nbsp;&nbsp; <span class="fml-r2">R² = ${d.r2}</span></div>`;
+}
+
+// ── Selectivity panel ─────────────────────────────────────────────────────
+let _selStats = null;
+
+function populateSelectivityPanel(stats) {
+  _selStats = stats;
+  _renderSelectivityChart();
+  const el = document.getElementById('selectivity-stats');
+  if (el) el.innerHTML = `
+    <div class="fml-label">Separation Factor</div>
+    <div class="fml-eq">${_katex(_SEL_LATEX)}</div>`;
+}
+
+function _renderSelectivityChart() {
+  const el = document.getElementById('selectivity-chart');
+  if (!el || !cache['fig_selectivity']) return;
+  const w = el.offsetWidth || 350;
+  const layout = { ...cache['fig_selectivity'].layout, width: w, autosize: false };
+  Plotly.react(el, cache['fig_selectivity'].data, layout, { displayModeBar: false });
 }
 
 // ── Input sync ─────────────────────────────────────────────────────────────
@@ -604,6 +668,7 @@ function switchTab(key) {
     if (cache[key]) {
       document.getElementById('empty').style.display = 'none';
       renderFig(key);
+      if (key === 'fig1') requestAnimationFrame(() => { _renderCorrChart(_corrActive); _renderSelectivityChart(); });
     } else if (pyReady && cache['fig3']) {
       calculate([key]);
     } else if (pyReady && !TABS_AUTO_COLLAPSE.has(key)) {
@@ -952,8 +1017,11 @@ _b._eready     = False
     document.getElementById('panel-fig1')?.classList.remove('has-data');
     const _ce = document.getElementById('corr-chart');
     if (_ce) { try { Plotly.purge(_ce); } catch(e) {} }
+    const _se = document.getElementById('selectivity-chart');
+    if (_se) { try { Plotly.purge(_se); } catch(e) {} }
     _corrStats = null;
     _corrActive = 'ot';
+    _selStats = null;
     document.querySelectorAll('.corr-tab').forEach(b => {
       const sel = b.dataset.model === 'ot';
       b.classList.toggle('active', sel);
