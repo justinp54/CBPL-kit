@@ -400,7 +400,7 @@ def fig_conjugate_curve(
             ))
 
     traces.append(_cart_point_trace(
-        conjugate.pt_plait, "Plait pt.", "darkorange", symbol="star", size=14,
+        conjugate.pt_plait, "Plait pt. (Conj. Curve)", "darkorange", symbol="star", size=14,
         labels=_lb(system),
     ))
 
@@ -500,7 +500,7 @@ def fig_interpolated_tie_lines(
         line=dict(color="darkorange", width=2),
     ))
     traces.append(_cart_point_trace(
-        conjugate.pt_plait, "Plait pt.", "darkorange", symbol="star", size=14,
+        conjugate.pt_plait, "Plait pt. (Conj. Curve)", "darkorange", symbol="star", size=14,
         labels=_lb(system),
     ))
 
@@ -830,7 +830,7 @@ def fig_correlation(corr, model):
         xaxis=dict(title=dict(text=m['xlabel'], font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text=m['ylabel'], font=dict(size=10)), **_axis),
         margin=dict(l=40, r=10, t=28, b=36),
-        height=220,
+        height=330,
         plot_bgcolor='white',
         paper_bgcolor='white',
     )
@@ -860,7 +860,7 @@ def fig_selectivity(sel):
                    tickfont=dict(size=9), gridcolor='#e8eaf0', nticks=4, rangemode='tozero',
                    showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
         margin=dict(l=30, r=10, t=28, b=36),
-        height=200,
+        height=300,
         plot_bgcolor='white',
         paper_bgcolor='white',
     )
@@ -894,16 +894,15 @@ def fig_plait_loglog(data):
     fig.add_trace(go.Scatter(
         x=b['x_fit'], y=b['y_fit'],
         mode='lines',
-        line=dict(color='#1878a8', width=1.5, dash='dash'),
+        line=dict(color='black', width=1.5, dash='dash'),
         showlegend=False, hoverinfo='skip',
     ))
 
-    # 2. Binodal points (open squares)
+    # 2. Binodal points (solid black squares)
     fig.add_trace(go.Scatter(
         x=b['x'], y=b['y'],
         mode='markers',
-        marker=dict(symbol='square', color='white', size=6,
-                    line=dict(color='#1878a8', width=1.5)),
+        marker=dict(symbol='square', color='black', size=6),
         showlegend=False,
         hovertemplate='(%{x:.3f}, %{y:.3f})<extra>Binodal</extra>',
     ))

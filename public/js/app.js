@@ -176,6 +176,9 @@ _plait_data = _compute_plait(_system)
 _sf['fig_plait']   = plot_util.fig_plait_loglog(_plait_data).to_json()
 _sf['plait_stats'] = _plait_data['plait_comp']
 
+_pp = _xyc(*_conjugate.pt_plait)
+_sf['conj_plait'] = {'carrier': round(max(0.0, _pp[1]), 2), 'solute': round(max(0.0, _pp[0]), 2), 'solvent': round(max(0.0, _pp[2]), 2)}
+
 json.dumps(_sf)
 `);
     const figs = JSON.parse(json);
@@ -184,6 +187,7 @@ json.dumps(_sf)
       if (k === 'corr_stats') continue;
       if (k === 'sel_stats') continue;
       if (k === 'plait_stats') continue;
+      if (k === 'conj_plait') continue;
       cache[k] = JSON.parse(v);
       rendered[k] = false;
     }
@@ -194,11 +198,11 @@ json.dumps(_sf)
     if (figs.tie_comps) populateTieLineTable(figs.tie_comps);
     if (figs.corr_stats) populateCorrelationPanel(figs.corr_stats);
     if (figs.sel_stats) populateSelectivityPanel(figs.sel_stats);
-    if (figs.plait_stats !== undefined) populatePlaitPanel(figs.plait_stats);
+    if (figs.plait_stats !== undefined) populatePlaitPanel(figs.plait_stats, figs.conj_plait);
     // Re-render panel charts with correct width after DOM paints
     requestAnimationFrame(() => {
       if (activeTab === 'fig1') { _renderCorrChart(_corrActive); _renderSelectivityChart(); }
-      else if (activeTab === 'fig2a') { _renderPlaitChart(); }
+      else if (activeTab === 'fig2a') { _renderPlaitChart(); _addLoglogPlaitToTernary(); }
     });
   } catch (e) { console.error('System fig render:', e); }
 }
@@ -296,6 +300,7 @@ function _updateCorrStats(model) {
 // ── Selectivity panel ─────────────────────────────────────────────────────
 let _selStats = null;
 let _plaitStats = null;
+let _conjPlaitStats = null;
 
 function populateSelectivityPanel(stats) {
   _selStats = stats;
@@ -319,28 +324,63 @@ function _renderPlaitChart() {
   const el = document.getElementById('plait-chart');
   if (!el || !cache['fig_plait']) return;
   const w = el.offsetWidth || 350;
-  const layout = { ...cache['fig_plait'].layout, width: w, autosize: false };
+  const layout = { ...cache['fig_plait'].layout, width: w, height: w, autosize: false };
   Plotly.react(el, cache['fig_plait'].data, layout, { displayModeBar: false });
 }
 
-function populatePlaitPanel(stats) {
-  _plaitStats = stats;
+let _plaitOverlayAdded = false;
+
+function _addLoglogPlaitToTernary() {
+  const el = document.getElementById('chart-fig2a');
+  if (!el || !_plaitStats || _plaitOverlayAdded || !rendered['fig2a']) return;
+  const x = _plaitStats.carrier + 0.5 * _plaitStats.solute;
+  const y = Math.sqrt(3) / 2 * _plaitStats.solute;
+  Plotly.addTraces(el, {
+    type: 'scatter', x: [x], y: [y],
+    mode: 'markers',
+    marker: { symbol: 'circle', color: '#dc2626', size: 10,
+              line: { color: 'white', width: 2 } },
+    name: 'Plait pt. (Treybal)',
+    showlegend: true,
+    hovertemplate:
+      `<b>Plait pt. (Treybal)</b><br>${_lbls.carrier.abbr}: ${_plaitStats.carrier}%  ${_lbls.solute.abbr}: ${_plaitStats.solute}%  ${_lbls.solvent.abbr}: ${_plaitStats.solvent}%<extra></extra>`,
+  });
+  _plaitOverlayAdded = true;
+}
+
+function populatePlaitPanel(treybalStats, conjStats) {
+  _plaitStats = treybalStats;
+  _conjPlaitStats = conjStats || null;
   _renderPlaitChart();
   const el = document.getElementById('plait-stats');
   if (!el) return;
-  if (!stats) {
-    el.innerHTML = '<div class="fml-label">Plait Point</div><div class="fml-params" style="text-align:center">Not found in data range</div>';
-    document.getElementById('panel-fig2a')?.classList.add('has-data');
-    return;
-  }
-  el.innerHTML = `
-    <div class="fml-label">Plait Point Composition</div>
-    <div class="fml-params" style="text-align:center">
-      ${_lbls.carrier.name} ${stats.carrier}% &nbsp;&nbsp;
-      ${_lbls.solute.name} ${stats.solute}% &nbsp;&nbsp;
-      ${_lbls.solvent.name} ${stats.solvent}%
-    </div>`;
   document.getElementById('panel-fig2a')?.classList.add('has-data');
+
+  const c = _lbls.carrier.abbr, s = _lbls.solute.abbr, sv = _lbls.solvent.abbr;
+  const tdH = `style="text-align:right;padding:3px 5px 5px;font-size:9.5px;font-weight:600;color:#1878a8"`;
+  const tdN = `style="text-align:left;padding:3px 5px 5px;font-size:9.5px;font-weight:600;color:#1878a8"`;
+  const td  = `style="text-align:right;padding:3px 4px;font-family:'JetBrains Mono',monospace;font-size:10px;font-variant-numeric:tabular-nums;border-bottom:1px solid #f0f1f3"`;
+  const tdL = `style="text-align:left;padding:3px 4px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:10.5px;color:var(--text);border-bottom:1px solid #f0f1f3;white-space:nowrap"`;
+
+  const treybalRow = treybalStats
+    ? `<tr><td ${tdL}>Treybal's</td><td ${td}>${treybalStats.carrier}</td><td ${td}>${treybalStats.solute}</td><td ${td}>${treybalStats.solvent}</td></tr>`
+    : `<tr><td colspan="4" style="text-align:center;padding:4px;color:var(--muted);font-size:10px">Treybal's: not found in range</td></tr>`;
+
+  const conjRow = conjStats
+    ? `<tr><td ${tdL}>Conj. Curve</td><td ${td}>${conjStats.carrier}</td><td ${td}>${conjStats.solute}</td><td ${td}>${conjStats.solvent}</td></tr>`
+    : '';
+
+  el.innerHTML = `
+    <div class="fml-label">Plait Point Comparison</div>
+    <table style="width:100%;border-collapse:collapse;margin-top:6px">
+      <thead><tr style="border-bottom:1.5px solid var(--border)">
+        <th ${tdN}>Method</th>
+        <th ${tdH}>${c}%</th>
+        <th ${tdH}>${s}%</th>
+        <th ${tdH}>${sv}%</th>
+      </tr></thead>
+      <tbody>${treybalRow}${conjRow}</tbody>
+    </table>`;
 }
 
 // ── Input sync ─────────────────────────────────────────────────────────────
@@ -593,6 +633,7 @@ async function calculate(requestedKeys) {
     for (const [k, v] of Object.entries(data.figures)) {
       cache[k] = JSON.parse(v);
       rendered[k] = false;
+      if (k === 'fig2a') _plaitOverlayAdded = false;
     }
 
     renderFig(activeTab);
@@ -711,7 +752,7 @@ function switchTab(key) {
       document.getElementById('empty').style.display = 'none';
       renderFig(key);
       if (key === 'fig1') requestAnimationFrame(() => { _renderCorrChart(_corrActive); _renderSelectivityChart(); });
-      if (key === 'fig2a') requestAnimationFrame(() => { _renderPlaitChart(); });
+      if (key === 'fig2a') requestAnimationFrame(() => { _renderPlaitChart(); _addLoglogPlaitToTernary(); });
     } else if (pyReady && cache['fig3']) {
       calculate([key]);
     } else if (pyReady && !TABS_AUTO_COLLAPSE.has(key)) {
@@ -750,8 +791,7 @@ updateTableHeaders();
 function showResults(data) {
   document.getElementById('n-val').textContent   = data.N_theory.toFixed(1);
   document.getElementById('badge-n').textContent = 'N=' + data.N_theory.toFixed(1);
-  document.getElementById('n-sub').textContent   =
-    `Plait pt · ${_lbls.solute.abbr} ${data.plait_point.wpa}% · ${_lbls.carrier.abbr} ${data.plait_point.wbp}%`;
+  document.getElementById('n-sub').textContent   = '';
 
   const streams = [
     {name:'R₀',   cls:'R', d:data.stream_points.R0 },
@@ -1069,6 +1109,8 @@ _b._eready     = False
     _corrActive = 'ot';
     _selStats = null;
     _plaitStats = null;
+    _conjPlaitStats = null;
+    _plaitOverlayAdded = false;
     const _ps = document.getElementById('plait-stats');
     if (_ps) _ps.innerHTML = '';
     document.querySelectorAll('.corr-tab').forEach(b => {
