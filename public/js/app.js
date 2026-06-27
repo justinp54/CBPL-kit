@@ -54,8 +54,8 @@ const TEAM_DATA = [
     gradient: 'linear-gradient(135deg, #5abade 0%, #1878a8 100%)',
     bio: 'Chemical and Biological Engineering student at Seoul National University.',
     links: [
-      { label: '✉ Email',     href: 'mailto:' },
-      { label: 'LinkedIn', href: '#' },
+      { label: '✉ Email',     href: 'mailto:andylee1208@snu.ac.kr' },
+      { label: 'LinkedIn', href: 'https://www.linkedin.com/in/seonglee-snu', external: true },
     ],
   },
 ];
