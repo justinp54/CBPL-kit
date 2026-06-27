@@ -352,3 +352,62 @@
       font-variant-numeric: tabular-nums; margin-top: 4px;
     }
     .corr-stats-box .fml-r2 { color: var(--blue); font-weight: 600; }
+
+    /* ── Contact tab ── */
+    .tab-contact { color: var(--blue) !important; }
+    .tab-contact:hover { color: var(--navy) !important; }
+
+    /* ── Contact: hide sidebar and empty overlay for full-width ── */
+    .layout:has(#plot-contact.active) aside,
+    .layout:has(#plot-contact.active) .collapse-btn,
+    .layout:has(#plot-contact.active) #empty { display: none !important; }
+
+    /* ── Contact pane ── */
+    .contact-pane { overflow-y: auto; background: var(--surface); }
+    .contact-content { max-width: 820px; margin: 0 auto; padding: 52px 48px 56px; }
+
+    .contact-header { text-align: center; margin-bottom: 52px; }
+    .contact-emblem { width: 72px; height: 72px; object-fit: contain; display: block; margin: 0 auto 16px; opacity: 0.88; }
+    .contact-kicker { font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--blue); margin-bottom: 12px; text-decoration: none; display: inline-block; }
+    .contact-kicker:hover { color: var(--navy); }
+    .contact-title { font-size: 30px; font-weight: 700; color: var(--navy); margin-bottom: 10px; letter-spacing: -.02em; }
+    .contact-sub { font-size: 13px; color: var(--muted); line-height: 1.75; }
+    .contact-tagline { font-size: 15px; font-weight: 500; color: var(--text); margin-top: 18px; line-height: 1.55; }
+
+    /* ── Team rows ── */
+    .team-rows { margin-bottom: 44px; }
+    .team-row { display: flex; align-items: center; gap: 28px; padding: 36px 0; }
+    .team-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+
+    .team-avatar-wrap { flex-shrink: 0; }
+    .team-photo { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 4px 16px rgba(15,39,68,.12); }
+    .team-photo-fallback { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: white; letter-spacing: .02em; box-shadow: 0 4px 16px rgba(24,120,168,.22); }
+
+    .team-info { flex: 1; min-width: 0; }
+    .team-name { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+    .team-meta { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 5px; }
+    .team-role-badge { display: inline-block; font-size: 11px; font-weight: 600; color: var(--blue); background: var(--blue-lt); border-radius: 10px; padding: 2px 9px; margin-bottom: 12px; }
+    .team-bio { font-size: 13px; color: var(--text); line-height: 1.7; max-width: 500px; }
+
+    .team-actions { flex-shrink: 0; display: flex; flex-direction: column; gap: 7px; min-width: 128px; }
+    .team-link { font-size: 12px; font-weight: 500; color: var(--muted); text-decoration: none; padding: 6px 14px; border: 1px solid var(--border); border-radius: 20px; transition: border-color .15s, color .15s, background .15s; text-align: center; white-space: nowrap; background: var(--surface); }
+    .team-link:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-lt); }
+
+    /* ── Contribute & footer ── */
+    .contact-submit { border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin-bottom: 36px; display: flex; align-items: center; gap: 24px; background: var(--bg); }
+    .contact-submit-text { flex: 1; }
+    .contact-submit-title { font-size: 14.5px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .contact-submit-desc { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+    .contact-submit-btn { padding: 10px 20px; background: var(--navy); color: white; border-radius: 7px; text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background .15s; font-family: 'IBM Plex Sans', sans-serif; }
+    .contact-submit-btn:hover { background: var(--navy-md); }
+
+    .contact-footer { text-align: center; font-size: 12px; color: var(--muted); }
+    .contact-gh-link { color: var(--muted); text-decoration: none; font-weight: 600; }
+    .contact-gh-link:hover { color: var(--text); }
+
+    @media (max-width: 767px) {
+      .contact-content { padding: 32px 20px 40px; }
+      .team-row { flex-wrap: wrap; }
+      .team-actions { flex-direction: row; flex-wrap: wrap; min-width: unset; }
+      .contact-submit { flex-direction: column; align-items: flex-start; }
+    }

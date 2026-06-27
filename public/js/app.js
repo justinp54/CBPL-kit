@@ -26,6 +26,90 @@ function toggleSidebarCollapse() {
   sidebarManualOverride = true;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTACT PAGE — Edit this section to update team info.
+// photo: path to image file (e.g. '/contact/junsang.jpg'), or null for initials.
+// ═══════════════════════════════════════════════════════════════════════════
+const TEAM_DATA = [
+  {
+    name: 'Junsang Park',
+    sid:  '2023-16582',
+    role: 'Lead Developer',
+    photo: null,
+    initials: 'JP',
+    gradient: 'linear-gradient(135deg, #1878a8 0%, #0f2744 100%)',
+    bio: 'Chemical and Biological Engineering & Computer Science and Engineering double major student at Seoul National University.',
+    links: [
+      { label: '✉ Email',     href: 'mailto:justinp5454@gmail.com' },
+      { label: 'LinkedIn', href: 'https://www.linkedin.com/in/junsang-park', external: true },
+      { label: '⟨/⟩ GitHub', href: 'https://github.com/justinp54', external: true },
+    ],
+  },
+  {
+    name: 'Seong Lee',
+    sid:  '2020-11063',
+    role: 'Developer',
+    photo: null,
+    initials: 'SL',
+    gradient: 'linear-gradient(135deg, #5abade 0%, #1878a8 100%)',
+    bio: 'Chemical and Biological Engineering student at Seoul National University.',
+    links: [
+      { label: '✉ Email',     href: 'mailto:' },
+      { label: 'LinkedIn', href: '#' },
+    ],
+  },
+];
+
+function renderContactPane() {
+  const el = document.getElementById('plot-contact');
+  if (!el) return;
+  const rows = TEAM_DATA.map(p => {
+    const ext = s => s.startsWith('http') ? 'target="_blank" rel="noopener"' : '';
+    const avatar = p.photo
+      ? `<img class="team-photo" src="${p.photo}" alt="${p.name}"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+         <div class="team-photo-fallback" style="background:${p.gradient};display:none">${p.initials}</div>`
+      : `<div class="team-photo-fallback" style="background:${p.gradient}">${p.initials}</div>`;
+    const links = p.links.map(l =>
+      `<a class="team-link" href="${l.href}" ${ext(l.href)}>${l.label}</a>`).join('');
+    return `
+      <div class="team-row">
+        <div class="team-avatar-wrap">${avatar}</div>
+        <div class="team-info">
+          <div class="team-name">${p.name}</div>
+          <div class="team-meta">${p.sid}</div>
+          ${p.bio ? `<div class="team-bio">${p.bio}</div>` : ''}
+        </div>
+        <div class="team-actions">${links}</div>
+      </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="contact-content">
+      <div class="contact-header">
+        <img src="/images/snu_ui.png" alt="Seoul National University" class="contact-emblem">
+        <div class="contact-kicker">SNU CBE · CBPL-kit</div>
+        <h1 class="contact-title">Made by</h1>
+        <p class="contact-sub"><a href="https://cbe.snu.ac.kr/cbe/main/main.do" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:2px">Seoul National University</a> — Chemical and Biological Engineering<br>
+          Developed in 2026-1 Semester</p>
+        <p class="contact-tagline">Built CBPL-kit to make LLE data analysis more accessible for lab students.</p>
+      </div>
+      <div class="team-rows">${rows}</div>
+      <div class="contact-submit">
+        <div class="contact-submit-text">
+          <div class="contact-submit-title">Contribute a System</div>
+          <div class="contact-submit-desc">Have a new LLE system? Submit a YAML file and we'll review it for inclusion in CBPL-kit.</div>
+        </div>
+        <a class="contact-submit-btn"
+           href="https://github.com/justinp54/CBPL-kit/issues/new?title=New+System+Submission&labels=system"
+           target="_blank" rel="noopener">Submit via GitHub →</a>
+      </div>
+      <div class="contact-footer">
+        <a href="https://github.com/justinp54/CBPL-kit" target="_blank" rel="noopener" class="contact-gh-link">⟨/⟩ View on GitHub</a>
+        &nbsp;·&nbsp; cbpl-kit.vercel.app
+      </div>
+    </div>`;
+}
+
 // ── State ─────────────────────────────────────────────────────────────────
 const FIELDS = ['V_R0','V_E1','V_RN','flow_solvent','flow_feed'];
 let pyodide   = null;
@@ -120,7 +204,7 @@ async function initPyodide() {
     // Hide init overlay; only show empty state on extraction tabs
     setTimeout(() => {
       document.getElementById('init-overlay').classList.add('hide');
-      if (!['guide','system','fig1','fig2a'].includes(activeTab) && Object.keys(cache).length === 0) {
+      if (!['guide','system','fig1','fig2a','contact'].includes(activeTab) && Object.keys(cache).length === 0) {
         document.getElementById('empty').style.display = 'flex';
       }
     }, 400);
@@ -714,6 +798,10 @@ function switchTab(key) {
   document.getElementById('tab-'  + key).classList.add('active');
   document.getElementById('tab-'  + key).setAttribute('aria-selected', 'true');
 
+  if (key === 'contact' || key === 'guide' || key === 'system') {
+    document.getElementById('empty').style.display = 'none';
+  }
+
   if (!sidebarManualOverride && window.innerWidth >= 768) {
     const hasData = Object.keys(cache).length > 0;
     if (TABS_AUTO_COLLAPSE.has(key)) {
@@ -1148,5 +1236,6 @@ async function loadGuide() {
 }
 
 // ── Boot ───────────────────────────────────────────────────────────────────
+renderContactPane();
 loadGuide();
 initPyodide();

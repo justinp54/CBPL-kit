@@ -26,6 +26,10 @@ outputs/
 *.png
 *.jpg
 *.jpeg
+# except static assets
+!public/images/*.png
+!public/images/*.jpg
+!public/images/*.jpeg
 
 # MacOS
 .DS_Store

@@ -160,6 +160,8 @@
       <button class="tab-btn"        id="tab-fig4"     role="tab" aria-selected="false" aria-controls="plot-fig4"     onclick="switchTab('fig4')">Lever Rule</button>
       <button class="tab-btn"        id="tab-fig_sf"   role="tab" aria-selected="false" aria-controls="plot-fig_sf"   onclick="switchTab('fig_sf')" title="Interactive solvent-to-feed ratio explorer">S:F Explorer ✦</button>
       <button class="tab-btn"        id="tab-fig_feed" role="tab" aria-selected="false" aria-controls="plot-fig_feed" onclick="switchTab('fig_feed')" title="Interactive feed composition explorer">Feed Explorer ✦</button>
+      <span class="tab-sep" role="separator" aria-hidden="true"></span>
+      <button class="tab-btn tab-contact" id="tab-contact" role="tab" aria-selected="false" aria-controls="plot-contact" onclick="switchTab('contact')">Contact</button>
     </nav>
 
     <div class="figure-area">
@@ -320,6 +322,8 @@
         </div>
       </div>
       <div class="plot-pane guide-pane active" id="plot-guide" role="tabpanel" aria-labelledby="tab-guide"></div>
+
+      <div class="plot-pane contact-pane" id="plot-contact" role="tabpanel" aria-labelledby="tab-contact"></div>
     </div>
   </main>
 </div>
