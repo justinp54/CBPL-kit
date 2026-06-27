@@ -863,3 +863,86 @@ def fig_selectivity(sel):
         paper_bgcolor='white',
     )
     return fig
+
+
+def fig_plait_loglog(data):
+    """
+    Log-log plait point determination chart.
+    data: output from compute_plait_loglog()
+    """
+    _axis = dict(
+        tickfont=dict(size=8),
+        gridcolor='#e8eaf0',
+        nticks=5,
+        showline=True,
+        linewidth=1,
+        linecolor='#d0d5dd',
+        mirror=True,
+        zeroline=True,
+        zerolinecolor='#e0e3ea',
+        zerolinewidth=1,
+    )
+
+    b = data['binodal']
+    t = data['tieline']
+
+    fig = go.Figure()
+
+    # 1. Binodal spline line
+    fig.add_trace(go.Scatter(
+        x=b['x_fit'], y=b['y_fit'],
+        mode='lines',
+        line=dict(color='#1878a8', width=1.5, dash='dash'),
+        showlegend=False,
+    ))
+
+    # 2. Binodal points (open squares)
+    fig.add_trace(go.Scatter(
+        x=b['x'], y=b['y'],
+        mode='markers',
+        marker=dict(symbol='square', color='white', size=6,
+                    line=dict(color='#1878a8', width=1.5)),
+        showlegend=False,
+    ))
+
+    # 3. Tie-line linear fit
+    fig.add_trace(go.Scatter(
+        x=t['x_fit'], y=t['y_fit'],
+        mode='lines',
+        line=dict(color='#dc2626', width=1.5, dash='dash'),
+        showlegend=False,
+    ))
+
+    # 4. Tie-line points
+    fig.add_trace(go.Scatter(
+        x=t['x'], y=t['y'],
+        mode='markers',
+        marker=dict(symbol='triangle-up', color='#1878a8', size=7),
+        showlegend=False,
+    ))
+
+    # 5. Plait point (if found)
+    if data['plait'] is not None:
+        p = data['plait']
+        fig.add_trace(go.Scatter(
+            x=[p['x']], y=[p['y']],
+            mode='markers+text',
+            marker=dict(symbol='star', color='#dc2626', size=12,
+                        line=dict(color='white', width=0.5)),
+            text=['plait point'],
+            textposition='top right',
+            textfont=dict(size=8, color='#0f2744'),
+            showlegend=False,
+        ))
+
+    fig.update_layout(
+        title=dict(text='Plait Point Determination (Log-Log)', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text='log(w₂₃/w₃₃),  log(w₂/w₃)', font=dict(size=9)), **_axis),
+        yaxis=dict(title=dict(text='log(w₂₁/w₁₁),  log(w₂/w₁)', font=dict(size=9)), **_axis),
+        height=280,
+        margin=dict(l=44, r=10, t=28, b=40),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        showlegend=False,
+    )
+    return fig

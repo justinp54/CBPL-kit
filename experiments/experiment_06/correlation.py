@@ -80,3 +80,111 @@ def compute_correlations(system):
             's':   np.round(s,   4).tolist(),
         },
     }
+
+
+def compute_plait_loglog(system):
+    """
+    Log-log plait point determination chart data.
+
+    For binodal data (each equilibrium_data point, columns [wCarrier%, wSolute%, wSolvent%]):
+      x = log(wSolute / wSolvent)  = log(wpa/ww)
+      y = log(wSolute / wCarrier)  = log(wpa/wbp)
+
+    For tie-line data (same axes as Hand correlation):
+      x = log(w23/w33)  = log(solute_solvent-rich / solvent_solvent-rich)
+      y = log(w21/w11)  = log(solute_carrier-rich / carrier_carrier-rich)
+
+    Plait point: where binodal curve crosses y = x diagonal.
+    """
+    from scipy.interpolate import splprep, splev
+    from scipy.optimize import brentq
+
+    _eps = 1e-9
+
+    # --- Binodal data ---
+    bx, by = [], []
+    for row in system.equil_data:
+        wC, wS, wSv = row[0]/100, row[1]/100, row[2]/100
+        if wC > _eps and wS > _eps and wSv > _eps:
+            bx.append(float(np.log(wS / wSv)))
+            by.append(float(np.log(wS / wC)))
+    bx = np.array(bx)
+    by = np.array(by)
+
+    n = len(bx)
+    bx_fine, by_fine = bx.copy(), by.copy()
+    tck = None
+    u_fine = np.linspace(0, 1, 300)
+    if n >= 4:
+        tck, _ = splprep([bx, by], s=0.0, k=min(3, n - 1))
+        bx_fine, by_fine = splev(u_fine, tck)
+        bx_fine = np.array(bx_fine)
+        by_fine = np.array(by_fine)
+
+    # --- Tie-line data (Hand correlation axes) — compute FIRST for intersection ---
+    tx, ty = [], []
+    for pt_L, pt_R in system.tie_coords:
+        cL = xy_to_comp(*pt_L)
+        cR = xy_to_comp(*pt_R)
+        w21 = max(_eps, cR[0] / 100)
+        w11 = max(_eps, cR[1] / 100)
+        w23 = max(_eps, cL[0] / 100)
+        w33 = max(_eps, cL[2] / 100)
+        tx.append(float(np.log(w23 / w33)))
+        ty.append(float(np.log(w21 / w11)))
+    tx = np.array(tx)
+    ty = np.array(ty)
+
+    coeffs         = np.polyfit(tx, ty, 1)
+    b_fit, a_fit   = float(coeffs[0]), float(coeffs[1])
+
+    # Plait point: intersection of binodal spline with tie-line linear fit
+    # i.e., find t where spline_y(t) = a_fit + b_fit * spline_x(t)
+    plait_loglog = None
+    plait_comp   = None
+    if tck is not None:
+        diff = by_fine - (a_fit + b_fit * bx_fine)
+        for i in range(len(diff) - 1):
+            if diff[i] * diff[i + 1] < 0:
+                try:
+                    def _f(uu, _a=a_fit, _b=b_fit):
+                        px, py = splev(float(uu), tck)
+                        return float(py) - (_a + _b * float(px))
+                    u_root = brentq(_f, float(u_fine[i]), float(u_fine[i + 1]))
+                    px, py = splev(u_root, tck)
+                    px, py = float(px), float(py)
+                    ex, ey = np.exp(px), np.exp(py)
+                    wS  = 1.0 / (1.0 + 1.0 / ex + 1.0 / ey)
+                    wSv = wS / ex
+                    wC  = wS / ey
+                    plait_loglog = {'x': round(px, 4), 'y': round(py, 4)}
+                    plait_comp   = {
+                        'carrier': round(wC  * 100, 2),
+                        'solute':  round(wS  * 100, 2),
+                        'solvent': round(wSv * 100, 2),
+                    }
+                except Exception:
+                    pass
+                break
+
+    # Extend tie-line fit to the plait point x (+ small margin)
+    tx_end = max(float(tx.max()), plait_loglog['x'] + 0.05) if plait_loglog else float(tx.max())
+    tx_fit = np.linspace(float(tx.min()), tx_end, 80)
+    ty_fit = a_fit + b_fit * tx_fit
+
+    return {
+        'binodal': {
+            'x':     np.round(bx,      6).tolist(),
+            'y':     np.round(by,      6).tolist(),
+            'x_fit': np.round(bx_fine, 6).tolist(),
+            'y_fit': np.round(by_fine, 6).tolist(),
+        },
+        'tieline': {
+            'x':     np.round(tx,     6).tolist(),
+            'y':     np.round(ty,     6).tolist(),
+            'x_fit': np.round(tx_fit, 6).tolist(),
+            'y_fit': np.round(ty_fit, 6).tolist(),
+        },
+        'plait':      plait_loglog,
+        'plait_comp': plait_comp,
+    }

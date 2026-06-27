@@ -34,7 +34,7 @@ let cache     = {};
 let rendered  = {};
 let activeTab = 'guide';
 let computing = false;
-let _lbls = { solute:{abbr:'PA'}, carrier:{abbr:'BP'}, solvent:{abbr:'W'} };
+let _lbls = { solute:{name:'Propionic Acid', abbr:'PA'}, carrier:{name:'n-Bromopropane', abbr:'BP'}, solvent:{name:'Water', abbr:'W'} };
 
 function syncDil(id, src) {
   const num = document.getElementById('dil-' + id);
@@ -171,6 +171,11 @@ _sf['fig_selectivity']  = plot_util.fig_selectivity(_corr['selectivity']).to_jso
 _sf['corr_stats']       = _corr
 _sf['sel_stats']        = _corr['selectivity']
 
+from correlation import compute_plait_loglog as _compute_plait
+_plait_data = _compute_plait(_system)
+_sf['fig_plait']   = plot_util.fig_plait_loglog(_plait_data).to_json()
+_sf['plait_stats'] = _plait_data['plait_comp']
+
 json.dumps(_sf)
 `);
     const figs = JSON.parse(json);
@@ -178,6 +183,7 @@ json.dumps(_sf)
       if (k === 'tie_comps') continue;
       if (k === 'corr_stats') continue;
       if (k === 'sel_stats') continue;
+      if (k === 'plait_stats') continue;
       cache[k] = JSON.parse(v);
       rendered[k] = false;
     }
@@ -188,6 +194,12 @@ json.dumps(_sf)
     if (figs.tie_comps) populateTieLineTable(figs.tie_comps);
     if (figs.corr_stats) populateCorrelationPanel(figs.corr_stats);
     if (figs.sel_stats) populateSelectivityPanel(figs.sel_stats);
+    if (figs.plait_stats !== undefined) populatePlaitPanel(figs.plait_stats);
+    // Re-render panel charts with correct width after DOM paints
+    requestAnimationFrame(() => {
+      if (activeTab === 'fig1') { _renderCorrChart(_corrActive); _renderSelectivityChart(); }
+      else if (activeTab === 'fig2a') { _renderPlaitChart(); }
+    });
   } catch (e) { console.error('System fig render:', e); }
 }
 
@@ -283,6 +295,7 @@ function _updateCorrStats(model) {
 
 // ── Selectivity panel ─────────────────────────────────────────────────────
 let _selStats = null;
+let _plaitStats = null;
 
 function populateSelectivityPanel(stats) {
   _selStats = stats;
@@ -299,6 +312,35 @@ function _renderSelectivityChart() {
   const w = el.offsetWidth || 350;
   const layout = { ...cache['fig_selectivity'].layout, width: w, autosize: false };
   Plotly.react(el, cache['fig_selectivity'].data, layout, { displayModeBar: false });
+}
+
+// ── Plait point panel ─────────────────────────────────────────────────────
+function _renderPlaitChart() {
+  const el = document.getElementById('plait-chart');
+  if (!el || !cache['fig_plait']) return;
+  const w = el.offsetWidth || 350;
+  const layout = { ...cache['fig_plait'].layout, width: w, autosize: false };
+  Plotly.react(el, cache['fig_plait'].data, layout, { displayModeBar: false });
+}
+
+function populatePlaitPanel(stats) {
+  _plaitStats = stats;
+  _renderPlaitChart();
+  const el = document.getElementById('plait-stats');
+  if (!el) return;
+  if (!stats) {
+    el.innerHTML = '<div class="fml-label">Plait Point</div><div class="fml-params" style="text-align:center">Not found in data range</div>';
+    document.getElementById('panel-fig2a')?.classList.add('has-data');
+    return;
+  }
+  el.innerHTML = `
+    <div class="fml-label">Plait Point Composition</div>
+    <div class="fml-params" style="text-align:center">
+      ${_lbls.carrier.name} ${stats.carrier}% &nbsp;&nbsp;
+      ${_lbls.solute.name} ${stats.solute}% &nbsp;&nbsp;
+      ${_lbls.solvent.name} ${stats.solvent}%
+    </div>`;
+  document.getElementById('panel-fig2a')?.classList.add('has-data');
 }
 
 // ── Input sync ─────────────────────────────────────────────────────────────
@@ -669,6 +711,7 @@ function switchTab(key) {
       document.getElementById('empty').style.display = 'none';
       renderFig(key);
       if (key === 'fig1') requestAnimationFrame(() => { _renderCorrChart(_corrActive); _renderSelectivityChart(); });
+      if (key === 'fig2a') requestAnimationFrame(() => { _renderPlaitChart(); });
     } else if (pyReady && cache['fig3']) {
       calculate([key]);
     } else if (pyReady && !TABS_AUTO_COLLAPSE.has(key)) {
@@ -983,9 +1026,9 @@ async function applySystem() {
       carrier: { name: comps.carrier?.name || 'Carrier', abbr: comps.carrier?.abbr || 'D'  },
     }));
     _lbls = {
-      solute:  { abbr: comps.solute?.abbr  || 'PA' },
-      carrier: { abbr: comps.carrier?.abbr || 'BP' },
-      solvent: { abbr: comps.solvent?.abbr || 'W'  },
+      solute:  { name: comps.solute?.name  || 'Solute',  abbr: comps.solute?.abbr  || 'PA' },
+      carrier: { name: comps.carrier?.name || 'Carrier', abbr: comps.carrier?.abbr || 'BP' },
+      solvent: { name: comps.solvent?.name || 'Solvent', abbr: comps.solvent?.abbr || 'W'  },
     };
     updateTableHeaders();
 
@@ -1015,13 +1058,19 @@ _b._eready     = False
       if (el) { try { Plotly.purge(el); } catch(e) {} }
     });
     document.getElementById('panel-fig1')?.classList.remove('has-data');
+    document.getElementById('panel-fig2a')?.classList.remove('has-data');
     const _ce = document.getElementById('corr-chart');
     if (_ce) { try { Plotly.purge(_ce); } catch(e) {} }
     const _se = document.getElementById('selectivity-chart');
     if (_se) { try { Plotly.purge(_se); } catch(e) {} }
+    const _pe = document.getElementById('plait-chart');
+    if (_pe) { try { Plotly.purge(_pe); } catch(e) {} }
     _corrStats = null;
     _corrActive = 'ot';
     _selStats = null;
+    _plaitStats = null;
+    const _ps = document.getElementById('plait-stats');
+    if (_ps) _ps.innerHTML = '';
     document.querySelectorAll('.corr-tab').forEach(b => {
       const sel = b.dataset.model === 'ot';
       b.classList.toggle('active', sel);
