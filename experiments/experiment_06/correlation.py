@@ -168,7 +168,7 @@ def compute_plait_loglog(system):
                 break
 
     # Extend tie-line fit to the plait point x (+ small margin)
-    tx_end = max(float(tx.max()), plait_loglog['x'] + 0.05) if plait_loglog else float(tx.max())
+    tx_end = max(float(tx.max()), plait_loglog['x'] + 0.3) if plait_loglog else float(tx.max())
     tx_fit = np.linspace(float(tx.min()), tx_end, 80)
     ty_fit = a_fit + b_fit * tx_fit
 

@@ -808,7 +808,7 @@ def fig_correlation(corr, model):
         },
     }
     m = _META[model]
-    _axis = dict(tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4,
+    _axis = dict(tickfont=dict(size=9), gridcolor='#e8eaf0', nticks=4,
                  showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True)
 
     fig = go.Figure()
@@ -817,17 +817,18 @@ def fig_correlation(corr, model):
         mode='markers',
         marker=dict(color='#1878a8', size=6, line=dict(width=0.5, color='white')),
         showlegend=False,
+        hovertemplate='(%{x:.3f}, %{y:.3f})<extra></extra>',
     ))
     fig.add_trace(go.Scatter(
         x=corr['x_fit'], y=corr['y_fit'],
         mode='lines',
         line=dict(color='#dc2626', width=1.5, dash='dash'),
-        showlegend=False,
+        showlegend=False, hoverinfo='skip',
     ))
     fig.update_layout(
         title=dict(text=m['title'], font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text=m['xlabel'], font=dict(size=9)), **_axis),
-        yaxis=dict(title=dict(text=m['ylabel'], font=dict(size=9)), **_axis),
+        xaxis=dict(title=dict(text=m['xlabel'], font=dict(size=10)), **_axis),
+        yaxis=dict(title=dict(text=m['ylabel'], font=dict(size=10)), **_axis),
         margin=dict(l=40, r=10, t=28, b=36),
         height=220,
         plot_bgcolor='white',
@@ -848,14 +849,15 @@ def fig_selectivity(sel):
         marker=dict(color='#1878a8', size=6, symbol='circle',
                     line=dict(width=0.5, color='white')),
         showlegend=False,
+        hovertemplate='w₂₁: %{x:.4f}<br>S: %{y:.3f}<extra></extra>',
     ))
     fig.update_layout(
         title=dict(text='Separation Factor S vs w₂₁', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='w₂₁ (solute, carrier-rich)', font=dict(size=9)),
-                   tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4,
+        xaxis=dict(title=dict(text='w₂₁ (solute, carrier-rich)', font=dict(size=10)),
+                   tickfont=dict(size=9), gridcolor='#e8eaf0', nticks=4,
                    showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
-        yaxis=dict(title=dict(text='S', font=dict(size=9)),
-                   tickfont=dict(size=8), gridcolor='#e8eaf0', nticks=4, rangemode='tozero',
+        yaxis=dict(title=dict(text='S', font=dict(size=10)),
+                   tickfont=dict(size=9), gridcolor='#e8eaf0', nticks=4, rangemode='tozero',
                    showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
         margin=dict(l=30, r=10, t=28, b=36),
         height=200,
@@ -871,7 +873,7 @@ def fig_plait_loglog(data):
     data: output from compute_plait_loglog()
     """
     _axis = dict(
-        tickfont=dict(size=8),
+        tickfont=dict(size=9),
         gridcolor='#e8eaf0',
         nticks=5,
         showline=True,
@@ -888,12 +890,12 @@ def fig_plait_loglog(data):
 
     fig = go.Figure()
 
-    # 1. Binodal spline line
+    # 1. Binodal spline line (no hover, no legend)
     fig.add_trace(go.Scatter(
         x=b['x_fit'], y=b['y_fit'],
         mode='lines',
         line=dict(color='#1878a8', width=1.5, dash='dash'),
-        showlegend=False,
+        showlegend=False, hoverinfo='skip',
     ))
 
     # 2. Binodal points (open squares)
@@ -903,22 +905,24 @@ def fig_plait_loglog(data):
         marker=dict(symbol='square', color='white', size=6,
                     line=dict(color='#1878a8', width=1.5)),
         showlegend=False,
+        hovertemplate='(%{x:.3f}, %{y:.3f})<extra>Binodal</extra>',
     ))
 
-    # 3. Tie-line linear fit
+    # 3. Tie-line linear fit (no hover, no legend)
     fig.add_trace(go.Scatter(
         x=t['x_fit'], y=t['y_fit'],
         mode='lines',
         line=dict(color='#dc2626', width=1.5, dash='dash'),
-        showlegend=False,
+        showlegend=False, hoverinfo='skip',
     ))
 
-    # 4. Tie-line points
+    # 4. Tie-line points (filled triangles)
     fig.add_trace(go.Scatter(
         x=t['x'], y=t['y'],
         mode='markers',
         marker=dict(symbol='triangle-up', color='#1878a8', size=7),
         showlegend=False,
+        hovertemplate='(%{x:.3f}, %{y:.3f})<extra>Tie-line</extra>',
     ))
 
     # 5. Plait point (if found)
@@ -926,19 +930,17 @@ def fig_plait_loglog(data):
         p = data['plait']
         fig.add_trace(go.Scatter(
             x=[p['x']], y=[p['y']],
-            mode='markers+text',
+            mode='markers',
             marker=dict(symbol='star', color='#dc2626', size=12,
                         line=dict(color='white', width=0.5)),
-            text=['plait point'],
-            textposition='top right',
-            textfont=dict(size=8, color='#0f2744'),
             showlegend=False,
+            hovertemplate='(%{x:.3f}, %{y:.3f})<extra>Plait point</extra>',
         ))
 
     fig.update_layout(
         title=dict(text='Plait Point Determination (Log-Log)', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='log(w₂₃/w₃₃),  log(w₂/w₃)', font=dict(size=9)), **_axis),
-        yaxis=dict(title=dict(text='log(w₂₁/w₁₁),  log(w₂/w₁)', font=dict(size=9)), **_axis),
+        xaxis=dict(title=dict(text='log(w₂₃/w₃₃),  log(w₂/w₃)', font=dict(size=10)), **_axis),
+        yaxis=dict(title=dict(text='log(w₂₁/w₁₁),  log(w₂/w₁)', font=dict(size=10)), **_axis),
         height=280,
         margin=dict(l=44, r=10, t=28, b=40),
         plot_bgcolor='white',
