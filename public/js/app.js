@@ -64,8 +64,8 @@ const TEAM_DATA = [
       'Seoul National University',
     ],
     links: [
-      { label: 'LinkedIn', href: 'https://www.linkedin.com/in/seonglee-snu', external: true },
       { label: 'CV', href: '/cv/seong-lee-cv.pdf', external: true },
+      { label: 'LinkedIn', href: 'https://www.linkedin.com/in/seonglee-snu', external: true },
     ],
   },
 ];
