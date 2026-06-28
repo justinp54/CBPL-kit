@@ -384,12 +384,15 @@
     .team-photo-fallback { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: white; letter-spacing: .02em; box-shadow: 0 4px 16px rgba(24,120,168,.22); }
 
     .team-info { flex: 1; min-width: 0; }
-    .team-name { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+    .team-name { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
     .team-role { font-size: 14px; font-weight: 500; color: #9aa4b0; }
     .team-role::before { content: '|'; margin: 0 8px; color: var(--border); font-weight: 400; }
     .team-meta { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 5px; }
+    .team-email { font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; color: inherit; text-decoration: underline; text-underline-offset: 2px; transition: color .15s; }
+    .team-email:hover { color: var(--blue); }
     .team-role-badge { display: inline-block; font-size: 11px; font-weight: 600; color: var(--blue); background: var(--blue-lt); border-radius: 10px; padding: 2px 9px; margin-bottom: 12px; }
-    .team-bio { font-size: 13px; color: var(--text); line-height: 1.7; max-width: 500px; }
+    .team-bio { font-size: 13px; color: var(--text); line-height: 1.5; max-width: 500px; }
+    .team-bio-role { font-weight: 600; }
 
     .team-actions { flex-shrink: 0; display: flex; flex-direction: column; gap: 7px; min-width: 128px; }
     .team-link { font-size: 12px; font-weight: 500; color: var(--muted); text-decoration: none; padding: 6px 14px; border: 1px solid var(--border); border-radius: 20px; transition: border-color .15s, color .15s, background .15s; text-align: center; white-space: nowrap; background: var(--surface); }

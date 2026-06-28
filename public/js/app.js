@@ -34,13 +34,18 @@ const TEAM_DATA = [
   {
     name: 'Junsang Park',
     sid:  '2023-16582',
+    email: 'justinp5454@gmail.com',
     role: 'Lead Developer',
     photo: null,
     initials: 'JP',
     gradient: 'linear-gradient(135deg, #1878a8 0%, #0f2744 100%)',
-    bio: 'Chemical and Biological Engineering & Computer Science and Engineering double major student at Seoul National University.',
+    bio: [
+      'Undergraduate Student',
+      'Department of Chemical and Biological Engineering',
+      'Department of Computer Science and Engineering',
+      'Seoul National University',
+    ],
     links: [
-      { label: '✉ Email',     href: 'mailto:justinp5454@gmail.com' },
       { label: 'LinkedIn', href: 'https://www.linkedin.com/in/junsang-park', external: true },
       { label: '⟨/⟩ GitHub', href: 'https://github.com/justinp54', external: true },
     ],
@@ -48,14 +53,19 @@ const TEAM_DATA = [
   {
     name: 'Seong Lee',
     sid:  '2020-11063',
+    email: 'andylee1208@snu.ac.kr',
     role: 'Developer',
     photo: null,
     initials: 'SL',
     gradient: 'linear-gradient(135deg, #5abade 0%, #1878a8 100%)',
-    bio: 'Chemical and Biological Engineering student at Seoul National University.',
+    bio: [
+      'Undergraduate Student',
+      'Department of Chemical and Biological Engineering',
+      'Seoul National University',
+    ],
     links: [
-      { label: '✉ Email',     href: 'mailto:andylee1208@snu.ac.kr' },
       { label: 'LinkedIn', href: 'https://www.linkedin.com/in/seonglee-snu', external: true },
+      { label: 'CV', href: '/cv/seong-lee-cv.pdf', external: true },
     ],
   },
 ];
@@ -64,21 +74,21 @@ function renderContactPane() {
   const el = document.getElementById('plot-contact');
   if (!el) return;
   const rows = TEAM_DATA.map(p => {
-    const ext = s => s.startsWith('http') ? 'target="_blank" rel="noopener"' : '';
+    const ext = l => (l.external || l.href.startsWith('http')) ? 'target="_blank" rel="noopener"' : '';
     const avatar = p.photo
       ? `<img class="team-photo" src="${p.photo}" alt="${p.name}"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
          <div class="team-photo-fallback" style="background:${p.gradient};display:none">${p.initials}</div>`
       : `<div class="team-photo-fallback" style="background:${p.gradient}">${p.initials}</div>`;
     const links = p.links.map(l =>
-      `<a class="team-link" href="${l.href}" ${ext(l.href)}>${l.label}</a>`).join('');
+      `<a class="team-link" href="${l.href}" ${ext(l)}>${l.label}</a>`).join('');
     return `
       <div class="team-row">
         <div class="team-avatar-wrap">${avatar}</div>
         <div class="team-info">
           <div class="team-name">${p.name}${p.role ? `<span class="team-role">${p.role}</span>` : ''}</div>
-          <div class="team-meta">${p.sid}</div>
-          ${p.bio ? `<div class="team-bio">${p.bio}</div>` : ''}
+          <div class="team-meta">${p.email ? `<a class="team-email" href="mailto:${p.email}">${p.email}</a>` : p.sid}</div>
+          ${p.bio ? `<div class="team-bio">${Array.isArray(p.bio) ? p.bio.map((line, i) => i === 0 ? `<span class="team-bio-role">${line}</span>` : line).join('<br>') : p.bio}</div>` : ''}
         </div>
         <div class="team-actions">${links}</div>
       </div>`;
@@ -89,8 +99,9 @@ function renderContactPane() {
         <img src="/images/snu_ui.png" alt="Seoul National University" class="contact-emblem">
         <div class="contact-kicker">SNU CBE · CBPL-kit</div>
         <h1 class="contact-title">Made by</h1>
-        <p class="contact-sub"><a href="https://cbe.snu.ac.kr/cbe/main/main.do" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:2px">Seoul National University</a> — Chemical and Biological Engineering<br>
-          Developed in 2026-1 Semester</p>
+        <p class="contact-sub"><a href="https://cbe.snu.ac.kr/cbe/main/main.do" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:2px">Department of Chemical and Biological Engineering</a>, Seoul National University,<br>
+          Seoul 08826, Republic of Korea<br>
+          Developed in Spring 2026</p>
         <p class="contact-tagline">Built CBPL-kit to make LLE data analysis more accessible for lab students.</p>
       </div>
       <div class="team-rows">${rows}</div>
