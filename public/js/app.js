@@ -374,7 +374,7 @@ const _CORR_FORMULA = {
   bachman: { label: 'Bachman',       latex: 'w_{11} = a + b\\cdot\\dfrac{w_{11}}{w_{33}}' },
 };
 
-const _SEL_LATEX = 'S = \\dfrac{D_2}{D_1},\\quad D_1 = \\dfrac{w_{13}}{w_{11}},\\quad D_2 = \\dfrac{w_{23}}{w_{21}}';
+const _SEL_LATEX = 'D_1 = \\dfrac{w_{13}}{w_{11}},\\quad D_2 = \\dfrac{w_{23}}{w_{21}},\\quad S = \\dfrac{D_2}{D_1}';
 
 function _katex(latex, display = true) {
   if (window.katex) return katex.renderToString(latex, { displayMode: display, throwOnError: false });
@@ -433,8 +433,8 @@ function _addLoglogPlaitToTernary() {
   Plotly.addTraces(el, {
     type: 'scatter', x: [x], y: [y],
     mode: 'markers',
-    marker: { symbol: 'circle', color: '#dc2626', size: 10,
-              line: { color: 'white', width: 2 } },
+    marker: { symbol: 'star', color: '#dc2626', size: 14,
+              line: { color: 'white', width: 0.5 } },
     name: 'Plait pt. (Treybal)',
     showlegend: true,
     hovertemplate:
@@ -458,11 +458,11 @@ function populatePlaitPanel(treybalStats, conjStats) {
   const tdL = `style="text-align:left;padding:3px 4px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:10.5px;color:var(--text);border-bottom:1px solid #f0f1f3;white-space:nowrap"`;
 
   const treybalRow = treybalStats
-    ? `<tr><td ${tdL}>Treybal's</td><td ${td}>${treybalStats.carrier}</td><td ${td}>${treybalStats.solute}</td><td ${td}>${treybalStats.solvent}</td></tr>`
-    : `<tr><td colspan="4" style="text-align:center;padding:4px;color:var(--muted);font-size:10px">Treybal's: not found in range</td></tr>`;
+    ? `<tr><td ${tdL}><span style="color:#dc2626;margin-right:5px">★</span>Treybal</td><td ${td}>${treybalStats.carrier}</td><td ${td}>${treybalStats.solute}</td><td ${td}>${treybalStats.solvent}</td></tr>`
+    : `<tr><td colspan="4" style="text-align:center;padding:4px;color:var(--muted);font-size:10px">Treybal: not found in range</td></tr>`;
 
   const conjRow = conjStats
-    ? `<tr><td ${tdL}>Conj. Curve</td><td ${td}>${conjStats.carrier}</td><td ${td}>${conjStats.solute}</td><td ${td}>${conjStats.solvent}</td></tr>`
+    ? `<tr><td ${tdL}><span style="color:darkorange;margin-right:5px">★</span>Conj. Curve</td><td ${td}>${conjStats.carrier}</td><td ${td}>${conjStats.solute}</td><td ${td}>${conjStats.solvent}</td></tr>`
     : '';
 
   el.innerHTML = `

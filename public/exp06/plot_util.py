@@ -92,9 +92,9 @@ def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
     a, b, c = _arr_to_ternary(system.x_smooth[mask], system.y_smooth[mask])
     curve = go.Scatterternary(
         a=a, b=b, c=c,
-        mode="lines", name="Equilibrium curve",
+        mode="lines", name="Binodal curve",
         line=dict(color="black", width=2.5),
-        hovertemplate=f"{s}:%{{a:.1f}}%  {sv}:%{{b:.1f}}%  {d}:%{{c:.1f}}%<extra>Equil. curve</extra>",
+        hovertemplate=f"{s}:%{{a:.1f}}%  {sv}:%{{b:.1f}}%  {d}:%{{c:.1f}}%<extra>Binodal curve</extra>",
     )
     a_pts = system.equil_data[:, 1].tolist()
     b_pts = system.equil_data[:, 2].tolist()
@@ -120,9 +120,9 @@ def _tie_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
             mode="lines+markers",
             line=dict(color="steelblue", width=1, dash="dot"),
             marker=dict(size=5, color="steelblue"),
-            name="Tie lines" if i == 0 else None,
+            name="Tie-lines" if i == 0 else None,
             showlegend=(i == 0),
-            hovertemplate=f"{s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%  {d}:%{{c:.2f}}%<extra>Tie line</extra>",
+            hovertemplate=f"{s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%  {d}:%{{c:.2f}}%<extra>Tie-line</extra>",
         ))
     return traces
 
@@ -264,12 +264,12 @@ def _cart_triangle_traces(system: EquilibriumSystem) -> list:
 
 
 def _cart_equil_traces(system: EquilibriumSystem) -> list:
-    """Equilibrium curve + data points as go.Scatter."""
+    """Binodal curve + data points as go.Scatter."""
     mask = _valid_mask(system.x_smooth, system.y_smooth)
     return [
         go.Scatter(
             x=system.x_smooth[mask], y=system.y_smooth[mask],
-            mode="lines", name="Equilibrium curve",
+            mode="lines", name="Binodal curve",
             line=dict(color="black", width=2.5),
         ),
         go.Scatter(
@@ -281,7 +281,7 @@ def _cart_equil_traces(system: EquilibriumSystem) -> list:
 
 
 def _cart_tie_traces(system: EquilibriumSystem) -> list:
-    """Tie lines as go.Scatter."""
+    """Tie-lines as go.Scatter."""
     traces = []
     for i, ((x1, y1), (x2, y2)) in enumerate(system.tie_coords):
         traces.append(go.Scatter(
@@ -289,7 +289,7 @@ def _cart_tie_traces(system: EquilibriumSystem) -> list:
             mode="lines+markers",
             line=dict(color="steelblue", width=1, dash="dot"),
             marker=dict(size=5, color="steelblue"),
-            name="Tie lines" if i == 0 else None,
+            name="Tie-lines" if i == 0 else None,
             showlegend=(i == 0),
             hoverinfo="skip",
         ))
@@ -299,7 +299,7 @@ def _cart_tie_traces(system: EquilibriumSystem) -> list:
 def _cart_point_trace(
     pt: tuple[float, float], label: str, color: str,
     symbol: str = "circle", size: int = 9,
-    labels: dict | None = None,
+    labels: dict | None = None, show_text: bool = True,
 ) -> go.Scatter:
     lb = labels or _DEFAULT_LABELS
     s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['carrier']['abbr']
@@ -307,10 +307,10 @@ def _cart_point_trace(
     wpa, wbp, ww = xy_to_comp(x, y)
     return go.Scatter(
         x=[x], y=[y],
-        mode="markers+text",
+        mode="markers+text" if show_text else "markers",
         name=label,
         marker=dict(color=color, size=size, symbol=symbol),
-        text=[label],
+        text=[label] if show_text else None,
         textposition="top center",
         hovertemplate=(
             f"<b>{label}</b><br>{s}:{wpa:.2f}%  {d}:{wbp:.2f}%  {sv}:{ww:.2f}%<extra></extra>"
@@ -401,13 +401,13 @@ def fig_conjugate_curve(
 
     traces.append(_cart_point_trace(
         conjugate.pt_plait, "Plait pt. (Conj. Curve)", "darkorange", symbol="star", size=14,
-        labels=_lb(system),
+        labels=_lb(system), show_text=False,
     ))
 
     fig = go.Figure(data=traces)
     y_min = min(p[1] for p in conjugate.aux_points)
     fig.update_layout(**_cart_layout(
-        "Conjugate Curve and Plait Point",
+        "Conjugate curve and Estimated Plait Point",
         y_range=(y_min - 8, 100),
     ))
     return fig
@@ -447,6 +447,12 @@ def fig_hunter_nash(
         ))
 
     # Stages: tie line E_i → R_i, then operating line R_i → P
+    # Legend-only entry: green line matching the tie-line segment
+    traces.append(go.Scatter(
+        x=[None], y=[None], mode="lines",
+        line=dict(color="darkgreen", width=1.8),
+        name="Stages", showlegend=True,
+    ))
     for s in steps:
         i = s.index
         wpa_E, wpa_R = s.comp_E[0], s.comp_R[0]
@@ -461,8 +467,7 @@ def fig_hunter_nash(
             customdata=[[wpa_E, s.comp_E[1], s.comp_E[2]],
                         [wpa_R, s.comp_R[1], s.comp_R[2]]],
             hovertemplate=f"{lb['solute']['abbr']}:%{{customdata[0]:.2f}}%  {lb['carrier']['abbr']}:%{{customdata[1]:.2f}}%  {lb['solvent']['abbr']}:%{{customdata[2]:.2f}}%<extra>%{{text}}</extra>",
-            name="Stages" if i == 1 else None,
-            showlegend=(i == 1),
+            showlegend=False,
         ))
         if i < len(steps):
             traces.append(_cart_line_trace(
@@ -501,9 +506,15 @@ def fig_interpolated_tie_lines(
     ))
     traces.append(_cart_point_trace(
         conjugate.pt_plait, "Plait pt. (Conj. Curve)", "darkorange", symbol="star", size=14,
-        labels=_lb(system),
+        labels=_lb(system), show_text=False,
     ))
 
+    # Legend-only entry: green line matching the tie-line segment
+    traces.append(go.Scatter(
+        x=[None], y=[None], mode="lines",
+        line=dict(color="darkgreen", width=1.8),
+        name="Tie-lines", showlegend=True,
+    ))
     for s in steps:
         i = s.index
         # Interpolated tie line E_i → R_i
@@ -515,8 +526,7 @@ def fig_interpolated_tie_lines(
             text=[f"E{i}", f"R{i}"],
             textposition=["middle right", "middle left"],
             textfont=dict(size=10),
-            name="Tie lines" if i == 1 else None,
-            showlegend=(i == 1),
+            showlegend=False,
         ))
 
         # Auxiliary dashed lines E_i → pt_inter and R_i → pt_inter
@@ -531,7 +541,7 @@ def fig_interpolated_tie_lines(
     fig = go.Figure(data=traces)
     y_min = min(p[1] for p in conjugate.aux_points)
     fig.update_layout(**_cart_layout(
-        "Interpolated Tie Lines", y_range=(y_min - 8, 100)
+        "Interpolated Tie-Lines", y_range=(y_min - 8, 100)
     ))
     return fig
 
@@ -808,7 +818,7 @@ def fig_correlation(corr, model):
         },
     }
     m = _META[model]
-    _axis = dict(tickfont=dict(size=9), gridcolor='#e8eaf0', nticks=4,
+    _axis = dict(tickfont=dict(size=9), showgrid=False, nticks=4,
                  showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True)
 
     fig = go.Figure()
@@ -854,15 +864,25 @@ def fig_selectivity(sel):
     fig.update_layout(
         title=dict(text='Separation Factor S vs w₂₁', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
         xaxis=dict(title=dict(text='w₂₁ (solute, carrier-rich)', font=dict(size=10)),
-                   tickfont=dict(size=9), gridcolor='#e8eaf0', nticks=4,
+                   tickfont=dict(size=9), showgrid=False, nticks=4,
                    showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
         yaxis=dict(title=dict(text='S', font=dict(size=10)),
-                   tickfont=dict(size=9), gridcolor='#e8eaf0', nticks=4, rangemode='tozero',
+                   tickfont=dict(size=9), showgrid=False, nticks=4, rangemode='tozero',
                    showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
         margin=dict(l=30, r=10, t=28, b=36),
         height=300,
         plot_bgcolor='white',
         paper_bgcolor='white',
+    )
+    fig.add_hline(
+        y=1,
+        line_dash='dash',
+        line_color='#9aa4b0',
+        line_width=1,
+        annotation_text='Plait point (S=1)',
+        annotation_position='top left',
+        annotation_font_size=9,
+        annotation_font_color='#9aa4b0',
     )
     return fig
 
@@ -874,15 +894,13 @@ def fig_plait_loglog(data):
     """
     _axis = dict(
         tickfont=dict(size=9),
-        gridcolor='#e8eaf0',
+        showgrid=False,
         nticks=5,
         showline=True,
         linewidth=1,
         linecolor='#d0d5dd',
         mirror=True,
-        zeroline=True,
-        zerolinecolor='#e0e3ea',
-        zerolinewidth=1,
+        zeroline=False,
     )
 
     b = data['binodal']
