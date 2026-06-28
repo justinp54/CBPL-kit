@@ -76,7 +76,7 @@ function renderContactPane() {
       <div class="team-row">
         <div class="team-avatar-wrap">${avatar}</div>
         <div class="team-info">
-          <div class="team-name">${p.name}</div>
+          <div class="team-name">${p.name}${p.role ? `<span class="team-role">${p.role}</span>` : ''}</div>
           <div class="team-meta">${p.sid}</div>
           ${p.bio ? `<div class="team-bio">${p.bio}</div>` : ''}
         </div>

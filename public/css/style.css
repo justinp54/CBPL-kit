@@ -385,6 +385,8 @@
 
     .team-info { flex: 1; min-width: 0; }
     .team-name { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+    .team-role { font-size: 14px; font-weight: 500; color: #9aa4b0; }
+    .team-role::before { content: '|'; margin: 0 8px; color: var(--border); font-weight: 400; }
     .team-meta { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 5px; }
     .team-role-badge { display: inline-block; font-size: 11px; font-weight: 600; color: var(--blue); background: var(--blue-lt); border-radius: 10px; padding: 2px 9px; margin-bottom: 12px; }
     .team-bio { font-size: 13px; color: var(--text); line-height: 1.7; max-width: 500px; }
