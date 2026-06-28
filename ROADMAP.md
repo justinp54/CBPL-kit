@@ -214,6 +214,55 @@ selection) 세 갈래를 함께 다룬다. 6개 feature는 의존성에 따라 �
 - **Plot functions return figures** — never call `.show()` inside
 - **public/exp06/ sync** — always copy edited modules before committing
 
+---
+
+## Phase 7 — Multi-Experiment Architecture
+
+현재 `public/index.html`이 Exp06 전용 SPA. 다른 실험(Exp04, Exp05 등)을 추가하려면 멀티페이지 구조로 전환 필요.
+
+### 7.1 Target Structure
+
+```
+public/
+  index.html              ← 랜딩 페이지 (실험 선택)
+  shared/
+    style.css             ← 공통 CSS 토큰 (palette, fonts, layout)
+    components.css        ← 공통 컴포넌트 (header, tabs, sidebar)
+  exp06/
+    index.html            ← LLE Hunter-Nash (현재 public/index.html 이동)
+    *.py                  ← Python 모듈 (현재와 동일)
+    systems/              ← YAML 시스템 정의
+  exp04/
+    index.html            ← 별도 실험 SPA
+    *.py
+  exp05/
+    index.html
+    *.py
+```
+
+### 7.2 Migration Steps
+
+1. 공통 CSS를 `public/shared/style.css`로 추출 (`:root` 변수, header, tab, sidebar 스타일)
+2. 현재 `public/index.html` → `public/exp06/index.html`로 이동
+3. 새 `public/index.html`에 랜딩 페이지 작성 (실험 목록, 카드 또는 리스트)
+4. `vercel.json` rewrites를 실험별 경로로 수정
+5. 각 실험 SPA는 `shared/style.css`를 import하여 디자인 일관성 유지
+
+### 7.3 Mobile/Tablet Improvements
+
+| 항목 | 현재 | 개선 방향 |
+|------|------|----------|
+| 그래프 크기 | Plotly responsive, 고정 비율 | 모바일에서 legend 숨기기, margin 축소 |
+| 데이터 패널 | 1024px 이하 숨김 | 차트 아래로 스택 옵션 |
+| System 폼 | 그리드 고정 | 768px 이하에서 1열로 접기 |
+| 터치 타겟 | 일부 44px 미달 | 슬라이더, 버튼 최소 크기 점검 |
+| 세로 스크롤 | body overflow:hidden | 모바일에서 figure-area 스크롤 허용 |
+
+**복잡도**: Medium  
+**우선순위**: Phase 6 이후, 다른 실험 추가 필요 시점에 착수
+
+---
+
 ## How to Run Locally
 
 ```bash

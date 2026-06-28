@@ -4,6 +4,7 @@ function toggleSidebar() {
   const backdrop = document.getElementById('sidebar-backdrop');
   const open = aside.classList.toggle('open');
   backdrop.classList.toggle('show', open);
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 270);
 }
 
 // ── Sidebar collapse (desktop) ────────────────────────────────────────────
@@ -17,6 +18,7 @@ function setSidebarCollapsed(collapsed) {
   aside.classList.toggle('collapsed', collapsed);
   btn.classList.toggle('is-collapsed', collapsed);
   btn.textContent = collapsed ? '▶' : '◀';
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 220);
 }
 
 function toggleSidebarCollapse() {
@@ -766,20 +768,53 @@ function getDefaultKeys() {
 // Add breathing room so bottom of ternary diagram isn't clipped
 function patchedLayout(layout) {
   const patched = { ...layout };
+  const narrow = window.innerWidth < 768;
   if (patched.ternary) {
-    patched.margin = { l: 40, r: 130, t: 40, b: 10 };
-    patched.legend = {
-      x: 1.02, y: 1, xanchor: 'left', yanchor: 'top',
-      bgcolor: 'rgba(255,255,255,0.95)',
-      bordercolor: '#e2e8f0', borderwidth: 1,
-      font: { size: 11 },
-    };
-    patched.ternary = {
-      ...patched.ternary,
-      domain: { x: [0.10, 0.95], y: [0.23, 0.92] },
-    };
+    // Always strip Python-fixed dimensions so Plotly sizes to its container at any viewport.
+    delete patched.width;
+    delete patched.height;
+    patched.autosize = true;
+    if (narrow) {
+      patched.margin = { l: 8, r: 15, t: 30, b: 55 };
+      // Shrink chart title font so it doesn't overflow
+      if (patched.title) {
+        const base = typeof patched.title === 'object' ? patched.title : { text: patched.title };
+        patched.title = { ...base, font: { size: 10 } };
+      }
+      patched.legend = {
+        x: 0.5, y: -0.04, xanchor: 'center', yanchor: 'top',
+        orientation: 'h',
+        bgcolor: 'rgba(255,255,255,0.9)',
+        bordercolor: '#e2e8f0', borderwidth: 1,
+        font: { size: 9 },
+      };
+      // axis mapping: aaxis=solute(PA), baxis=solvent(W), caxis=carrier(BP)
+      const abbr = n => `${n} (wt%)`;
+      patched.ternary = {
+        ...patched.ternary,
+        domain: { x: [0.04, 0.88], y: [0.14, 0.97] },
+        aaxis: { ...patched.ternary.aaxis, title: { text: abbr(_lbls?.solute?.abbr  ?? 'Solute'),  font: { size: 9 } }, tickfont: { size: 8 } },
+        baxis: { ...patched.ternary.baxis, title: { text: abbr(_lbls?.solvent?.abbr ?? 'Solvent'), font: { size: 9 } }, tickfont: { size: 8 } },
+        caxis: { ...patched.ternary.caxis, title: { text: abbr(_lbls?.carrier?.abbr ?? 'Carrier'), font: { size: 9 } }, tickfont: { size: 8 } },
+      };
+    } else {
+      patched.margin = { l: 40, r: 130, t: 40, b: 10 };
+      patched.legend = {
+        x: 1.02, y: 1, xanchor: 'left', yanchor: 'top',
+        bgcolor: 'rgba(255,255,255,0.95)',
+        bordercolor: '#e2e8f0', borderwidth: 1,
+        font: { size: 11 },
+      };
+      patched.ternary = {
+        ...patched.ternary,
+        domain: { x: [0.10, 0.95], y: [0.23, 0.92] },
+      };
+    }
   } else {
-    // Cartesian (white bg): add bottom breathing room
+    // Cartesian: strip Python-fixed dimensions same as ternary.
+    delete patched.width;
+    delete patched.height;
+    patched.autosize = true;
     patched.margin = { l: 20, r: 20, t: 50, b: 40, ...(layout.margin || {}) };
   }
   return patched;
@@ -809,11 +844,23 @@ function switchTab(key) {
   document.getElementById('tab-'  + key).classList.add('active');
   document.getElementById('tab-'  + key).setAttribute('aria-selected', 'true');
 
+  closeDataDrawer();
+  _setDataTrigger(key === 'fig1' || key === 'fig2a',
+    key === 'fig1' ? 'panel-fig1' : 'panel-fig2a');
+
+  // Re-render all chart tabs on every tab switch so Plotly sizes to the current container.
+  if (['fig1', 'fig2a', 'fig2b', 'fig3', 'fig4'].includes(key) && cache[key]) {
+    requestAnimationFrame(() => {
+      const _el = document.getElementById('chart-' + key) || document.getElementById('plot-' + key);
+      if (_el?.data) Plotly.react(_el, cache[key].data, patchedLayout(cache[key].layout), PLOTLY_CFG);
+    });
+  }
+
   if (key === 'contact' || key === 'guide' || key === 'system') {
     document.getElementById('empty').style.display = 'none';
   }
 
-  if (!sidebarManualOverride && window.innerWidth >= 768) {
+  if (!sidebarManualOverride && window.innerWidth >= 1200) {
     const hasData = Object.keys(cache).length > 0;
     if (TABS_AUTO_COLLAPSE.has(key)) {
       setSidebarCollapsed(true);
@@ -1246,7 +1293,66 @@ async function loadGuide() {
   }
 }
 
+// ── Data drawer (mobile/tablet) ────────────────────────────────────────────
+let _drawerPanel = null;
+
+function openDataDrawer() {
+  if (!_drawerPanel) return;
+  document.getElementById(_drawerPanel).classList.add('drawer-open');
+  document.getElementById('drawer-backdrop').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDataDrawer() {
+  if (_drawerPanel) document.getElementById(_drawerPanel)?.classList.remove('drawer-open');
+  document.getElementById('drawer-backdrop')?.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function _setDataTrigger(show, panelId) {
+  _drawerPanel = show ? panelId : null;
+  const btn = document.getElementById('data-trigger-btn');
+  if (!btn) return;
+  if (show && window.innerWidth < 1200) {
+    btn.style.display = 'flex';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+// ── Panel chart resize on window resize / orientation change ─────────────
+let _resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    if (window.innerWidth >= 1200) {
+      // Going to desktop: close drawer, hide trigger, re-render panel charts
+      closeDataDrawer();
+      const btn = document.getElementById('data-trigger-btn');
+      if (btn) btn.style.display = 'none';
+      if (activeTab === 'fig1' && _corrStats) { _renderCorrChart(_corrActive); _renderSelectivityChart(); }
+      else if (activeTab === 'fig2a' && _plaitStats) { _renderPlaitChart(); }
+    } else {
+      // Mobile/tablet: re-render active ternary chart on orientation/resize.
+      // (Desktop relies on responsive:true ResizeObserver; switchTab() handles switch-back-after-resize.)
+      const ternaryTabs = ['fig1', 'fig2a', 'fig2b', 'fig3', 'fig4'];
+      if (ternaryTabs.includes(activeTab) && cache[activeTab]) {
+        const chartEl = document.getElementById('chart-' + activeTab) || document.getElementById('plot-' + activeTab);
+        if (chartEl?.data) Plotly.react(chartEl, cache[activeTab].data, patchedLayout(cache[activeTab].layout), PLOTLY_CFG);
+      }
+      // Keep trigger visible for the right tabs on mobile/tablet
+      if (_drawerPanel) {
+        const btn = document.getElementById('data-trigger-btn');
+        if (btn) btn.style.display = 'flex';
+      }
+    }
+  }, 150);
+});
+
 // ── Boot ───────────────────────────────────────────────────────────────────
 renderContactPane();
 loadGuide();
 initPyodide();
+// Show trigger button if starting on a data-panel tab on mobile
+_setDataTrigger(activeTab === 'fig1' || activeTab === 'fig2a',
+  activeTab === 'fig1' ? 'panel-fig1' : 'panel-fig2a');

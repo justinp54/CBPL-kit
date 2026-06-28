@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>LLE Hunter-Nash Simulator</title>
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
@@ -209,6 +209,10 @@
       <div class="plot-pane plot-with-panel" id="plot-fig1" role="tabpanel" aria-labelledby="tab-fig1">
         <div class="plot-chart" id="chart-fig1"></div>
         <div class="data-panel" id="panel-fig1">
+          <div class="data-panel-drawer-hd">
+            <div class="drawer-handle"></div>
+            <button class="drawer-close-btn" onclick="closeDataDrawer()" aria-label="Close">×</button>
+          </div>
           <div class="data-panel-heading">Tie-Line Compositions</div>
           <table id="tieline-table"><thead></thead><tbody></tbody></table>
           <div class="data-panel-note">Full 3-component compositions at each tie-line endpoint, derived from the binodal curve.</div>
@@ -230,6 +234,10 @@
       <div class="plot-pane plot-with-panel" id="plot-fig2a" role="tabpanel" aria-labelledby="tab-fig2a">
         <div id="chart-fig2a" class="plot-chart"></div>
         <div class="data-panel" id="panel-fig2a">
+          <div class="data-panel-drawer-hd">
+            <div class="drawer-handle"></div>
+            <button class="drawer-close-btn" onclick="closeDataDrawer()" aria-label="Close">×</button>
+          </div>
           <div class="data-panel-heading">Plait Point Estimation</div>
           <div id="plait-chart"></div>
           <div id="plait-stats" class="corr-stats-box"></div>
@@ -328,6 +336,8 @@
   </main>
 </div>
 
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDataDrawer()"></div>
+<button class="data-trigger-btn" id="data-trigger-btn" aria-label="Show data panel" onclick="openDataDrawer()">↑ Data</button>
 <script src="/js/app.js"></script>
 </body>
 </html>
