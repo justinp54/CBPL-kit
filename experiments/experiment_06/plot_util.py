@@ -937,7 +937,7 @@ def fig_plait_loglog(data):
         ))
 
     fig.update_layout(
-        title=dict(text='Plait Point Determination (Log-Log)', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        title=dict(text="Treybal's Method (Log-Log)", font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
         xaxis=dict(title=dict(text='log(w₂₃/w₃₃),  log(w₂/w₃)', font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text='log(w₂₁/w₁₁),  log(w₂/w₁)', font=dict(size=10)), **_axis),
         height=280,
