@@ -1053,7 +1053,7 @@ const BLANK_EXAMPLE = {
     solute:  { name: 'Propionic acid', abbr: 'PA' },
     solvent: { name: 'Water',          abbr: 'W'  },
   },
-  properties: { rho_carrier: 1.354, rho_solute: 0.993, rho_solvent: 1.0, mw_solute: 74.08 },
+  properties: { rho_carrier: 1.354, rho_solute: 0.993, rho_solvent: 0.997, mw_solute: 74.08 },
   equilibrium_data: [
     [5.1, 9.49, 85.41], [8.37, 36.65, 54.98], [17.67, 49.4, 32.93],
     [32.724, 49.087, 18.189], [56.74, 37.83, 5.43], [84.18, 9.35, 6.47],
