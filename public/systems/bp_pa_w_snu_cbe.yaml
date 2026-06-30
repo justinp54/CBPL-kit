@@ -8,7 +8,7 @@ components:
 properties:
   rho_carrier: 1.354   # g/mL
   rho_solute: 0.993   # g/mL
-  rho_solvent: 1.0   # g/mL
+  rho_solvent: 0.997   # g/mL
   mw_solute: 74.08   # g/mol
 
 # Each row: [Carrier wt%, Solute wt%, Solvent wt%]
