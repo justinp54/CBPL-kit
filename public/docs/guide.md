@@ -102,7 +102,7 @@ Real-time feed composition explorer. Change the feed PA concentration (10–55 w
 The **System** tab lets you load a different ternary system by pasting a YAML file.  
 Edit the YAML directly in the text area and click **Apply System**.
 
-A valid system YAML looks like this. The example below is the current default system, loaded live from `public/systems/nbp_pa_water.yaml` — edit that file and this example updates automatically:
+A valid system YAML looks like this. The example below is the current default system, loaded live from `public/systems/bp_pa_w_snu_cbe.yaml` — edit that file and this example updates automatically:
 
 ```yaml
 {{SYSTEM_YAML}}

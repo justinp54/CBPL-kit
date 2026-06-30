@@ -184,9 +184,9 @@ async function initPyodide() {
     `);
 
     // Fetch default system YAML and write to Pyodide FS (needed by config.py)
-    const sysResp = await fetch('/systems/nbp_pa_water.yaml', { cache: 'no-store' });
+    const sysResp = await fetch('/systems/bp_pa_w_snu_cbe.yaml', { cache: 'no-store' });
     if (!sysResp.ok) throw new Error(`Failed to fetch system YAML: ${sysResp.status}`);
-    pyodide.FS.writeFile('/cbpl/systems/nbp_pa_water.yaml', await sysResp.text());
+    pyodide.FS.writeFile('/cbpl/systems/bp_pa_w_snu_cbe.yaml', await sysResp.text());
 
     const _v = Date.now();
     for (const path of moduleFiles) {
@@ -990,7 +990,7 @@ function toggleStages() {
 let defaultSystemYaml = '';
 let systemTabLoaded   = false;
 let systemList        = [];
-let currentSystemFile = 'nbp_pa_water.yaml';
+let currentSystemFile = 'bp_pa_w_snu_cbe.yaml';
 
 // Dropdown label from a parsed system: "Carrier (1) + Solute (2) + Solvent (3) (note)"
 // note is omitted when empty.
@@ -1448,7 +1448,7 @@ async function loadGuide() {
     let md = await resp.text();
     let sysYaml = '# (system file unavailable)';
     try {
-      const yr = await fetch('/systems/nbp_pa_water.yaml', { cache: 'no-store' });
+      const yr = await fetch('/systems/bp_pa_w_snu_cbe.yaml', { cache: 'no-store' });
       if (yr.ok) sysYaml = (await yr.text()).trim();
     } catch (e) { console.error('Guide system YAML:', e); }
     md = md.replace('{{SYSTEM_YAML}}', () => sysYaml);

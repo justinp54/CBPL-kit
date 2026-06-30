@@ -1,5 +1,5 @@
 """
-Experiment 06 — system constants loaded from systems/nbp_pa_water.yaml.
+Experiment 06 — system constants loaded from systems/bp_pa_w_snu_cbe.yaml.
 
 To change the ternary system, edit (or replace) that YAML file.
 To change titration/flow defaults, edit the values at the bottom of this file
@@ -11,7 +11,7 @@ import numpy as np
 import yaml
 from pathlib import Path
 
-_path = Path(__file__).parent / "systems" / "nbp_pa_water.yaml"
+_path = Path(__file__).parent / "systems" / "bp_pa_w_snu_cbe.yaml"
 _d    = yaml.safe_load(_path.read_text())
 _p    = _d["properties"]
 
