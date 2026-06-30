@@ -2,11 +2,14 @@ components:
   carrier: { name: "n-Bromopropane", abbr: "BP" }   # (1)
   solute: { name: "Propionic Acid", abbr: "PA" }   # (2)
   solvent: { name: "Water", abbr: "W" }   # (3)
+
 properties:
-  rho_solvent: 1.0
-  rho_solute: 0.993
-  rho_carrier: 1.354
-  mw_solute: 74.08
+  rho_carrier: 1.354   # g/mL
+  rho_solute: 0.993   # g/mL
+  rho_solvent: 1.0   # g/mL
+  mw_solute: 74.08   # g/mol
+
+# Each row: [Carrier wt%, Solute wt%, Solvent wt%]   (100w1, 100w2, 100w3; sum = 100, sorted by increasing carrier)
 equilibrium_data:
   - [5.1, 9.49, 85.41]
   - [8.37, 36.65, 54.98]
@@ -14,6 +17,8 @@ equilibrium_data:
   - [32.724, 49.087, 18.189]
   - [56.74, 37.83, 5.43]
   - [84.18, 9.35, 6.47]
+
+# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]   (100w23, 100w21)
 tie_lines:
   - [6.253, 2.564]
   - [8.02, 2.65]
@@ -21,3 +26,5 @@ tie_lines:
   - [14.175, 8.047]
   - [16.73, 9.88]
   - [26.069, 19.418]
+
+note: "Seoul National University"
