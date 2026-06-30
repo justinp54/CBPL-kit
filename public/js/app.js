@@ -4,7 +4,8 @@ function toggleSidebar() {
   const backdrop = document.getElementById('sidebar-backdrop');
   const open = aside.classList.toggle('open');
   backdrop.classList.toggle('show', open);
-  setTimeout(() => window.dispatchEvent(new Event('resize')), 270);
+  // Sidebar is position:fixed on tablet/phone — doesn't affect layout, no resize needed.
+  if (window.innerWidth >= 1200) setTimeout(() => window.dispatchEvent(new Event('resize')), 270);
 }
 
 // ── Sidebar collapse (desktop) ────────────────────────────────────────────
@@ -872,9 +873,14 @@ function switchTab(key) {
     document.getElementById('empty').style.display = 'none';
   }
 
+  if (key === 'contact' && window.innerWidth < 1200) {
+    // Mobile/tablet: close overlay sidebar if open
+    document.querySelector('aside').classList.remove('open');
+    document.getElementById('sidebar-backdrop')?.classList.remove('show');
+  }
   if (!sidebarManualOverride && window.innerWidth >= 1200) {
     const hasData = Object.keys(cache).length > 0;
-    if (TABS_AUTO_COLLAPSE.has(key)) {
+    if (TABS_AUTO_COLLAPSE.has(key) || key === 'contact') {
       setSidebarCollapsed(true);
     } else if (TABS_NEED_SIDEBAR.has(key)) {
       setSidebarCollapsed(false);

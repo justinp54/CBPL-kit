@@ -236,7 +236,7 @@
     /* ── Data panel (beside chart) ── */
     .plot-with-panel { width: 100%; height: 100%; }
     .plot-with-panel.active { display: flex; }
-    .plot-with-panel .plot-chart { flex: 1; min-width: 0; }
+    .plot-with-panel .plot-chart { flex: 1; min-width: 0; overflow: hidden; }
     .data-panel { width: 480px; flex-shrink: 0; overflow-y: auto; overflow-x: hidden; border-left: 1px solid var(--border); background: var(--surface); padding: 14px 12px; font-size: 11.5px; display: none; }
     .data-panel.has-data { display: block; }
     .data-panel-title, .data-panel-heading { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
@@ -434,10 +434,13 @@
     .tab-contact { color: var(--blue) !important; }
     .tab-contact:hover { color: var(--navy) !important; }
 
-    /* ── Contact: hide sidebar and empty overlay for full-width ── */
-    .layout:has(#plot-contact.active) aside,
+    /* ── Contact: hide empty overlay; sidebar handled by JS collapse animation ── */
     .layout:has(#plot-contact.active) .collapse-btn,
     .layout:has(#plot-contact.active) #empty { display: none !important; }
+    /* Mobile/tablet: sidebar is a fixed overlay — still instant-hide is fine */
+    @media (max-width: 1199px) {
+      .layout:has(#plot-contact.active) aside { display: none !important; }
+    }
 
     /* ── Contact pane ── */
     .contact-pane { overflow-y: auto; background: var(--surface); }
