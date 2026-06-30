@@ -62,6 +62,7 @@ const TEAM_DATA = [
     gradient: 'linear-gradient(135deg, #5abade 0%, #1878a8 100%)',
     bio: [
       'Undergraduate Student',
+      '<a class="team-bio-link" href="https://fluid.snu.ac.kr/" target="_blank" rel="noopener">Microfluidics and Coating Process Laboratory (MCPL)</a>',
       'Department of Chemical and Biological Engineering',
       'Seoul National University',
     ],
@@ -132,6 +133,7 @@ let rendered  = {};
 let activeTab = 'guide';
 let computing = false;
 let _lbls = { solute:{name:'Propionic Acid', abbr:'PA'}, carrier:{name:'n-Bromopropane', abbr:'BP'}, solvent:{name:'Water', abbr:'W'} };
+const SYSTEM_STORE_KEY = 'cbpl_system_yaml';   // localStorage key: last applied system (persists across refresh)
 
 function syncDil(id, src) {
   const num = document.getElementById('dil-' + id);
@@ -181,7 +183,7 @@ async function initPyodide() {
     `);
 
     // Fetch default system YAML and write to Pyodide FS (needed by config.py)
-    const sysResp = await fetch('/systems/nbp_pa_water.yaml');
+    const sysResp = await fetch('/systems/nbp_pa_water.yaml', { cache: 'no-store' });
     if (!sysResp.ok) throw new Error(`Failed to fetch system YAML: ${sysResp.status}`);
     pyodide.FS.writeFile('/cbpl/systems/nbp_pa_water.yaml', await sysResp.text());
 
@@ -211,8 +213,18 @@ async function initPyodide() {
     setProgress(100, 'Ready!');
     pyReady = true;
 
-    // Auto-render system figures (no titration data needed)
-    await renderSystemFigs();
+    // Restore a previously-applied custom system (localStorage); else render default figures
+    let _restored = false;
+    try {
+      const _saved = localStorage.getItem(SYSTEM_STORE_KEY);
+      if (_saved) {
+        document.getElementById('sys-yaml').value = _saved;
+        populateFormFromYaml(_saved);
+        _restored = await applyYamlText(_saved);
+        if (!_restored) { try { localStorage.removeItem(SYSTEM_STORE_KEY); } catch (e) {} }
+      }
+    } catch (e) { console.error('Restore system:', e); }
+    if (!_restored) await renderSystemFigs();
 
     // Hide init overlay; only show empty state on extraction tabs
     setTimeout(() => {
@@ -974,25 +986,45 @@ let systemTabLoaded   = false;
 let systemList        = [];
 let currentSystemFile = 'nbp_pa_water.yaml';
 
+// Dropdown label from a parsed system: "Carrier (1) + Solute (2) + Solvent (3) (note)"
+// note is omitted when empty.
+function systemLabel(d) {
+  const c = d.components || {};
+  const names = `${c.carrier?.name || 'Carrier'} (1) + ${c.solute?.name || 'Solute'} (2) + ${c.solvent?.name || 'Solvent'} (3)`;
+  const note = (d.note || '').trim();
+  const label = note ? `${names} (${note})` : names;
+  return label.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+}
+
 async function loadSystemTab() {
   if (systemTabLoaded) return;
   systemTabLoaded = true;
   try {
-    const listResp = await fetch('/systems/index.json');
+    const listResp = await fetch('/systems/index.json', { cache: 'no-store' });
     if (listResp.ok) {
-      systemList = await listResp.json();
+      systemList = await listResp.json();   // array of file names
       const sel = document.getElementById('sys-select');
-      sel.innerHTML = systemList.map(s =>
-        `<option value="${s.file}"${s.file === currentSystemFile ? ' selected' : ''}>${s.name} (${s.abbr})</option>`
-      ).join('');
+      const opts = await Promise.all(systemList.map(async file => {
+        let label = file;
+        try {
+          const r = await fetch('/systems/' + file, { cache: 'no-store' });
+          if (r.ok) label = systemLabel(jsyaml.load(await r.text()));
+        } catch (e) { console.error('System label:', file, e); }
+        return `<option value="${file}"${file === currentSystemFile ? ' selected' : ''}>${label}</option>`;
+      }));
+      opts.push('<option value="__new__">+ Enter your own data</option>');
+      sel.innerHTML = opts.join('');
     }
   } catch (e) { console.error('System list:', e); }
   try {
-    const resp = await fetch('/systems/' + currentSystemFile);
+    const resp = await fetch('/systems/' + currentSystemFile, { cache: 'no-store' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    defaultSystemYaml = await resp.text();
-    document.getElementById('sys-yaml').value = defaultSystemYaml;
-    populateFormFromYaml(defaultSystemYaml);
+    defaultSystemYaml = await resp.text();                       // default file — used by Reset to Default
+    let saved = null;
+    try { saved = localStorage.getItem(SYSTEM_STORE_KEY); } catch (e) {}
+    const show = saved || defaultSystemYaml;                     // show restored custom system if present
+    document.getElementById('sys-yaml').value = show;
+    populateFormFromYaml(show);
   } catch (e) {
     setSysMsg('Failed to load system YAML: ' + e.message, 'error');
   }
@@ -1002,8 +1034,9 @@ async function loadSystemFromSelect() {
   const sel = document.getElementById('sys-select');
   const file = sel.value;
   if (!file) return;
+  if (file === '__new__') { loadBlankTemplate(); return; }
   try {
-    const resp = await fetch('/systems/' + file);
+    const resp = await fetch('/systems/' + file, { cache: 'no-store' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const yaml = await resp.text();
     currentSystemFile = file;
@@ -1019,10 +1052,79 @@ async function loadSystemFromSelect() {
   }
 }
 
+// "Enter your own data" — clear the form and show the current example's values as
+// gray placeholders, so the user can fill in their own system from scratch.
+function loadBlankTemplate() {
+  let d = {};
+  try { d = jsyaml.load(defaultSystemYaml) || {}; } catch (e) {}
+  const c = d.components || {}, p = d.properties || {};
+  const ph = (id, val, prefix = '') => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = '';
+    if (val !== undefined && val !== null && String(val) !== '') el.placeholder = prefix + val;
+  };
+  ph('sf-carrier-name', c.carrier?.name, 'e.g. ');
+  ph('sf-carrier-abbr', c.carrier?.abbr);
+  ph('sf-solute-name',  c.solute?.name,  'e.g. ');
+  ph('sf-solute-abbr',  c.solute?.abbr);
+  ph('sf-solvent-name', c.solvent?.name, 'e.g. ');
+  ph('sf-solvent-abbr', c.solvent?.abbr);
+  ph('sf-rho-carrier', p.rho_carrier);
+  ph('sf-rho-solute',  p.rho_solute);
+  ph('sf-rho-solvent', p.rho_solvent);
+  ph('sf-mw-solute',   p.mw_solute);
+  ph('sf-note', d.note, 'e.g. ');
+  fillDataTable('sf-equil-tbody', [], d.equilibrium_data, 3);
+  fillDataTable('sf-tie-tbody', [], d.tie_lines, 2);
+  syncYamlFromForm();
+  setSysMsg('Cleared. Gray text shows example values — type in your own and press Apply System.', '');
+}
+
 function resetSystem() {
+  try { localStorage.removeItem(SYSTEM_STORE_KEY); } catch (e) {}   // forget the saved custom system
   document.getElementById('sys-yaml').value = defaultSystemYaml;
   populateFormFromYaml(defaultSystemYaml);
-  setSysMsg('', '');
+  setSysMsg('Editor reset to default. Press Apply System to rebuild from it.', '');
+}
+
+// Download the user's CURRENT system (form, or Advanced text if open) as a .yaml file.
+// Filename is auto-derived from components + note, but the user can rename it in the save dialog.
+function downloadUserYaml() {
+  const advancedOpen = document.getElementById('sys-advanced').open;
+  const yamlText = advancedOpen ? document.getElementById('sys-yaml').value : collectFormToYaml();
+  let d = {};
+  try { d = jsyaml.load(yamlText) || {}; } catch (e) {}
+  const c = d.components || {};
+  const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  const parts = [slug(c.carrier?.abbr) || 'carrier', slug(c.solute?.abbr) || 'solute', slug(c.solvent?.abbr) || 'solvent'];
+  let base = parts.join('_');
+  const noteSlug = slug(d.note).slice(0, 20).replace(/_+$/, '');
+  if (noteSlug) base += '_' + noteSlug;
+  const blob = new Blob([yamlText], { type: 'text/yaml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = base + '.yaml';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Render a data table. When `data` has rows, show those values; otherwise show the
+// `example` system's rows with empty values so they read as gray placeholders. Each
+// cell also carries the matching example value as its placeholder.
+function fillDataTable(tbodyId, data, example, ncol) {
+  data = Array.isArray(data) ? data : [];
+  example = Array.isArray(example) ? example : [];
+  const hasData = data.length > 0;
+  const rows = hasData ? data : example;
+  document.getElementById(tbodyId).innerHTML = rows.map((row, i) => {
+    const cells = Array.from({ length: ncol }, (_, j) => {
+      const val = hasData ? (row[j] ?? '') : '';
+      const ph = (example[i] != null && example[i][j] != null) ? example[i][j] : '';
+      return `<td><input value="${val}" type="number" step="0.01" placeholder="${ph}" /></td>`;
+    }).join('');
+    return `<tr><td>${i + 1}</td>${cells}</tr>`;
+  }).join('');
 }
 
 function populateFormFromYaml(yamlText) {
@@ -1040,14 +1142,10 @@ function populateFormFromYaml(yamlText) {
     document.getElementById('sf-rho-solute').value  = p.rho_solute || '';
     document.getElementById('sf-rho-carrier').value = p.rho_carrier || '';
     document.getElementById('sf-mw-solute').value   = p.mw_solute || '';
-    const eqTbody = document.getElementById('sf-equil-tbody');
-    eqTbody.innerHTML = (d.equilibrium_data || []).map((row, i) =>
-      `<tr><td>${i+1}</td>${row.map(v => `<td><input value="${v}" type="number" step="0.01" /></td>`).join('')}</tr>`
-    ).join('');
-    const tieTbody = document.getElementById('sf-tie-tbody');
-    tieTbody.innerHTML = (d.tie_lines || []).map((row, i) =>
-      `<tr><td>${i+1}</td>${row.map(v => `<td><input value="${v}" type="number" step="0.01" /></td>`).join('')}</tr>`
-    ).join('');
+    // Data tables show exactly what the YAML contains (empty → empty table).
+    fillDataTable('sf-equil-tbody', d.equilibrium_data, [], 3);
+    fillDataTable('sf-tie-tbody', d.tie_lines, [], 2);
+    document.getElementById('sf-note').value = d.note || '';
   } catch (e) { console.error('Form populate:', e); }
 }
 
@@ -1095,49 +1193,82 @@ function sortEquilData() {
     `<tr><td>${i+1}</td>${row.map(v => `<td><input value="${v}" type="number" step="0.01" /></td>`).join('')}</tr>`
   ).join('');
   setSysMsg('Equilibrium data sorted by carrier%.', 'success');
+  syncYamlFromForm();
 }
 
+// Build the canonical system YAML string directly (with comments + note),
+// so the Advanced text area matches the hand-written system files and the guide.
 function collectFormToYaml() {
-  const obj = {
-    name: document.getElementById('sf-solute-name').value + ' system',
-    components: {
-      solvent: { name: document.getElementById('sf-solvent-name').value, abbr: document.getElementById('sf-solvent-abbr').value },
-      solute:  { name: document.getElementById('sf-solute-name').value,  abbr: document.getElementById('sf-solute-abbr').value },
-      carrier: { name: document.getElementById('sf-carrier-name').value, abbr: document.getElementById('sf-carrier-abbr').value },
-    },
-    properties: {
-      rho_solvent: parseFloat(document.getElementById('sf-rho-solvent').value),
-      rho_solute:  parseFloat(document.getElementById('sf-rho-solute').value),
-      rho_carrier: parseFloat(document.getElementById('sf-rho-carrier').value),
-      mw_solute:   parseFloat(document.getElementById('sf-mw-solute').value),
-    },
-    equilibrium_data: [...document.getElementById('sf-equil-tbody').rows].map(r =>
-      [...r.querySelectorAll('input')].map(inp => parseFloat(inp.value))
-    ),
-    tie_lines: [...document.getElementById('sf-tie-tbody').rows].map(r =>
-      [...r.querySelectorAll('input')].map(inp => parseFloat(inp.value))
-    ),
+  const v = id => document.getElementById(id).value.trim();
+  const cName = v('sf-carrier-name'), cAbbr = v('sf-carrier-abbr');
+  const sName = v('sf-solute-name'),  sAbbr = v('sf-solute-abbr');
+  const vName = v('sf-solvent-name'), vAbbr = v('sf-solvent-abbr');
+  const rowsYaml = tbodyId => {
+    const rows = [...document.getElementById(tbodyId).rows]
+      .map(r => [...r.querySelectorAll('input')].map(i => i.value.trim()))
+      .filter(cells => cells.some(c => c !== ''));   // drop fully-empty rows so blank form stays valid YAML
+    return rows.length ? '\n' + rows.map(cells => `  - [${cells.join(', ')}]`).join('\n') : ' []';
   };
-  return jsyaml.dump(obj, { flowLevel: 2 });
+  const eqRows = rowsYaml('sf-equil-tbody');
+  const tieRows = rowsYaml('sf-tie-tbody');
+  return `components:
+  carrier: { name: "${cName}", abbr: "${cAbbr}" }   # (1)
+  solute: { name: "${sName}", abbr: "${sAbbr}" }   # (2)
+  solvent: { name: "${vName}", abbr: "${vAbbr}" }   # (3)
+
+properties:
+  rho_carrier: ${v('sf-rho-carrier')}   # g/mL
+  rho_solute: ${v('sf-rho-solute')}   # g/mL
+  rho_solvent: ${v('sf-rho-solvent')}   # g/mL
+  mw_solute: ${v('sf-mw-solute')}   # g/mol
+
+# Each row: [Carrier wt%, Solute wt%, Solvent wt%]   (100w1, 100w2, 100w3; sum = 100, sorted by increasing carrier)
+equilibrium_data:${eqRows}
+
+# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]   (100w23, 100w21)
+tie_lines:${tieRows}
+
+note: "${v('sf-note')}"
+`;
 }
+
+// Keep the Advanced YAML text area (and thus the download filename) in sync with the
+// form while Advanced is open. When Advanced is closed we leave the text area alone,
+// so manually-typed YAML edits there aren't clobbered.
+function syncYamlFromForm() {
+  const adv = document.getElementById('sys-advanced');
+  if (adv && adv.open) document.getElementById('sys-yaml').value = collectFormToYaml();
+}
+document.getElementById('sys-form')?.addEventListener('input', syncYamlFromForm);
+
+// Reverse sync: when the user types or pastes YAML in the Advanced editor, mirror it
+// back into the form above. Programmatic .value changes don't fire 'input', so the two
+// directions never trigger each other (no feedback loop).
+document.getElementById('sys-yaml')?.addEventListener('input', () => {
+  populateFormFromYaml(document.getElementById('sys-yaml').value);
+});
 
 function addEquilRow() {
   const tbody = document.getElementById('sf-equil-tbody');
   const n = tbody.rows.length + 1;
   tbody.insertAdjacentHTML('beforeend', `<tr><td>${n}</td><td><input value="" type="number" step="0.01" /></td><td><input value="" type="number" step="0.01" /></td><td><input value="" type="number" step="0.01" /></td></tr>`);
+  syncYamlFromForm();
 }
 function removeEquilRow() {
   const tbody = document.getElementById('sf-equil-tbody');
   if (tbody.rows.length > 0) tbody.deleteRow(-1);
+  syncYamlFromForm();
 }
 function addTieRow() {
   const tbody = document.getElementById('sf-tie-tbody');
   const n = tbody.rows.length + 1;
   tbody.insertAdjacentHTML('beforeend', `<tr><td>${n}</td><td><input value="" type="number" step="0.01" /></td><td><input value="" type="number" step="0.01" /></td></tr>`);
+  syncYamlFromForm();
 }
 function removeTieRow() {
   const tbody = document.getElementById('sf-tie-tbody');
   if (tbody.rows.length > 0) tbody.deleteRow(-1);
+  syncYamlFromForm();
 }
 
 function setSysMsg(text, type) {
@@ -1169,6 +1300,12 @@ async function applySystem() {
     yamlText = collectFormToYaml();
     document.getElementById('sys-yaml').value = yamlText;
   }
+  await applyYamlText(yamlText);
+}
+
+// Parse → validate → build the system in Pyodide → re-render. On success, persist
+// the applied YAML to localStorage so a page refresh restores the same system.
+async function applyYamlText(yamlText) {
   setSysMsg('', '');
 
   let sysData;
@@ -1194,6 +1331,20 @@ async function applySystem() {
         setSysMsg('Equilibrium data is not sorted by increasing carrier%. Please sort before applying.', 'error');
         return;
       }
+    }
+  }
+
+  // Each equilibrium row is a full ternary composition → must sum to 100 wt%
+  for (let i = 0; i < eqData.length; i++) {
+    const r = eqData[i];
+    if (!Array.isArray(r) || r.length !== 3 || r.some(x => isNaN(Number(x)))) {
+      setSysMsg(`Equilibrium row ${i + 1} must have 3 numeric values: [Carrier, Solute, Solvent] wt%.`, 'error');
+      return false;
+    }
+    const sum = Number(r[0]) + Number(r[1]) + Number(r[2]);
+    if (Math.abs(sum - 100) > 0.5) {
+      setSysMsg(`Equilibrium row ${i + 1} sums to ${sum.toFixed(2)}%, not 100%. Each [Carrier, Solute, Solvent] row must sum to 100.`, 'error');
+      return false;
     }
   }
 
@@ -1269,10 +1420,13 @@ _b._eready     = False
       document.getElementById('empty').style.display = 'flex';
     }
     await renderSystemFigs();
+    try { localStorage.setItem(SYSTEM_STORE_KEY, yamlText); } catch (e) {}
     setSysMsg('System applied. Press Calculate to run extraction analysis.', 'success');
+    return true;
 
   } catch (e) {
     setSysMsg('Failed to build system: ' + e.message, 'error');
+    return false;
   }
 }
 
@@ -1283,9 +1437,15 @@ async function loadGuide() {
   const el = document.getElementById('plot-guide');
   el.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:13px">Loading guide…</div>';
   try {
-    const resp = await fetch('/docs/guide.md');
+    const resp = await fetch('/docs/guide.md', { cache: 'no-store' });
     if (!resp.ok) throw new Error('guide.md not found');
-    const md = await resp.text();
+    let md = await resp.text();
+    let sysYaml = '# (system file unavailable)';
+    try {
+      const yr = await fetch('/systems/nbp_pa_water.yaml', { cache: 'no-store' });
+      if (yr.ok) sysYaml = (await yr.text()).trim();
+    } catch (e) { console.error('Guide system YAML:', e); }
+    md = md.replace('{{SYSTEM_YAML}}', () => sysYaml);
     el.innerHTML = `<div class="guide-content">${marked.parse(md)}</div>`;
     guideLoaded = true;
   } catch (e) {

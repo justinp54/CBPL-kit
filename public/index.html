@@ -255,42 +255,42 @@
             <select class="sys-select" id="sys-select" onchange="loadSystemFromSelect()">
               <option value="">Loading systems…</option>
             </select>
-            <a class="sys-btn" id="sys-download" href="/systems/nbp_pa_water.yaml" download="nbp_pa_water.yaml">Download YAML</a>
+            <a class="sys-btn" id="sys-download" href="/systems/nbp_pa_water.yaml" download="nbp_pa_water.yaml">Download example</a>
           </div>
           <div class="sys-form" id="sys-form">
             <div class="sys-form-section">
               <div class="sys-form-label">Components</div>
               <div class="sys-form-grid cols-3">
                 <span class="col-header">Role</span><span class="col-header">Name</span><span class="col-header">Abbr</span>
-                <span class="sys-form-row-label">Solvent</span>
-                <input class="sys-form-input" id="sf-solvent-name" placeholder="e.g. Water" />
-                <input class="sys-form-input" id="sf-solvent-abbr" placeholder="W" />
-                <span class="sys-form-row-label">Solute</span>
-                <input class="sys-form-input" id="sf-solute-name" placeholder="e.g. Propionic Acid" />
-                <input class="sys-form-input" id="sf-solute-abbr" placeholder="PA" />
-                <span class="sys-form-row-label">Carrier</span>
+                <span class="sys-form-row-label">Carrier (1)</span>
                 <input class="sys-form-input" id="sf-carrier-name" placeholder="e.g. n-Bromopropane" />
                 <input class="sys-form-input" id="sf-carrier-abbr" placeholder="BP" />
+                <span class="sys-form-row-label">Solute (2)</span>
+                <input class="sys-form-input" id="sf-solute-name" placeholder="e.g. Propionic Acid" />
+                <input class="sys-form-input" id="sf-solute-abbr" placeholder="PA" />
+                <span class="sys-form-row-label">Solvent (3)</span>
+                <input class="sys-form-input" id="sf-solvent-name" placeholder="e.g. Water" />
+                <input class="sys-form-input" id="sf-solvent-abbr" placeholder="W" />
               </div>
             </div>
             <div class="sys-form-section">
               <div class="sys-form-label">Physical Properties</div>
               <div class="sys-form-grid cols-2">
                 <span class="col-header">Property</span><span class="col-header">Value</span>
-                <span class="sys-form-row-label">ρ solvent (g/mL)</span>
-                <input class="sys-form-input mono" id="sf-rho-solvent" type="number" step="0.001" />
-                <span class="sys-form-row-label">ρ solute (g/mL)</span>
-                <input class="sys-form-input mono" id="sf-rho-solute" type="number" step="0.001" />
                 <span class="sys-form-row-label">ρ carrier (g/mL)</span>
                 <input class="sys-form-input mono" id="sf-rho-carrier" type="number" step="0.001" />
+                <span class="sys-form-row-label">ρ solute (g/mL)</span>
+                <input class="sys-form-input mono" id="sf-rho-solute" type="number" step="0.001" />
+                <span class="sys-form-row-label">ρ solvent (g/mL)</span>
+                <input class="sys-form-input mono" id="sf-rho-solvent" type="number" step="0.001" />
                 <span class="sys-form-row-label">MW solute (g/mol)</span>
                 <input class="sys-form-input mono" id="sf-mw-solute" type="number" step="0.01" />
               </div>
             </div>
             <div class="sys-form-section">
-              <div class="sys-form-label">Equilibrium Data <span style="font-weight:400;color:var(--muted)">(wt%: Carrier, Solute, Solvent)</span></div>
+              <div class="sys-form-label">Equilibrium Data <span style="font-weight:400;color:var(--muted)">(wt%)</span></div>
               <table class="sys-editable" id="sf-equil-table">
-                <thead><tr><th>#</th><th>Carrier%</th><th>Solute%</th><th>Solvent%</th></tr></thead>
+                <thead><tr><th>#</th><th>Carrier<span class="col-sub">100w<sub>1</sub></span></th><th>Solute<span class="col-sub">100w<sub>2</sub></span></th><th>Solvent<span class="col-sub">100w<sub>3</sub></span></th></tr></thead>
                 <tbody id="sf-equil-tbody"></tbody>
               </table>
               <div class="sys-row-actions">
@@ -299,15 +299,19 @@
               </div>
             </div>
             <div class="sys-form-section">
-              <div class="sys-form-label">Tie Lines <span style="font-weight:400;color:var(--muted)">(wSolute% at each phase boundary)</span></div>
+              <div class="sys-form-label">Tie-Lines <span style="font-weight:400;color:var(--muted)">(Solute wt% in each phase)</span></div>
               <table class="sys-editable" id="sf-tie-table">
-                <thead><tr><th>#</th><th>Solvent-rich</th><th>Carrier-rich</th></tr></thead>
+                <thead><tr><th>#</th><th>Solvent-rich phase (3)<span class="col-sub">100w<sub>23</sub></span></th><th>Carrier-rich phase (1)<span class="col-sub">100w<sub>21</sub></span></th></tr></thead>
                 <tbody id="sf-tie-tbody"></tbody>
               </table>
               <div class="sys-row-actions">
                 <button class="sys-row-btn" onclick="addTieRow()">+ Add row</button>
                 <button class="sys-row-btn" onclick="removeTieRow()">− Remove last</button>
               </div>
+            </div>
+            <div class="sys-form-section">
+              <div class="sys-form-label">Note <span style="font-weight:400;color:var(--muted)">(data source, temperature, etc. — free text)</span></div>
+              <input class="sys-form-input" id="sf-note" placeholder="e.g. 25 °C, Treybal (1980)" style="width:100%;box-sizing:border-box" />
             </div>
           </div>
           <details class="sys-advanced" id="sys-advanced" ontoggle="if(this.open) document.getElementById('sys-yaml').value = collectFormToYaml()">
@@ -319,12 +323,13 @@
           </details>
           <div class="sys-footer">
             <button class="btn-apply" onclick="applySystem()">Apply System</button>
+            <button class="sys-btn" onclick="downloadUserYaml()">Download my YAML</button>
             <span class="sys-msg" id="sys-msg"></span>
           </div>
           <p class="sys-note">
-            Required fields: <code>equilibrium_data</code> (rows of [wSolvent%, wSolute%, wCarrier%]),
-            <code>tie_lines</code> (rows of [wSolute% left, wSolute% right]),
-            and <code>properties</code> (rho_solvent, rho_solute, rho_carrier, mw_solute).
+            Required fields: <code>equilibrium_data</code> (rows of [Carrier wt%, Solute wt%, Solvent wt%]),
+            <code>tie_lines</code> (rows of [Solute wt% in solvent-rich phase, Solute wt% in carrier-rich phase]),
+            and <code>properties</code> (rho_carrier, rho_solute, rho_solvent, mw_solute).
             See the <strong>Guide</strong> tab for the full format.
           </p>
         </div>

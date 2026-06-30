@@ -102,30 +102,10 @@ Real-time feed composition explorer. Change the feed PA concentration (10–55 w
 The **System** tab lets you load a different ternary system by pasting a YAML file.  
 Edit the YAML directly in the text area and click **Apply System**.
 
-A valid system YAML looks like this:
+A valid system YAML looks like this. The example below is the current default system, loaded live from `public/systems/nbp_pa_water.yaml` — edit that file and this example updates automatically:
 
 ```yaml
-name: "Component A / Component B / Component C"
-components:
-  solvent: { name: "Component A", abbr: "A" }
-  solute:  { name: "Component B", abbr: "B" }
-  diluent: { name: "Component C", abbr: "C" }
-
-# [wSolvent%, wSolute%, wDiluent%] for each binodal point
-equilibrium_data:
-  - [5.1, 9.5, 85.4]
-  - ...
-
-# [wSolute% in diluent-rich phase, wSolute% in solvent-rich phase]
-tie_lines:
-  - [6.25, 2.56]
-  - ...
-
-properties:
-  rho_solvent: 1.354   # g/mL
-  rho_solute:  0.993   # g/mL
-  rho_diluent: 1.000   # g/mL
-  mw_solute:   74.08   # g/mol  (used for titration → concentration)
+{{SYSTEM_YAML}}
 ```
 
 After applying a new system, click **Calculate** to rebuild all figures.

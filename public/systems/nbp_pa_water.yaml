@@ -1,8 +1,7 @@
-name: n-Bromopropane / Propionic Acid / Water
 components:
-  solvent: {name: Water, abbr: W}
-  solute: {name: Propionic Acid, abbr: PA}
-  carrier: {name: n-Bromopropane, abbr: BP}
+  carrier: { name: "n-Bromopropane", abbr: "BP" }   # (1)
+  solute: { name: "Propionic Acid", abbr: "PA" }   # (2)
+  solvent: { name: "Water", abbr: "W" }   # (3)
 properties:
   rho_solvent: 1.0
   rho_solute: 0.993

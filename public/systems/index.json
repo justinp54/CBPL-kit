@@ -1,4 +1,4 @@
 [
-  { "file": "nbp_pa_water.yaml", "name": "n-Bromopropane / Propionic Acid / Water", "abbr": "n-BP / PA / W" },
-  { "file": "test.yaml", "name": "Water / Acetic acid / Isopropyl ether", "abbr": "W / AcOH / IPE" }
+  "nbp_pa_water.yaml",
+  "test.yaml"
 ]
