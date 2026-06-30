@@ -134,7 +134,6 @@ let rendered  = {};
 let activeTab = 'guide';
 let computing = false;
 let _lbls = { solute:{name:'Propionic Acid', abbr:'PA'}, carrier:{name:'n-Bromopropane', abbr:'BP'}, solvent:{name:'Water', abbr:'W'} };
-const SYSTEM_STORE_KEY = 'cbpl_system_yaml';   // localStorage key: last applied system (persists across refresh)
 
 function syncDil(id, src) {
   const num = document.getElementById('dil-' + id);
@@ -214,18 +213,8 @@ async function initPyodide() {
     setProgress(100, 'Ready!');
     pyReady = true;
 
-    // Restore a previously-applied custom system (localStorage); else render default figures
-    let _restored = false;
-    try {
-      const _saved = localStorage.getItem(SYSTEM_STORE_KEY);
-      if (_saved) {
-        document.getElementById('sys-yaml').value = _saved;
-        populateFormFromYaml(_saved);
-        _restored = await applyYamlText(_saved);
-        if (!_restored) { try { localStorage.removeItem(SYSTEM_STORE_KEY); } catch (e) {} }
-      }
-    } catch (e) { console.error('Restore system:', e); }
-    if (!_restored) await renderSystemFigs();
+    // Auto-render system figures (no titration data needed)
+    await renderSystemFigs();
 
     // Hide init overlay; only show empty state on extraction tabs
     setTimeout(() => {
@@ -1025,12 +1014,9 @@ async function loadSystemTab() {
   try {
     const resp = await fetch('/systems/' + currentSystemFile, { cache: 'no-store' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    defaultSystemYaml = await resp.text();                       // default file — used by Reset to Default
-    let saved = null;
-    try { saved = localStorage.getItem(SYSTEM_STORE_KEY); } catch (e) {}
-    const show = saved || defaultSystemYaml;                     // show restored custom system if present
-    document.getElementById('sys-yaml').value = show;
-    populateFormFromYaml(show);
+    defaultSystemYaml = await resp.text();
+    document.getElementById('sys-yaml').value = defaultSystemYaml;
+    populateFormFromYaml(defaultSystemYaml);
   } catch (e) {
     setSysMsg('Failed to load system YAML: ' + e.message, 'error');
   }
@@ -1107,7 +1093,6 @@ function loadBlankTemplate() {
 }
 
 function resetSystem() {
-  try { localStorage.removeItem(SYSTEM_STORE_KEY); } catch (e) {}   // forget the saved custom system
   document.getElementById('sys-yaml').value = defaultSystemYaml;
   populateFormFromYaml(defaultSystemYaml);
   setSysMsg('Editor reset to default. Press Apply System to rebuild from it.', '');
@@ -1333,8 +1318,7 @@ async function applySystem() {
   await applyYamlText(yamlText);
 }
 
-// Parse → validate → build the system in Pyodide → re-render. On success, persist
-// the applied YAML to localStorage so a page refresh restores the same system.
+// Parse → validate → build the system in Pyodide → re-render.
 async function applyYamlText(yamlText) {
   setSysMsg('', '');
 
@@ -1450,7 +1434,6 @@ _b._eready     = False
       document.getElementById('empty').style.display = 'flex';
     }
     await renderSystemFigs();
-    try { localStorage.setItem(SYSTEM_STORE_KEY, yamlText); } catch (e) {}
     setSysMsg('System applied. Press Calculate to run extraction analysis.', 'success');
     return true;
 
