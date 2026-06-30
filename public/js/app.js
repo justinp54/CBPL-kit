@@ -1058,24 +1058,43 @@ async function loadSystemFromSelect() {
   }
 }
 
-// "Enter your own data" — clear the form and show the current example's values as
-// gray placeholders, so the user can fill in their own system from scratch.
+// Fixed example shown as gray placeholders in "+ Enter your own data" mode, so the
+// hints (and the number of rows) stay consistent regardless of which system was
+// loaded before. Purely a UI hint — not parsed or applied.
+const BLANK_EXAMPLE = {
+  components: {
+    carrier: { name: 'n-Bromopropane', abbr: 'BP' },
+    solute:  { name: 'Propionic acid', abbr: 'PA' },
+    solvent: { name: 'Water',          abbr: 'W'  },
+  },
+  properties: { rho_carrier: 1.354, rho_solute: 0.993, rho_solvent: 1.0, mw_solute: 74.08 },
+  equilibrium_data: [
+    [5.1, 9.49, 85.41], [8.37, 36.65, 54.98], [17.67, 49.4, 32.93],
+    [32.724, 49.087, 18.189], [56.74, 37.83, 5.43], [84.18, 9.35, 6.47],
+  ],
+  tie_lines: [
+    [6.253, 2.564], [8.02, 2.65], [8.291, 3.058],
+    [14.175, 8.047], [16.73, 9.88], [26.069, 19.418],
+  ],
+  note: 'SNU CBE, 25 °C, Treybal (1980), Zhang (2020)',
+};
+
+// "Enter your own data" — clear the form and show BLANK_EXAMPLE as gray placeholders.
 function loadBlankTemplate() {
-  let d = {};
-  try { d = jsyaml.load(defaultSystemYaml) || {}; } catch (e) {}
-  const c = d.components || {}, p = d.properties || {};
+  const d = BLANK_EXAMPLE;
+  const c = d.components, p = d.properties;
   const ph = (id, val, prefix = '') => {
     const el = document.getElementById(id);
     if (!el) return;
     el.value = '';
     if (val !== undefined && val !== null && String(val) !== '') el.placeholder = prefix + val;
   };
-  ph('sf-carrier-name', c.carrier?.name, 'e.g. ');
-  ph('sf-carrier-abbr', c.carrier?.abbr);
-  ph('sf-solute-name',  c.solute?.name,  'e.g. ');
-  ph('sf-solute-abbr',  c.solute?.abbr);
-  ph('sf-solvent-name', c.solvent?.name, 'e.g. ');
-  ph('sf-solvent-abbr', c.solvent?.abbr);
+  ph('sf-carrier-name', c.carrier.name, 'e.g. ');
+  ph('sf-carrier-abbr', c.carrier.abbr);
+  ph('sf-solute-name',  c.solute.name,  'e.g. ');
+  ph('sf-solute-abbr',  c.solute.abbr);
+  ph('sf-solvent-name', c.solvent.name, 'e.g. ');
+  ph('sf-solvent-abbr', c.solvent.abbr);
   ph('sf-rho-carrier', p.rho_carrier);
   ph('sf-rho-solute',  p.rho_solute);
   ph('sf-rho-solvent', p.rho_solvent);
@@ -1217,7 +1236,9 @@ function collectFormToYaml() {
   };
   const eqRows = rowsYaml('sf-equil-tbody');
   const tieRows = rowsYaml('sf-tie-tbody');
-  return `components:
+  return `# System Configuration
+
+components:
   carrier: { name: "${cName}", abbr: "${cAbbr}" }   # (1)
   solute: { name: "${sName}", abbr: "${sAbbr}" }   # (2)
   solvent: { name: "${vName}", abbr: "${vAbbr}" }   # (3)
@@ -1228,12 +1249,15 @@ properties:
   rho_solvent: ${v('sf-rho-solvent')}   # g/mL
   mw_solute: ${v('sf-mw-solute')}   # g/mol
 
-# Each row: [Carrier wt%, Solute wt%, Solvent wt%]   (100w1, 100w2, 100w3; sum = 100, sorted by increasing carrier)
+# Each row: [Carrier wt%, Solute wt%, Solvent wt%]
+# (100w1, 100w2, 100w3; sorted by increasing carrier)
 equilibrium_data:${eqRows}
 
-# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]   (100w23, 100w21)
+# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]
+# (100w23, 100w21; sorted by increasing solute)
 tie_lines:${tieRows}
 
+# data source, temperature, etc. - free text
 note: "${v('sf-note')}"
 `;
 }

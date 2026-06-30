@@ -19,7 +19,7 @@ public/
   js/app.js            ← All JS logic (Pyodide, Plotly, forms)
   exp06/               ← Python modules (browser serving copy)
   systems/             ← YAML system definition files
-    index.json         ← Dropdown manifest
+    index.json         ← Dropdown manifest (filename list)
   docs/guide.md        ← Guide tab markdown
 experiments/
   experiment_04/       ← Python only (no web integration)
@@ -44,7 +44,7 @@ Forgetting this means the web app uses stale code while the Python package is up
 ### Adding a YAML system
 
 1. Create YAML file in `public/systems/` (follow existing format)
-2. Add entry to `public/systems/index.json`
+2. Add the filename to `public/systems/index.json` (just the filename — dropdown label auto-built from `components` + `note`)
 3. Copy to `experiments/experiment_06/systems/`
 4. git push
 

@@ -250,7 +250,7 @@
       <div class="plot-pane system-pane" id="plot-system" role="tabpanel" aria-labelledby="tab-system">
         <div class="system-content">
           <h2>System Configuration</h2>
-          <p>Select a system or edit the YAML definition below.</p>
+          <p>Choose an example system or enter your own, then Apply System. Download it as YAML to save or reuse.</p>
           <div class="sys-select-row">
             <select class="sys-select" id="sys-select" onchange="loadSystemFromSelect()">
               <option value="">Loading systems…</option>
@@ -288,7 +288,7 @@
               </div>
             </div>
             <div class="sys-form-section">
-              <div class="sys-form-label">Equilibrium Data <span style="font-weight:400;color:var(--muted)">(wt%)</span></div>
+              <div class="sys-form-label">Equilibrium Data <span style="font-weight:400;color:var(--muted)">(wt%, sort by Carrier ↑)</span></div>
               <table class="sys-editable" id="sf-equil-table">
                 <thead><tr><th>#</th><th>Carrier<span class="col-sub">100w<sub>1</sub></span></th><th>Solute<span class="col-sub">100w<sub>2</sub></span></th><th>Solvent<span class="col-sub">100w<sub>3</sub></span></th></tr></thead>
                 <tbody id="sf-equil-tbody"></tbody>
@@ -299,7 +299,7 @@
               </div>
             </div>
             <div class="sys-form-section">
-              <div class="sys-form-label">Tie-Lines <span style="font-weight:400;color:var(--muted)">(Solute wt% in each phase)</span></div>
+              <div class="sys-form-label">Tie-Lines <span style="font-weight:400;color:var(--muted)">(Solute wt% in each phase, sort ascending ↑)</span></div>
               <table class="sys-editable" id="sf-tie-table">
                 <thead><tr><th>#</th><th>Solvent-rich phase (3)<span class="col-sub">100w<sub>23</sub></span></th><th>Carrier-rich phase (1)<span class="col-sub">100w<sub>21</sub></span></th></tr></thead>
                 <tbody id="sf-tie-tbody"></tbody>
@@ -311,7 +311,7 @@
             </div>
             <div class="sys-form-section">
               <div class="sys-form-label">Note <span style="font-weight:400;color:var(--muted)">(data source, temperature, etc. — free text)</span></div>
-              <input class="sys-form-input" id="sf-note" placeholder="e.g. 25 °C, Treybal (1980)" style="width:100%;box-sizing:border-box" />
+              <input class="sys-form-input" id="sf-note" placeholder="e.g. SNU CBE, 25 °C, Treybal (1980), Zhang (2020)" style="width:100%;box-sizing:border-box" />
             </div>
           </div>
           <details class="sys-advanced" id="sys-advanced" ontoggle="if(this.open) document.getElementById('sys-yaml').value = collectFormToYaml()">

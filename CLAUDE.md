@@ -13,8 +13,8 @@ public/
   js/app.js               ← All JS logic (935 lines)
   exp06/                  ← Python modules (loaded into Pyodide FS)
   systems/                ← YAML system definition files
-    index.json            ← Dropdown manifest
-    nbp_pa_water.yaml     ← Default system
+    index.json            ← Dropdown manifest (filename list)
+    bp_pa_w_snu_cbe.yaml  ← Default system
   docs/guide.md           ← Guide tab content (rendered by marked.js)
 experiments/
   experiment_04/          ← Python modules only (no web integration)
@@ -33,31 +33,44 @@ YAML files in `experiments/.../systems/` and `public/systems/` must also stay in
 ## Adding a New YAML System
 
 1. Create YAML file in `public/systems/` (follow existing format)
-2. Add entry to `public/systems/index.json`
+2. Add the filename to `public/systems/index.json` (just the filename — the dropdown label is auto-built from `components` + `note`)
 3. Copy to `experiments/experiment_06/systems/`
 4. git push → Vercel auto-deploys
 
 ### YAML Format
 
 ```yaml
-name: System Name
+# System Configuration
+
 components:
-  solvent: {name: Water, abbr: W}
-  solute: {name: Propionic Acid, abbr: PA}
-  carrier: {name: n-Bromopropane, abbr: BP}
+  carrier: { name: "n-Bromopropane", abbr: "BP" }   # (1)
+  solute: { name: "Propionic Acid", abbr: "PA" }   # (2)
+  solvent: { name: "Water", abbr: "W" }   # (3)
+
 properties:
-  rho_solvent: 1.0
-  rho_solute: 0.993
-  rho_carrier: 1.354
-  mw_solute: 74.08
+  rho_carrier: 1.354   # g/mL
+  rho_solute: 0.993   # g/mL
+  rho_solvent: 1.0   # g/mL
+  mw_solute: 74.08   # g/mol
+
+# Each row: [Carrier wt%, Solute wt%, Solvent wt%]
+# (100w1, 100w2, 100w3; sorted by increasing carrier)
 equilibrium_data:
   - [5.1, 9.49, 85.41]
+
+# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]
+# (100w23, 100w21; sorted by increasing solute)
 tie_lines:
   - [6.253, 2.564]
+
+# data source, temperature, etc. - free text
+note: "Seoul National University"
 ```
 
+- No top-level `name` — the dropdown label is auto-generated from `components` + `note`.
 - equilibrium_data: [wCarrier%, wSolute%, wSolvent%] — must be sorted by increasing carrier%
 - tie_lines: [wSolute% solvent-rich, wSolute% carrier-rich]
+- note: free text (data source, temperature, etc.) — distinguishes same-component systems in the dropdown
 
 ## Python Modules (exp06)
 
