@@ -1,0 +1,50 @@
+# System Configuration
+
+components:
+  carrier: { name: "Water", abbr: "W" }   # (1)
+  solute: { name: "Acetic acid", abbr: "AcOH" }   # (2)
+  solvent: { name: "Diisopropyl ether", abbr: "DIPE" }   # (3)
+
+properties:
+  rho_carrier: 1   # g/mL
+  rho_solute: 1.049   # g/mL
+  rho_solvent: 0.725   # g/mL
+  mw_solute: 60.05   # g/mol
+
+# Each row: [Carrier wt%, Solute wt%, Solvent wt%]
+# (100w1, 100w2, 100w3; sorted by increasing carrier)
+equilibrium_data:
+  - [0.5, 0.18, 99.3]
+  - [0.7, 0.37, 98.9]
+  - [0.8, 0.79, 98.4]
+  - [1.0, 1.93, 97.1]
+  - [1.9, 4.82, 93.3]
+  - [3.9, 11.40, 84.7]
+  - [6.9, 21.6, 71.5]
+  - [10.8, 31.10, 58.1]
+  - [15.1, 36.20, 48.7]
+  - [37.1, 46.40, 16.5]
+  - [45.1, 44.30, 10.6]
+  - [58.9, 36.70, 4.4]
+  - [71.1, 25.50, 3.4]
+  - [84.4, 13.30, 2.3]
+  - [91.7, 6.42, 1.9]
+  - [95.5, 2.89, 1.6]
+  - [97.1, 1.41, 1.5]
+  - [98.1, 0.69, 1.2]
+
+# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]
+# (100w23, 100w21; sorted by increasing solute)
+tie_lines:
+  - [0.18, 0.69]
+  - [0.37, 1.41]
+  - [0.79, 2.89]
+  - [1.93, 6.42]
+  - [4.82, 13.30]
+  - [11.40, 25.50]
+  - [21.60, 36.70]
+  - [31.10, 44.30]
+  - [36.20, 46.40]
+
+# data source, temperature, etc. - free text
+note: "Treybal (1980)"
