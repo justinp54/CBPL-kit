@@ -79,7 +79,7 @@ Forgetting this means the web app uses stale code while the Python package is up
 ## Hard Guardrails
 
 ### Confirm before modifying
-- `requirements.txt` — check Pyodide compatibility first
+- `pyproject.toml` — check Pyodide compatibility before adding dependencies
 - `vercel.json` — routing changes can break the deployed site
 - `plot_util.py` `_layout()` / `_cart_layout()` — shared functions, never modify for a single chart
 

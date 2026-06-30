@@ -40,7 +40,7 @@ The first load takes ~20 seconds (Python runs in browser via Pyodide); subsequen
 ```bash
 git clone https://github.com/justinp54/CBPL-kit.git
 cd CBPL-kit
-pip install -r requirements.txt
+pip install -e .
 jupyter notebook experiments/experiment_06/demo.ipynb
 ```
 
