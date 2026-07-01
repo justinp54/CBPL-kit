@@ -1,0 +1,38 @@
+# System Configuration
+
+components:
+  carrier: { name: "Water", abbr: "W" }   # (1)
+  solute: { name: "Acetone", abbr: "Ac" }   # (2)
+  solvent: { name: "1,1,2-Trichloroethane", abbr: "TCE" }   # (3)
+
+properties:
+  rho_carrier: 0.997   # g/mL
+  rho_solute: 0.7845   # g/mL
+  rho_solvent: 1.435   # g/mL
+  mw_solute: 58.08   # g/mol
+
+# Each row: [Carrier wt%, Solute wt%, Solvent wt%]
+# (100w1, 100w2, 100w3; sorted by increasing carrier)
+equilibrium_data:
+  - [1, 10, 89]
+  - [1.5, 20, 78.5]
+  - [2, 30, 68]
+  - [3, 40, 57]
+  - [4, 50, 46]
+  - [13, 60, 27]
+  - [35, 55, 10]
+  - [43, 50, 7]
+  - [57, 40, 3]
+  - [68, 30, 2]
+  - [79, 20, 1]
+  - [89.5, 10, 0.5]
+
+# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]
+# (100w23, 100w21; sorted by increasing solute)
+tie_lines:
+  - [18, 12]
+  - [40, 29]
+  - [56, 44]
+
+# data source, temperature, etc. - free text
+note: "25 °C, Seader (2006)"
