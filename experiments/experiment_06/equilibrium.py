@@ -49,21 +49,38 @@ class EquilibriumSystem:
                 "Remove the duplicate point or replace with a more distinct composition."
             )
 
-        # Add axis-intercept anchors (y=0) estimated by linear extrapolation from
-        # the two boundary data points on each side. This prevents the cubic spline
-        # from curling upward outside the data range, which would create false roots
-        # during tie-line inversion and a visually incorrect equilibrium curve.
-        _sl = (self.y_equil[1] - self.y_equil[0]) / (self.x_equil[1] - self.x_equil[0])
-        _sr = (self.y_equil[-1] - self.y_equil[-2]) / (self.x_equil[-1] - self.x_equil[-2])
-        _xl = float(np.clip(self.x_equil[0] - self.y_equil[0] / _sl,
-                            0.0, self.x_equil[0] - 0.1)) if _sl > 1e-9 else 0.0
-        _xr = float(np.clip(self.x_equil[-1] - self.y_equil[-1] / _sr,
-                            self.x_equil[-1] + 0.1, 100.0)) if _sr < -1e-9 else 100.0
-        _x_fit = np.concatenate([[_xl], self.x_equil, [_xr]])
-        _y_fit  = np.concatenate([[0.0], self.y_equil, [0.0]])
+        # Add axis-intercept anchors (y=0) on each side. If the given data
+        # already reaches the axis (wpa≈0) there, that real point is used
+        # directly; otherwise one is estimated from a shape-preserving edge
+        # slope and inserted. This prevents the cubic spline from curling
+        # outside the data range, which would create false roots during
+        # tie-line inversion and a visually incorrect equilibrium curve.
+        n = len(self.x_equil)
+        k = min(3, n)
+        _xl = self._axis_anchor(self.x_equil[:k], self.y_equil[:k])
+        _xr = self._axis_anchor(self.x_equil[::-1][:k], self.y_equil[::-1][:k])
+
+        x_parts = [self.x_equil]
+        y_parts = [self.y_equil]
+        if _xl is not None:
+            x_parts.insert(0, np.array([_xl]))
+            y_parts.insert(0, np.array([0.0]))
+        if _xr is not None:
+            x_parts.append(np.array([_xr]))
+            y_parts.append(np.array([0.0]))
+        _x_fit = np.concatenate(x_parts)
+        _y_fit = np.concatenate(y_parts)
         self.spline = make_interp_spline(_x_fit, _y_fit, k=3)
 
-        x_dense = np.linspace(0.0, 100.0, 10_000)
+        # True support of the curve: real data boundary, or the synthesized
+        # anchor when one was inserted. The spline is never sampled/searched
+        # outside this range, so it can't extrapolate/curl unnoticed.
+        self.x_domain: tuple[float, float] = (
+            _xl if _xl is not None else float(self.x_equil[0]),
+            _xr if _xr is not None else float(self.x_equil[-1]),
+        )
+
+        x_dense = np.linspace(self.x_domain[0], self.x_domain[1], 10_000)
         y_dense = self.spline(x_dense)
         self.x_smooth: np.ndarray = x_dense
         self.y_smooth: np.ndarray = np.maximum(y_dense, 0.0)
@@ -75,6 +92,46 @@ class EquilibriumSystem:
             self._build_tie_coords()
         )
 
+    @staticmethod
+    def _edge_slope(xs: np.ndarray, ys: np.ndarray) -> float:
+        """Non-centered Fritsch-Carlson shape-preserving derivative at xs[0].
+
+        Uses xs[0..2] when available (less sensitive to noise in any single
+        point than a plain 2-point secant); falls back to the secant slope
+        when only two points exist on that side of the curve.
+        """
+        if len(xs) < 3:
+            return (ys[1] - ys[0]) / (xs[1] - xs[0])
+        h0, h1 = abs(xs[1] - xs[0]), abs(xs[2] - xs[1])
+        d0 = (ys[1] - ys[0]) / (xs[1] - xs[0])
+        d1 = (ys[2] - ys[1]) / (xs[2] - xs[1])
+        d_hat = ((2 * h0 + h1) * d0 - h0 * d1) / (h0 + h1)
+        if d_hat * d0 < 0:
+            d_hat = 0.0
+        elif d0 * d1 < 0 and abs(d_hat) > 3 * abs(d0):
+            d_hat = 3 * d0
+        return d_hat
+
+    def _axis_anchor(self, xs: np.ndarray, ys: np.ndarray) -> float | None:
+        """Axis-intercept x for one side of the curve, or None to use the
+        real boundary point (xs[0], ys[0]) as-is because it's already at
+        (or close enough to) the axis. xs/ys must start at the curve's edge
+        point and move inward (2-3 points).
+        """
+        x0, y0 = float(xs[0]), float(ys[0])
+        slope = self._edge_slope(xs, ys)
+        if abs(slope) < 1e-9:
+            return None
+        x_anchor = x0 - y0 / slope
+        h0 = abs(xs[1] - xs[0])
+        min_gap = max(0.5, 0.15 * h0)
+        if abs(x_anchor - x0) < min_gap:
+            return None
+        max_reach = 3.0 * h0
+        if abs(x_anchor - x0) > max_reach:
+            x_anchor = x0 - np.sign(x_anchor - x0) * max_reach
+        return float(np.clip(x_anchor, 0.0, 100.0))
+
     def _find_x_intercepts(self, x: np.ndarray, y: np.ndarray) -> list[float]:
         roots: list[float] = []
         for i in range(len(x) - 1):
@@ -82,26 +139,16 @@ class EquilibriumSystem:
                 root = brentq(self.spline, x[i], x[i + 1])
                 roots.append(round(float(root), 3))
 
-        # For systems where data nearly spans [0, 100], the y=0 intercepts may
-        # lie just outside the spline range. Try a short extrapolation window;
-        # fall back to the data boundary (y is small there anyway).
-        def _edge_intercept(x_inner: float, direction: int) -> float:
-            x_outer = x_inner + direction * 5.0
-            try:
-                if float(self.spline(x_inner)) * float(self.spline(x_outer)) < 0:
-                    return round(brentq(self.spline, min(x_inner, x_outer),
-                                       max(x_inner, x_outer)), 3)
-            except Exception:
-                pass
-            return round(float(x_inner), 3)
-
+        # No sign change found within the domain (e.g. the boundary point
+        # sits at a small positive residual rather than exactly 0) — the
+        # domain edge itself is the best available intercept.
+        lo, hi = self.x_domain
         if len(roots) == 0:
-            roots = [_edge_intercept(float(self.x_equil[0]),  -1),
-                     _edge_intercept(float(self.x_equil[-1]), +1)]
+            roots = [round(lo, 3), round(hi, 3)]
         elif len(roots) == 1 and roots[0] < 50.0:
-            roots.append(_edge_intercept(float(self.x_equil[-1]), +1))
+            roots.append(round(hi, 3))
         elif len(roots) == 1:
-            roots.insert(0, _edge_intercept(float(self.x_equil[0]), -1))
+            roots.insert(0, round(lo, 3))
         return roots
 
     def _build_tie_coords(
@@ -114,7 +161,7 @@ class EquilibriumSystem:
             #   (b) near-plait-point → function barely touches zero (no sign
             #       change) → fall back to the minimum-|f| point on the scan.
             y_target = np.sqrt(3) / 2.0 * wpa_target
-            lo, hi = (0.0, self.x_plait_approx) if left else (self.x_plait_approx, 100.0)
+            lo, hi = (self.x_domain[0], self.x_plait_approx) if left else (self.x_plait_approx, self.x_domain[1])
             x_scan = np.linspace(lo, hi, 5000)
             f_vals = self.spline(x_scan) - y_target
 
@@ -174,7 +221,7 @@ class EquilibriumSystem:
         self, target_c: float, left: bool
     ) -> tuple[tuple[float, float], tuple[float, float, float], float]:
         """Find the point on the equilibrium curve whose PA concentration equals target_c."""
-        bounds = (0.0, self.x_plait_approx) if left else (self.x_plait_approx, 100.0)
+        bounds = (self.x_domain[0], self.x_plait_approx) if left else (self.x_plait_approx, self.x_domain[1])
         res = minimize_scalar(
             lambda x: abs(
                 self.molar_concentration_pa(x, float(self.spline(x))) - target_c
