@@ -1,0 +1,43 @@
+# System Configuration
+
+components:
+  carrier: { name: "Water", abbr: "W" }   # (1)
+  solute: { name: "Ethylene glycol", abbr: "EG" }   # (2)
+  solvent: { name: "Furfural", abbr: "Fur" }   # (3)
+
+properties:
+  rho_carrier: 0.997   # g/mL
+  rho_solute: 1.113   # g/mL
+  rho_solvent: 1.16   # g/mL
+  mw_solute: 62.07   # g/mol
+
+# Each row: [Carrier wt%, Solute wt%, Solvent wt%]
+# (100w1, 100w2, 100w3; sorted by increasing carrier)
+equilibrium_data:
+  - [3.9, 10.0, 86.1]
+  - [4.5, 5.2, 90.3]
+  - [4.9, 20.0, 75.1]
+  - [5.8, 27.5, 66.7]
+  - [9.5, 41.5, 49.0]
+  - [15.2, 50.5, 34.3]
+  - [20.0, 52.5, 27.5]
+  - [38.6, 47.5, 13.9]
+  - [49.0, 40.0, 11.0]
+  - [60.3, 30.0, 9.7]
+  - [76.6, 15.0, 8.4]
+
+# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]
+# (100w23, 100w21; sorted by increasing solute)
+tie_lines:
+  - [2.5, 7.3]
+  - [5.2, 15.0]
+  - [6.2, 20.0]
+  - [7.5, 30.0]
+  - [10.0, 40.0]
+  - [15.0, 47.5]
+  - [20.0, 51.5]
+  - [27.5, 52.5]
+  - [32.5, 50.5]
+
+# data source, temperature, etc. - free text
+note: "Seader"
