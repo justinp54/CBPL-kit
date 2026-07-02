@@ -40,4 +40,4 @@ tie_lines:
   - [32.5, 50.5]
 
 # data source, temperature, etc. - free text
-note: "Seader"
+note: "25 °C, Seader (2006)"
