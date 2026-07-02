@@ -116,7 +116,7 @@ class EquilibriumSystem:
             y_target = np.sqrt(3) / 2.0 * wpa_target
             lo, hi = (0.0, self.x_plait_approx) if left else (self.x_plait_approx, 100.0)
             x_scan = np.linspace(lo, hi, 5000)
-            f_vals = np.array([float(self.spline(x)) - y_target for x in x_scan])
+            f_vals = self.spline(x_scan) - y_target
 
             sign_changes = np.where(f_vals[:-1] * f_vals[1:] < 0)[0]
             if len(sign_changes) > 0:
