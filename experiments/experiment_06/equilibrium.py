@@ -252,28 +252,23 @@ class EquilibriumSystem:
     ) -> list[tuple[tuple[float, float], tuple[float, float]]]:
         def on_curve(wpa_target: float, left: bool) -> tuple[float, float]:
             # Invert the spline: find x on the left or right branch where
-            # spline(x) = y_target.  Uses a dense scan so that:
-            #   (a) normal tie lines  → sign change found → brentq refines it
-            #   (b) near-plait-point → function barely touches zero (no sign
-            #       change) → fall back to the minimum-|f| point on the scan.
+            # spline(x) = y_target. Each branch is a monotone Hermite piece
+            # (see _hermite_branch), so f(x) = spline(x) - y_target has at
+            # most one root — checking the two endpoints is enough to know
+            # whether it exists, no scan needed.
             y_target = np.sqrt(3) / 2.0 * wpa_target
             lo, hi = (self.x_domain[0], self.x_plait_approx) if left else (self.x_plait_approx, self.x_domain[1])
-            x_scan = np.linspace(lo, hi, 5000)
-            f_vals = self.spline(x_scan) - y_target
+            f_lo, f_hi = float(self.spline(lo)) - y_target, float(self.spline(hi)) - y_target
 
-            sign_changes = np.where(f_vals[:-1] * f_vals[1:] < 0)[0]
-            if len(sign_changes) > 0:
-                i = sign_changes[0]
-                x_star = brentq(
-                    lambda x: float(self.spline(x)) - y_target,
-                    x_scan[i], x_scan[i + 1],
-                )
+            if f_lo * f_hi < 0:
+                x_star = brentq(lambda x: float(self.spline(x)) - y_target, lo, hi)
                 return float(x_star), float(self.spline(x_star))
 
-            # Touching root (near plait point): accept closest approach
-            idx_min = int(np.argmin(np.abs(f_vals)))
-            if abs(f_vals[idx_min]) < 0.5:
-                x_star = float(x_scan[idx_min])
+            # No sign change: target is at or just past this branch's
+            # reachable range (typically a tie line very near the plait
+            # point) — accept the closer endpoint if it's a near miss.
+            x_star, f_star = (lo, f_lo) if abs(f_lo) < abs(f_hi) else (hi, f_hi)
+            if abs(f_star) < 0.5:
                 return x_star, float(self.spline(x_star))
 
             side = "left" if left else "right"
