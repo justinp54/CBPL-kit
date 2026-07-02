@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy.interpolate import make_interp_spline
+from scipy.interpolate import CubicHermiteSpline, PchipInterpolator
 from scipy.optimize import brentq, minimize_scalar
 
 try:
@@ -19,6 +19,25 @@ _DEFAULT_LABELS: dict = {
     "solvent": {"name": "Water",            "abbr": "W"},
     "carrier": {"name": "n-Bromopropane",  "abbr": "BP"},
 }
+
+
+class _BranchSpline:
+    """Callable combining two Hermite branches, split and rejoined at x_peak.
+
+    Both branches share the peak knot with an explicit zero derivative
+    there (see EquilibriumSystem._build_spline), so this reads as one
+    seamless curve even though it's built from two pieces.
+    """
+
+    def __init__(self, left: CubicHermiteSpline, right: CubicHermiteSpline, x_peak: float) -> None:
+        self.left = left
+        self.right = right
+        self.x_peak = x_peak
+
+    def __call__(self, x):
+        x_arr = np.atleast_1d(np.asarray(x, dtype=float))
+        out = np.where(x_arr <= self.x_peak, self.left(x_arr), self.right(x_arr))
+        return float(out[0]) if np.ndim(x) == 0 else out
 
 
 @dataclass
@@ -70,7 +89,18 @@ class EquilibriumSystem:
             y_parts.append(np.array([0.0]))
         _x_fit = np.concatenate(x_parts)
         _y_fit = np.concatenate(y_parts)
-        self.spline = make_interp_spline(_x_fit, _y_fit, k=3)
+
+        # Split at the highest point (the plait-point side of the curve) and
+        # fit each side as its own monotone Hermite branch, instead of one
+        # global cubic spline through everything. A single k=3 spline
+        # enforces curvature continuity across all knots at once, so an
+        # unevenly spaced knot anywhere can make it oscillate far from that
+        # spot; two independent monotone branches can't overshoot past their
+        # own data no matter how uneven the spacing is elsewhere.
+        i_peak = int(np.argmax(_y_fit))
+        left_end, x_peak, y_peak = self._fitted_peak(_x_fit, _y_fit, i_peak)
+        self.x_plait_approx: float = x_peak
+        self.spline = self._build_spline(_x_fit, _y_fit, left_end, x_peak, y_peak)
 
         # True support of the curve: real data boundary, or the synthesized
         # anchor when one was inserted. The spline is never sampled/searched
@@ -86,11 +116,77 @@ class EquilibriumSystem:
         self.y_smooth: np.ndarray = np.maximum(y_dense, 0.0)
 
         self.x_intercepts: list[float] = self._find_x_intercepts(x_dense, y_dense)
-        # Approximate plait-point x (spline maximum) used to split left/right branches
-        self.x_plait_approx: float = float(x_dense[int(np.argmax(y_dense))])
         self.tie_coords: list[tuple[tuple[float, float], tuple[float, float]]] = (
             self._build_tie_coords()
         )
+
+    @staticmethod
+    def _fitted_peak(x: np.ndarray, y: np.ndarray, i_peak: int) -> tuple[int, float, float]:
+        """Refine the peak with a local parabola through the max and its two
+        neighbors. Sparse data can have two near-tied points straddling the
+        true extremum (e.g. y=42.78 then y=42.51 fifteen x-units apart);
+        splitting exactly at whichever one happens to be marginally higher
+        flattens what should be a single rounded apex. A 3-point local fit
+        recovers that rounding without the unbounded overshoot risk of a
+        global spline (see _build_spline's docstring).
+
+        Returns (left_end, x_peak, y_peak): left_end is the index of the
+        last real point belonging to the left branch (x[i_peak] itself if
+        the vertex lands to its right, x[i_peak - 1] if the vertex lands
+        to its left — the fit isn't guaranteed to lean either way).
+        """
+        n = len(x)
+        if i_peak == 0 or i_peak == n - 1:
+            return i_peak, float(x[i_peak]), float(y[i_peak])
+        xs, ys = x[i_peak - 1 : i_peak + 2], y[i_peak - 1 : i_peak + 2]
+        a, b, c = np.polyfit(xs, ys, 2)
+        fallback = (i_peak, float(x[i_peak]), float(y[i_peak]))
+        if abs(a) < 1e-12:
+            return fallback
+        x_v = -b / (2 * a)
+        if xs[0] < x_v < xs[1]:
+            left_end = i_peak - 1
+        elif xs[1] < x_v < xs[2]:
+            left_end = i_peak
+        else:
+            return fallback
+        y_v = a * x_v ** 2 + b * x_v + c
+        if y_v < y[i_peak]:
+            return fallback
+        return left_end, float(x_v), float(y_v)
+
+    @staticmethod
+    def _build_spline(
+        x: np.ndarray, y: np.ndarray, left_end: int, x_peak: float, y_peak: float
+    ) -> _BranchSpline:
+        if x_peak == float(x[left_end]) and y_peak == float(y[left_end]):
+            # No parabola refinement (edge of data, or genuinely flat) —
+            # split directly at the raw peak point as before.
+            left = EquilibriumSystem._hermite_branch(x[: left_end + 1], y[: left_end + 1], peak_at_end=True)
+            right = EquilibriumSystem._hermite_branch(x[left_end:], y[left_end:], peak_at_end=False)
+        else:
+            left = EquilibriumSystem._hermite_branch(
+                np.append(x[: left_end + 1], x_peak), np.append(y[: left_end + 1], y_peak), peak_at_end=True
+            )
+            right = EquilibriumSystem._hermite_branch(
+                np.insert(x[left_end + 1 :], 0, x_peak), np.insert(y[left_end + 1 :], 0, y_peak), peak_at_end=False
+            )
+        return _BranchSpline(left, right, x_peak)
+
+    @staticmethod
+    def _hermite_branch(x: np.ndarray, y: np.ndarray, peak_at_end: bool) -> CubicHermiteSpline:
+        """Monotone Hermite fit for one branch, with the peak-side knot's
+        derivative forced to 0 (the plait point is a true extremum, so its
+        tangent is horizontal by definition — not just an estimate) so both
+        branches meet with matching value *and* slope at the peak.
+        """
+        if len(x) < 2:
+            x = np.array([x[0], x[0] + 1.0])
+            y = np.array([y[0], y[0]])
+            return CubicHermiteSpline(x, y, [0.0, 0.0])
+        d = PchipInterpolator(x, y).derivative()(x)
+        d[-1 if peak_at_end else 0] = 0.0
+        return CubicHermiteSpline(x, y, d)
 
     @staticmethod
     def _edge_slope(xs: np.ndarray, ys: np.ndarray) -> float:
