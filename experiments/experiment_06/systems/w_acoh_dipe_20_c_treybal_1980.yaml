@@ -6,9 +6,9 @@ components:
   solvent: { name: "Diisopropyl ether", abbr: "DIPE" }   # (3)
 
 properties:
-  rho_carrier: 0.997   # g/mL
+  rho_carrier: 0.9982   # g/mL
   rho_solute: 1.049   # g/mL
-  rho_solvent: 0.725   # g/mL
+  rho_solvent: 0.724   # g/mL
   mw_solute: 60.05   # g/mol
 
 # Each row: [Carrier wt%, Solute wt%, Solvent wt%]
