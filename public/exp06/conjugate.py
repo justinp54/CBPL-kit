@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 import numpy as np
 from scipy.interpolate import PchipInterpolator
-from scipy.optimize import brentq
 
 try:
     from .equilibrium import EquilibriumSystem
@@ -15,25 +14,37 @@ except ImportError:
 @dataclass
 class ConjugateCurve:
     """
-    Polynomial conjugate curve from auxiliary-line intersections and plait-point finder.
+    Conjugate curve from auxiliary-line intersections and plait-point finder.
 
     Method (Treybal, Mass Transfer Operations):
     1. For each tie line, draw auxiliary lines with slopes ±√3 from each endpoint.
     2. Their intersection gives one point on the conjugate curve.
-    3. Fit a degree-N polynomial; intersect with equilibrium curve to find the plait point.
+    3. Extend that curve, in a straight line along its tangent at the last real
+       point (curvature clamped to zero — see _extend_to_plait), until it comes
+       closest to the equilibrium curve. That's the plait-point estimate.
+
+    Sparse, real tie-line data is never actually close enough to the plait point
+    for this extension to be a precise measurement (the last available tie line
+    can still be tens of composition-% away from where the two phases truly
+    merge), so step 3 optimizes a "closest approach" objective instead of
+    requiring an exact intersection, which may not exist for any well-behaved
+    extension of the real points. Treat the result as an estimate, not a
+    high-precision answer — a different construction can reasonably land
+    somewhere else nearby.
     """
 
     system: EquilibriumSystem
-    degree: int = 4
 
     def __post_init__(self) -> None:
         self.aux_points: list[tuple[float, float]] = self._build_aux_points()
-        self.x_anchor: float = self.aux_points[0][0]
-        self._coefs: np.ndarray = self._fit_polynomial()
-        self.pt_plait: tuple[float, float] = self._find_plait_point()
+        self._t: np.ndarray
+        self._px: PchipInterpolator
+        self._py: PchipInterpolator
+        self._t, self._px, self._py = self._build_parametric()
+        self.pt_plait: tuple[float, float]
         self.x_curve: np.ndarray
         self.y_curve: np.ndarray
-        self.x_curve, self.y_curve = self._eval_curve()
+        self.pt_plait, self.x_curve, self.y_curve = self._extend_to_plait()
 
     def _build_aux_points(self) -> list[tuple[float, float]]:
         m1, m2 = -np.sqrt(3), np.sqrt(3)
@@ -48,20 +59,20 @@ class ConjugateCurve:
             points.append((float(x_int), float(m1 * (x_int - xL) + yL)))
         return points
 
-    def _fit_polynomial(self) -> np.ndarray:
-        xa, ya = self.aux_points[0]
-        x_guide = np.array([p[0] for p in self.aux_points[1:]])
-        y_guide = np.array([p[1] for p in self.aux_points[1:]])
-        t = np.linspace(0, 1, len(x_guide) + 2)[1:-1]
-        x_fit = np.concatenate([[xa], (1 - t) * xa + t * x_guide])
-        y_fit = np.concatenate([[ya], (1 - t) * ya + t * y_guide])
-        return np.polyfit(x_fit, y_fit, self.degree)
-
-    def eval(self, x: float | np.ndarray) -> np.ndarray:
-        return np.polyval(self._coefs, x)
+    def _build_parametric(self) -> tuple[np.ndarray, PchipInterpolator, PchipInterpolator]:
+        """Parametrize the real aux points by cumulative point-to-point
+        distance instead of x, since the aux-point trajectory can double
+        back in x near the plait point (it isn't a function of x) but
+        distance-walked-so-far is always monotonic.
+        """
+        xs = np.array([p[0] for p in self.aux_points])
+        ys = np.array([p[1] for p in self.aux_points])
+        ds = np.sqrt(np.diff(xs) ** 2 + np.diff(ys) ** 2)
+        t = np.concatenate([[0.0], np.cumsum(ds)])
+        return t, PchipInterpolator(t, xs), PchipInterpolator(t, ys)
 
     def intersect_line(self, slope: float, x0: float, y0: float) -> tuple[float, float]:
-        """Intersection of line y = slope*(x-x0)+y0 with the PCHIP conjugate curve."""
+        """Intersection of line y = slope*(x-x0)+y0 with the conjugate curve."""
         f = self.y_curve - (slope * (self.x_curve - x0) + y0)
         sc = np.where(f[:-1] * f[1:] < 0)[0]
         if len(sc) > 0:
@@ -73,56 +84,47 @@ class ConjugateCurve:
         idx = int(np.argmin(np.abs(f)))
         return float(self.x_curve[idx]), float(self.y_curve[idx])
 
-    def _find_plait_point(self) -> tuple[float, float]:
-        x_max = max(p[0] for p in self.aux_points)
+    def _extend_to_plait(self) -> tuple[tuple[float, float], np.ndarray, np.ndarray]:
+        """Extend the real-data curve past its last point along a straight
+        line in its exact tangent direction there — curvature clamped to
+        zero, no continued cubic bending — and take the closest approach
+        to the equilibrium curve as the plait point.
 
-        def _try(coefs: np.ndarray, lo: float) -> tuple[float, float] | None:
-            def diff(x: float) -> float:
-                return float(np.polyval(coefs, x)) - float(self.system.spline(x))
-            try:
-                x_pp = brentq(diff, lo, 100.0)
-                return float(x_pp), float(np.polyval(coefs, x_pp))
-            except ValueError:
-                return None
+        Letting the natural PCHIP cubic keep curving instead is unstable:
+        stretched far enough, a cubic segment inevitably bends back on
+        itself, so "closest approach" can end up almost anywhere depending
+        on how far the search is allowed to run (verified empirically —
+        the answer swings from one side of the triangle to the other, and
+        past a certain distance leaves the triangle entirely, as the
+        search range grows). A straight line can't develop that wobble:
+        once it's long enough to reach the equilibrium curve, the
+        closest-approach point is unique and stops changing no matter how
+        much further the search extends.
+        """
+        t_max = float(self._t[-1])
+        x0, y0 = float(self._px(t_max)), float(self._py(t_max))
+        dxdt, dydt = float(self._px.derivative()(t_max)), float(self._py.derivative()(t_max))
 
-        # Try current degree with slightly relaxed lower bound
-        for lo in [x_max, x_max * 0.9]:
-            result = _try(self._coefs, lo)
-            if result:
-                return result
+        dt_scan = np.linspace(0.0, 20.0 * t_max, 6000)
+        x_scan = x0 + dxdt * dt_scan
+        y_scan = y0 + dydt * dt_scan
 
-        # Fallback: refit with progressively lower degree
-        xa, ya = self.aux_points[0]
-        x_guide = np.array([p[0] for p in self.aux_points[1:]])
-        y_guide = np.array([p[1] for p in self.aux_points[1:]])
-        t = np.linspace(0, 1, len(x_guide) + 2)[1:-1]
-        x_fit = np.concatenate([[xa], (1 - t) * xa + t * x_guide])
-        y_fit = np.concatenate([[ya], (1 - t) * ya + t * y_guide])
+        lo, hi = self.system.x_domain
+        in_domain = (x_scan >= lo) & (x_scan <= hi)
+        if not np.any(in_domain):
+            raise ValueError(
+                "Conjugate-curve extension never re-enters the equilibrium "
+                "curve's domain — check this system's tie-line data."
+            )
+        gap = np.full_like(x_scan, np.inf)
+        gap[in_domain] = np.abs(y_scan[in_domain] - self.system.spline(x_scan[in_domain]))
+        i_best = int(np.argmin(gap))
+        pt_plait = (float(x_scan[i_best]), float(y_scan[i_best]))
 
-        for deg in range(self.degree - 1, 1, -1):
-            coefs = np.polyfit(x_fit, y_fit, deg)
-            for lo in [x_max, x_max * 0.9]:
-                result = _try(coefs, lo)
-                if result:
-                    self._coefs = coefs
-                    self.degree = deg
-                    return result
-
-        raise ValueError(
-            f"Plait point not found with polynomial degrees {self.degree} down to 2 "
-            f"(search range [{x_max:.3f}, 100]). "
-            "Check that equilibrium and tie-line data are consistent."
-        )
-
-    def _eval_curve(self) -> tuple[np.ndarray, np.ndarray]:
-        # Parametric PCHIP by arc length in tie-line order (y is monotone in this order)
-        all_pts = self.aux_points + [self.pt_plait]
-        xs = np.array([p[0] for p in all_pts])
-        ys = np.array([p[1] for p in all_pts])
-        ds = np.sqrt(np.diff(xs) ** 2 + np.diff(ys) ** 2)
-        t = np.concatenate([[0.0], np.cumsum(ds)])
-        t_eval = np.linspace(0.0, t[-1], 2000)
-        return (
-            np.asarray(PchipInterpolator(t, xs)(t_eval), dtype=float),
-            np.asarray(PchipInterpolator(t, ys)(t_eval), dtype=float),
-        )
+        t_dense = np.linspace(0.0, t_max, 1500)
+        # [1:] -- dt=0 is the same point as t_dense's last sample; skip it
+        # so the join isn't a duplicated, zero-length segment.
+        dt_dense = np.linspace(0.0, dt_scan[i_best], 500)[1:]
+        x_curve = np.concatenate([self._px(t_dense), x0 + dxdt * dt_dense])
+        y_curve = np.concatenate([self._py(t_dense), y0 + dydt * dt_dense])
+        return pt_plait, np.asarray(x_curve), np.asarray(y_curve)
