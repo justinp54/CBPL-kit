@@ -1,16 +1,17 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 import numpy as np
 from scipy.optimize import brentq
 
 try:
-    from .equilibrium import EquilibriumSystem
     from .conjugate import ConjugateCurve
+    from .equilibrium import EquilibriumSystem
     from .ternary import xy_to_comp
 except ImportError:
-    from equilibrium import EquilibriumSystem
     from conjugate import ConjugateCurve
+    from equilibrium import EquilibriumSystem
     from ternary import xy_to_comp
 
 
@@ -76,6 +77,28 @@ class HunterNashSolver:
 
         return steps, float(len(steps))
 
+    def _find_on_spline(self, line, lo: float, hi: float, tol: float = 0.5) -> float:
+        """x in [lo, hi] where line(x) == system.spline(x). Each equilibrium
+        branch is monotone (EquilibriumSystem._hermite_branch), so checking
+        the two endpoints is enough: opposite signs -> brentq; same sign ->
+        accept the nearer endpoint if it's a close miss (line/point just
+        outside our modeled two-phase envelope), otherwise this stage's
+        construction doesn't intersect the curve at all and that should be
+        surfaced, not guessed at by extrapolating past the real data.
+        """
+        spline = self.system.spline
+        f_lo, f_hi = line(lo) - float(spline(lo)), line(hi) - float(spline(hi))
+        if f_lo * f_hi < 0:
+            return brentq(lambda x: line(x) - float(spline(x)), lo, hi)
+        x_star, f_star = (lo, f_lo) if abs(f_lo) < abs(f_hi) else (hi, f_hi)
+        if abs(f_star) < tol:
+            return x_star
+        raise ValueError(
+            f"Hunter-Nash step found no intersection with the equilibrium "
+            f"curve in [{lo:.2f}, {hi:.2f}] (closest miss: {abs(f_star):.3f}). "
+            "Check that P/E1/Rn are consistent with this system's equilibrium data."
+        )
+
     def _E_to_R(
         self, pt_E: tuple[float, float]
     ) -> tuple[tuple[float, float], tuple[float, float]]:
@@ -85,15 +108,7 @@ class HunterNashSolver:
 
         m2 = np.sqrt(3)
         line_m2 = lambda x: m2 * (x - x_inter) + y_inter
-        x_pp = self.conjugate.pt_plait[0]
-        x_scan = np.linspace(x_pp, 100.0, 2000)
-        f_vals = np.array([line_m2(x) - float(self.system.spline(x)) for x in x_scan])
-        sc = np.where(f_vals[:-1] * f_vals[1:] < 0)[0]
-        if len(sc) > 0:
-            xR = brentq(lambda x: line_m2(x) - float(self.system.spline(x)),
-                        x_scan[sc[0]], x_scan[sc[0] + 1])
-        else:
-            xR = float(x_scan[int(np.argmin(np.abs(f_vals)))])
+        xR = self._find_on_spline(line_m2, self.conjugate.pt_plait[0], self.system.x_domain[1])
         return (float(xR), float(line_m2(xR))), (x_inter, y_inter)
 
     def _R_to_E(self, pt_R: tuple[float, float]) -> tuple[float, float]:
@@ -101,13 +116,6 @@ class HunterNashSolver:
         x2, y2 = self.pt_P
         m = (y2 - y1) / (x2 - x1)
         b = y1 - m * x1
-        x_pp = self.conjugate.pt_plait[0]
-        x_scan = np.linspace(0.0, x_pp, 2000)
-        f_vals = np.array([(m * x + b) - float(self.system.spline(x)) for x in x_scan])
-        sc = np.where(f_vals[:-1] * f_vals[1:] < 0)[0]
-        if len(sc) > 0:
-            xE = brentq(lambda x: (m * x + b) - float(self.system.spline(x)),
-                        x_scan[sc[0]], x_scan[sc[0] + 1])
-        else:
-            xE = float(x_scan[int(np.argmin(np.abs(f_vals)))])
-        return (float(xE), float(m * xE + b))
+        line = lambda x: m * x + b
+        xE = self._find_on_spline(line, self.system.x_domain[0], self.conjugate.pt_plait[0])
+        return (float(xE), float(line(xE)))
