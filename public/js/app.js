@@ -248,7 +248,16 @@ async function renderSystemFigs() {
 import json
 _sf = {}
 _sf['fig1']  = plot_util.fig_ternary_equilibrium(_system).to_json()
-_sf['fig2a'] = plot_util.fig_conjugate_curve(_system, _conjugate).to_json()
+
+# Two conjugate-curve constructions (which two triangle sides the
+# auxiliary lines are drawn parallel to). _conjugate (diagonal) stays the
+# one used everywhere else in the app (Hunter-Nash, etc.) — 'horizontal'
+# only feeds the compare toggle on this tab.
+_conj_h = ConjugateCurve(_system, method='horizontal')
+_conj_methods = {'diagonal': _conjugate, 'horizontal': _conj_h}
+for _mname, _conj in _conj_methods.items():
+    _sf['fig2a_' + _mname] = plot_util.fig_conjugate_curve(_system, _conj).to_json()
+_sf['fig2a'] = _sf['fig2a_diagonal']
 
 # Extract tie line full compositions from pre-computed tie_coords
 from ternary import xy_to_comp as _xyc
@@ -275,8 +284,13 @@ _plait_data = _compute_plait(_system)
 _sf['fig_plait']   = plot_util.fig_plait_loglog(_plait_data).to_json()
 _sf['plait_stats'] = _plait_data['plait_comp']
 
-_pp = _xyc(*_conjugate.pt_plait)
-_sf['conj_plait'] = {'carrier': round(max(0.0, _pp[1]), 2), 'solute': round(max(0.0, _pp[0]), 2), 'solvent': round(max(0.0, _pp[2]), 2)}
+_conj_plait_by_method = {}
+for _mname, _conj in _conj_methods.items():
+    _pp = _xyc(*_conj.pt_plait)
+    _conj_plait_by_method[_mname] = {'carrier': round(max(0.0, _pp[1]), 2), 'solute': round(max(0.0, _pp[0]), 2), 'solvent': round(max(0.0, _pp[2]), 2)}
+_sf['conj_plait_by_method'] = _conj_plait_by_method
+_sf['conj_plait'] = _conj_plait_by_method['diagonal']
+_sf['conj_horizontal_side'] = _conj_h.horizontal_side
 
 json.dumps(_sf)
 `);
@@ -287,6 +301,8 @@ json.dumps(_sf)
       if (k === 'sel_stats') continue;
       if (k === 'plait_stats') continue;
       if (k === 'conj_plait') continue;
+      if (k === 'conj_plait_by_method') continue;
+      if (k === 'conj_horizontal_side') continue;
       cache[k] = JSON.parse(v);
       rendered[k] = false;
     }
@@ -297,7 +313,8 @@ json.dumps(_sf)
     if (figs.tie_comps) populateTieLineTable(figs.tie_comps);
     if (figs.corr_stats) populateCorrelationPanel(figs.corr_stats);
     if (figs.sel_stats) populateSelectivityPanel(figs.sel_stats);
-    if (figs.plait_stats !== undefined) populatePlaitPanel(figs.plait_stats, figs.conj_plait);
+    _conjHorizontalSide = figs.conj_horizontal_side || null;
+    if (figs.plait_stats !== undefined) populatePlaitPanel(figs.plait_stats, figs.conj_plait_by_method);
     // Re-render panel charts with correct width after DOM paints
     requestAnimationFrame(() => {
       if (activeTab === 'fig1') { _renderCorrChart(_corrActive); _renderSelectivityChart(); }
@@ -399,7 +416,12 @@ function _updateCorrStats(model) {
 // ── Selectivity panel ─────────────────────────────────────────────────────
 let _selStats = null;
 let _plaitStats = null;
-let _conjPlaitStats = null;
+let _conjPlaitByMethod = null;
+let _conjMethod = 'diagonal';
+let _conjHorizontalSide = null;  // 'left' | 'right' — auto-picked per system, see conjugate.py
+const CONJ_METHOD_LABELS = {
+  diagonal: 'Diagonal', horizontal: 'Horizontal',
+};
 
 function populateSelectivityPanel(stats) {
   _selStats = stats;
@@ -447,26 +469,36 @@ function _addLoglogPlaitToTernary() {
   _plaitOverlayAdded = true;
 }
 
-function populatePlaitPanel(treybalStats, conjStats) {
+function populatePlaitPanel(treybalStats, conjPlaitByMethod) {
   _plaitStats = treybalStats;
-  _conjPlaitStats = conjStats || null;
+  _conjPlaitByMethod = conjPlaitByMethod || null;
   _renderPlaitChart();
+  document.getElementById('panel-fig2a')?.classList.add('has-data');
+  _renderPlaitTable();
+}
+
+function _renderPlaitTable() {
   const el = document.getElementById('plait-stats');
   if (!el) return;
-  document.getElementById('panel-fig2a')?.classList.add('has-data');
 
   const c = _lbls.carrier.abbr, s = _lbls.solute.abbr, sv = _lbls.solvent.abbr;
   const tdH = `style="text-align:right;padding:3px 5px 5px;font-size:9.5px;font-weight:600;color:#1878a8"`;
   const tdN = `style="text-align:left;padding:3px 5px 5px;font-size:9.5px;font-weight:600;color:#1878a8"`;
-  const td  = `style="text-align:right;padding:3px 4px;font-family:'JetBrains Mono',monospace;font-size:10px;font-variant-numeric:tabular-nums;border-bottom:1px solid #f0f1f3"`;
-  const tdL = `style="text-align:left;padding:3px 4px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:10.5px;color:var(--text);border-bottom:1px solid #f0f1f3;white-space:nowrap"`;
+  const td  = (active) => `style="text-align:right;padding:3px 4px;font-family:'JetBrains Mono',monospace;font-size:10px;font-variant-numeric:tabular-nums;border-bottom:1px solid #f0f1f3${active ? ';background:var(--blue-lt)' : ''}"`;
+  const tdL = (active) => `style="text-align:left;padding:3px 4px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:10.5px;color:var(--text);border-bottom:1px solid #f0f1f3;white-space:nowrap${active ? ';background:var(--blue-lt)' : ''}"`;
 
-  const treybalRow = treybalStats
-    ? `<tr><td ${tdL}><span style="color:#dc2626;margin-right:5px">★</span>Treybal</td><td ${td}>${treybalStats.carrier}</td><td ${td}>${treybalStats.solute}</td><td ${td}>${treybalStats.solvent}</td></tr>`
+  const treybalRow = _plaitStats
+    ? `<tr><td ${tdL(false)}><span style="color:#dc2626;margin-right:5px">★</span>Treybal (log-log)</td><td ${td(false)}>${_plaitStats.carrier}</td><td ${td(false)}>${_plaitStats.solute}</td><td ${td(false)}>${_plaitStats.solvent}</td></tr>`
     : `<tr><td colspan="4" style="text-align:center;padding:4px;color:var(--muted);font-size:10px">Treybal: not found in range</td></tr>`;
 
-  const conjRow = conjStats
-    ? `<tr><td ${tdL}><span style="color:darkorange;margin-right:5px">★</span>Conj. Curve</td><td ${td}>${conjStats.carrier}</td><td ${td}>${conjStats.solute}</td><td ${td}>${conjStats.solvent}</td></tr>`
+  const conjRows = _conjPlaitByMethod
+    ? Object.entries(CONJ_METHOD_LABELS).map(([m, label]) => {
+        const st = _conjPlaitByMethod[m];
+        if (!st) return '';
+        const active = m === _conjMethod;
+        const suffix = (m === 'horizontal' && _conjHorizontalSide) ? ` (${_conjHorizontalSide} endpoint)` : '';
+        return `<tr><td ${tdL(active)}><span style="color:darkorange;margin-right:5px">★</span>Conj. Curve — ${label}${suffix}</td><td ${td(active)}>${st.carrier}</td><td ${td(active)}>${st.solute}</td><td ${td(active)}>${st.solvent}</td></tr>`;
+      }).join('')
     : '';
 
   el.innerHTML = `
@@ -478,8 +510,29 @@ function populatePlaitPanel(treybalStats, conjStats) {
         <th ${tdH}>${s}%</th>
         <th ${tdH}>${sv}%</th>
       </tr></thead>
-      <tbody>${treybalRow}${conjRow}</tbody>
-    </table>`;
+      <tbody>${treybalRow}${conjRows}</tbody>
+    </table>
+    <div style="font-size:9.5px;color:var(--muted);margin-top:6px">Highlighted row = currently plotted on the triangle</div>`;
+}
+
+function switchConjugateMethod(method) {
+  if (method === _conjMethod || !cache['fig2a_' + method]) return;
+  _conjMethod = method;
+  cache.fig2a = cache['fig2a_' + method];
+
+  document.querySelectorAll('.conj-method-tab').forEach(b => {
+    const sel = b.dataset.method === method;
+    b.classList.toggle('active', sel);
+    b.setAttribute('aria-selected', sel);
+  });
+
+  const el = document.getElementById('chart-fig2a');
+  if (el && rendered.fig2a) {
+    Plotly.react(el, cache.fig2a.data, patchedLayout(cache.fig2a.layout), PLOTLY_CFG);
+    _plaitOverlayAdded = false;
+    _addLoglogPlaitToTernary();
+  }
+  _renderPlaitTable();
 }
 
 // ── Input sync ─────────────────────────────────────────────────────────────
@@ -732,7 +785,15 @@ async function calculate(requestedKeys) {
     for (const [k, v] of Object.entries(data.figures)) {
       cache[k] = JSON.parse(v);
       rendered[k] = false;
-      if (k === 'fig2a') _plaitOverlayAdded = false;
+      if (k === 'fig2a') {
+        // The Calculate path only ever recomputes the diagonal method
+        // (see PY_COMPUTE) — keep that cached under its own key and
+        // restore whichever method the toggle is currently on, instead
+        // of silently reverting the displayed curve to diagonal.
+        cache.fig2a_diagonal = cache.fig2a;
+        cache.fig2a = cache['fig2a_' + _conjMethod] || cache.fig2a;
+        _plaitOverlayAdded = false;
+      }
     }
 
     renderFig(activeTab);
@@ -1420,12 +1481,19 @@ _b._eready     = False
     _corrActive = 'ot';
     _selStats = null;
     _plaitStats = null;
-    _conjPlaitStats = null;
+    _conjPlaitByMethod = null;
+    _conjMethod = 'diagonal';
+    _conjHorizontalSide = null;
     _plaitOverlayAdded = false;
     const _ps = document.getElementById('plait-stats');
     if (_ps) _ps.innerHTML = '';
     document.querySelectorAll('.corr-tab').forEach(b => {
       const sel = b.dataset.model === 'ot';
+      b.classList.toggle('active', sel);
+      b.setAttribute('aria-selected', sel);
+    });
+    document.querySelectorAll('.conj-method-tab').forEach(b => {
+      const sel = b.dataset.method === 'diagonal';
       b.classList.toggle('active', sel);
       b.setAttribute('aria-selected', sel);
     });

@@ -7,8 +7,10 @@ from scipy.interpolate import PchipInterpolator
 
 try:
     from .equilibrium import EquilibriumSystem
+    from .ternary import xy_to_comp
 except ImportError:
     from equilibrium import EquilibriumSystem
+    from ternary import xy_to_comp
 
 
 @dataclass
@@ -34,9 +36,12 @@ class ConjugateCurve:
     """
 
     system: EquilibriumSystem
+    method: str = "diagonal"  # "diagonal" | "horizontal"
 
     def __post_init__(self) -> None:
-        self.aux_points: list[tuple[float, float]] = self._build_aux_points()
+        self.aux_points: list[tuple[float, float]]
+        self.horizontal_side: str | None
+        self.aux_points, self.horizontal_side = self._build_aux_points()
         self._t: np.ndarray
         self._px: PchipInterpolator
         self._py: PchipInterpolator
@@ -46,8 +51,34 @@ class ConjugateCurve:
         self.y_curve: np.ndarray
         self.pt_plait, self.x_curve, self.y_curve = self._extend_to_plait()
 
-    def _build_aux_points(self) -> list[tuple[float, float]]:
-        m1, m2 = -np.sqrt(3), np.sqrt(3)
+    def _build_aux_points(self) -> tuple[list[tuple[float, float]], str | None]:
+        # m1 (left/solvent-rich endpoint) is parallel to the right leg;
+        # m2 (right/carrier-rich endpoint) parallel to the left leg by
+        # default ("diagonal"). "horizontal" swaps ONE of the two for a
+        # line parallel to the base (slope 0) instead — but which side
+        # stays inside the *triangle* (not just the equilibrium curve's
+        # x-domain: a point can have a perfectly in-range x and still be
+        # geometrically outside, e.g. y too large for that x, which shows
+        # up as a negative composition) depends on the system. So for
+        # "horizontal" we build both variants and keep whichever has less
+        # total negative-composition violation across its aux points.
+        if self.method != "horizontal":
+            return self._aux_points_for(-np.sqrt(3), np.sqrt(3)), None
+
+        left_pts = self._aux_points_for(0.0, np.sqrt(3))
+        right_pts = self._aux_points_for(-np.sqrt(3), 0.0)
+
+        def excursion(pts: list[tuple[float, float]]) -> float:
+            return sum(
+                sum(max(-v, 0.0) for v in xy_to_comp(x, y))
+                for x, y in pts
+            )
+
+        if excursion(left_pts) < excursion(right_pts):
+            return left_pts, "left"
+        return right_pts, "right"
+
+    def _aux_points_for(self, m1: float, m2: float) -> list[tuple[float, float]]:
         # Baseline intercepts serve as the first (degenerate) "tie line"
         ic = self.system.x_intercepts
         tie_aug = [((ic[0], 0.0), (ic[1], 0.0))] + self.system.tie_coords
