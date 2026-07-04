@@ -190,6 +190,7 @@ async function initPyodide() {
       'exp06/lever_rule.py',
       'exp06/plot_util.py',
       'exp06/correlation.py',
+      'exp06/validate_system.py',
     ];
 
     pyodide.runPython(`
@@ -1527,6 +1528,10 @@ async function applySystem() {
 }
 
 // Parse → validate → build the system in Pyodide → re-render.
+// Structural validation (required fields, equilibrium sort, sum-to-100,
+// tie_lines monotonicity) lives in validate_system.py — the same module the
+// GitHub Action uses to check system-submission issues — so there's one
+// canonical rulebook instead of parallel JS/Python checks drifting apart.
 async function applyYamlText(yamlText) {
   setSysMsg('', '');
 
@@ -1536,40 +1541,23 @@ async function applyYamlText(yamlText) {
   } catch (e) {
     setSysMsg('YAML parse error: ' + e.message, 'error'); return;
   }
+  if (sysData == null) {
+    setSysMsg('YAML is empty.', 'error'); return;
+  }
 
-  if (!sysData?.equilibrium_data || !sysData?.tie_lines || !sysData?.properties) {
-    setSysMsg('Missing required fields: equilibrium_data, tie_lines, or properties.', 'error'); return;
+  pyodide.globals.set('_val_json', JSON.stringify(sysData));
+  const errsJson = await pyodide.runPythonAsync(`
+import json, validate_system
+json.dumps(validate_system.validate(json.loads(_val_json)))
+`);
+  const valErrors = JSON.parse(errsJson);
+  if (valErrors.length > 0) {
+    const sortErr = valErrors.find(e => e.startsWith('SORT:'));
+    setSysMsg(sortErr ? sortErr.slice(5) + ' Please sort before applying.' : valErrors[0], 'error');
+    return;
   }
 
   const p = sysData.properties;
-  if ([p.rho_solvent, p.rho_solute, p.rho_carrier, p.mw_solute].some(v => !v)) {
-    setSysMsg('properties must include rho_solvent, rho_solute, rho_carrier, mw_solute.', 'error'); return;
-  }
-
-  const eqData = sysData.equilibrium_data;
-  if (eqData.length >= 2) {
-    for (let i = 1; i < eqData.length; i++) {
-      if (eqData[i][0] < eqData[i-1][0]) {
-        setSysMsg('Equilibrium data is not sorted by increasing carrier%. Please sort before applying.', 'error');
-        return;
-      }
-    }
-  }
-
-  // Each equilibrium row is a full ternary composition → must sum to 100 wt%
-  for (let i = 0; i < eqData.length; i++) {
-    const r = eqData[i];
-    if (!Array.isArray(r) || r.length !== 3 || r.some(x => isNaN(Number(x)))) {
-      setSysMsg(`Equilibrium row ${i + 1} must have 3 numeric values: [Carrier, Solute, Solvent] wt%.`, 'error');
-      return false;
-    }
-    const sum = Number(r[0]) + Number(r[1]) + Number(r[2]);
-    if (Math.abs(sum - 100) > 0.5) {
-      setSysMsg(`Equilibrium row ${i + 1} sums to ${sum.toFixed(2)}%, not 100%. Each [Carrier, Solute, Solvent] row must sum to 100.`, 'error');
-      return false;
-    }
-  }
-
   setSysMsg('Building system…', '');
   try {
     pyodide.globals.set('_sys_equil',  pyodide.toPy(sysData.equilibrium_data));
