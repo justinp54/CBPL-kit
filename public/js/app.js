@@ -233,6 +233,7 @@ async function initPyodide() {
       document.getElementById(f).disabled = false;
       document.getElementById('s-' + f).disabled = false;
     });
+    document.getElementById('export-btn').disabled = false;
 
   } catch (err) {
     setProgress(100, '⚠ ' + err.message);
@@ -1178,6 +1179,100 @@ function downloadUserYaml() {
   a.href = url; a.download = base + '.yaml';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── Bundle export (system + figures + tables as a .zip) ───────────────────
+
+async function exportBundle() {
+  if (!pyReady || typeof JSZip === 'undefined') return;
+  const btn = document.getElementById('export-btn');
+  const label = btn.querySelector('.export-label');
+  const origLabel = label.textContent;
+  btn.disabled = true;
+  label.textContent = 'Exporting…';
+
+  try {
+    const zip = new JSZip();
+    const included = [];
+    const calculated = document.getElementById('results-panel').classList.contains('show');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const slug = (currentSystemFile || 'system.yaml').replace(/\.yaml$/, '');
+
+    // System YAML
+    const advancedOpen = document.getElementById('sys-advanced')?.open;
+    const yamlText = advancedOpen ? document.getElementById('sys-yaml').value : collectFormToYaml();
+    zip.file('system.yaml', yamlText);
+    included.push('system.yaml');
+
+    // Figures: always the equilibrium/conjugate pair; Hunter-Nash/Lever Rule
+    // only once the user has actually calculated something to show there.
+    // A tab a user never opened this session has cache[key] but its pane is
+    // still display:none, which Plotly would capture as a blank/0-size
+    // image — so briefly switch to it (restoring the original tab after)
+    // instead of assuming the DOM is already painted.
+    const figs = [['fig1', 'chart-fig1', 'fig1_equilibrium.png'], ['fig2a', 'chart-fig2a', 'fig2a_conjugate.png']];
+    if (calculated) figs.push(['fig3', 'plot-fig3', 'fig3_hunter_nash.png'], ['fig4', 'plot-fig4', 'fig4_lever_rule.png']);
+    const startTab = activeTab;
+    for (const [tabKey, elId, filename] of figs) {
+      if (!cache[tabKey]) continue;
+      if (activeTab !== tabKey) {
+        switchTab(tabKey);
+        await new Promise(r => setTimeout(r, 80));
+      }
+      const el = document.getElementById(elId);
+      if (!el || !el.data) continue;
+      const dataUrl = await Plotly.toImage(el, { format: 'png', width: 900, height: 900 });
+      zip.file(filename, dataUrl.split(',')[1], { base64: true });
+      included.push(filename);
+    }
+    if (activeTab !== startTab) switchTab(startTab);
+
+    // Tables: one results.xlsx workbook, one sheet per table (friendlier
+    // for students than a scatter of loose .csv files — table_to_sheet
+    // also honors colspan/rowspan as real merged cells, so the two-row
+    // tie-line header lines up properly instead of the ragged CSV row
+    // a plain text export would produce).
+    const sheets = [['Tie Lines', document.getElementById('tieline-table')],
+                     ['Plait Point Comparison', document.querySelector('#plait-stats table')]];
+    if (calculated) {
+      sheets.push(['Stream Points', document.getElementById('stream-tbody')?.closest('table')],
+                   ['Stage Results', document.getElementById('stages-tbody')?.closest('table')]);
+    }
+    const wb = XLSX.utils.book_new();
+    for (const [sheetName, tableEl] of sheets) {
+      if (!tableEl || !tableEl.querySelector('tr')) continue;
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(tableEl), sheetName);
+    }
+    const xlsxName = 'compositions.xlsx';
+    if (wb.SheetNames.length) {
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      zip.file(xlsxName, wbout);
+      included.push(xlsxName + ' (' + wb.SheetNames.join(', ') + ')');
+    }
+
+    // Manifest: always say what's in the zip, and why anything is missing,
+    // so opening it later (without the app open) still explains itself.
+    let manifest = `CBPL-kit export — ${slug} — ${dateStr}\n\nIncluded:\n`
+      + included.map(f => '  ' + f).join('\n');
+    if (!calculated) {
+      manifest += '\n\nNot included: Hunter-Nash results (fig3, fig4, and the Stream Points / Stage Results sheets)\n'
+        + '  -> Run "Calculate" with titration inputs first, then export again to include these.';
+    }
+    zip.file('README.txt', manifest);
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `cbpl_${slug}_${dateStr}.zip`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch (err) {
+    console.error('Export failed:', err);
+    alert('Export failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    label.textContent = origLabel;
+  }
 }
 
 // Render a data table. When `data` has rows, show those values; otherwise show the
