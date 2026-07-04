@@ -955,11 +955,15 @@ def fig_plait_loglog(data):
         ))
 
     fig.update_layout(
-        title=dict(text="Treybal's Method (Log-Log)", font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        # Title is a real HTML label in index.html (above #plait-chart) instead
+        # of a Plotly title, so it renders with the exact same CSS as the
+        # "Conjugate curve construction" label next to it — Plotly draws
+        # titles as SVG text, which doesn't visually match HTML text even
+        # with identical family/size/weight.
         xaxis=dict(title=dict(text='log(w₂₃/w₃₃),  log(w₂/w₃)', font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text='log(w₂₁/w₁₁),  log(w₂/w₁)', font=dict(size=10)), **_axis),
-        height=280,
-        margin=dict(l=44, r=10, t=28, b=40),
+        height=260,
+        margin=dict(l=44, r=10, t=10, b=40),
         plot_bgcolor='white',
         paper_bgcolor='white',
         showlegend=False,
