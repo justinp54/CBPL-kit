@@ -1,0 +1,36 @@
+name: New System Submission
+description: Contribute a new LLE system (equilibrium + tie-line data) to CBPL-kit
+title: "[System] "
+labels: ["system"]
+body:
+  - type: input
+    id: system_name
+    attributes:
+      label: System name
+      description: e.g. "Water / Acetic Acid / DIPE"
+    validations:
+      required: true
+  - type: input
+    id: components
+    attributes:
+      label: Components (carrier / solute / solvent)
+    validations:
+      required: true
+  - type: input
+    id: data_source
+    attributes:
+      label: Data source / citation
+      description: Textbook, paper, or lab report this data comes from
+    validations:
+      required: true
+  - type: textarea
+    id: system_yaml
+    attributes:
+      label: System YAML
+      description: >-
+        Paste the full system YAML here (see the Guide tab in the app for the
+        expected format). A GitHub Action will check it automatically and
+        comment on this issue with the result.
+      render: yaml
+    validations:
+      required: true

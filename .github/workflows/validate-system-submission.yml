@@ -1,0 +1,58 @@
+name: Validate System Submission
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  validate:
+    if: contains(github.event.issue.labels.*.name, 'system')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse issue form
+        uses: stefanbuck/github-issue-parser@v3
+        id: issue-parser
+        with:
+          template-path: .github/ISSUE_TEMPLATE/system-submission.yml
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install pyyaml
+
+      - name: Validate submitted YAML
+        id: validate
+        env:
+          SYSTEM_YAML: ${{ steps.issue-parser.outputs.issueparser_system_yaml }}
+        run: python .github/scripts/validate_issue.py
+
+      - name: Comment on issue
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body-path: comment_body.md
+
+      - name: Label based on result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ok = '${{ steps.validate.outputs.ok }}' === 'true';
+            // Best-effort: the validation comment above is the part that
+            // matters, so don't fail the whole run over a labeling hiccup
+            // (e.g. the label not existing yet in this repo).
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [ok ? 'validated' : 'needs-fix'],
+              });
+            } catch (err) {
+              core.warning(`Could not add label: ${err.message}`);
+            }
