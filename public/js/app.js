@@ -90,6 +90,14 @@ const TEAM_DATA = [
   },
 ];
 
+// Both submission CTAs below point at the two devs directly (not the
+// advisor) — mailto has no server, so whoever's address is here just gets
+// the email; easy to change later if that should move to a shared inbox.
+const DEV_EMAILS = 'justinp5454@gmail.com,andylee1208@snu.ac.kr';
+function _mailtoHref(subject, bodyLines) {
+  return `mailto:${DEV_EMAILS}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
+}
+
 function renderContactPane() {
   const el = document.getElementById('plot-contact');
   if (!el) return;
@@ -130,9 +138,36 @@ function renderContactPane() {
           <div class="contact-submit-title">Contribute a System</div>
           <div class="contact-submit-desc">Have a new LLE system? Submit a YAML file and we'll review it for inclusion in CBPL-kit.</div>
         </div>
-        <a class="contact-submit-btn"
-           href="https://github.com/justinp54/CBPL-kit/issues/new?title=New+System+Submission&labels=system"
-           target="_blank" rel="noopener">Submit via GitHub →</a>
+        <div class="contact-submit-actions">
+          <a class="contact-submit-btn"
+             href="https://github.com/justinp54/CBPL-kit/issues/new?title=New+System+Submission&labels=system"
+             target="_blank" rel="noopener">Submit via GitHub →</a>
+          <a class="contact-submit-secondary" href="${_mailtoHref('New System Submission - CBPL-kit', [
+            'System name: ',
+            'Components (carrier/solute/solvent): ',
+            'Data source/citation: ',
+            '',
+            '(Please attach your YAML file to this email)',
+          ])}">No GitHub? Email us instead →</a>
+        </div>
+      </div>
+      <div class="contact-submit">
+        <div class="contact-submit-text">
+          <div class="contact-submit-title">Report a Bug or Feedback</div>
+          <div class="contact-submit-desc">Found something that doesn't work, or have a suggestion? Let us know.</div>
+        </div>
+        <div class="contact-submit-actions">
+          <a class="contact-submit-btn"
+             href="https://github.com/justinp54/CBPL-kit/issues/new?title=Bug+Report&labels=bug"
+             target="_blank" rel="noopener">Report on GitHub →</a>
+          <a class="contact-submit-secondary" href="${_mailtoHref('Bug Report / Feedback - CBPL-kit', [
+            'System used: ',
+            'What happened: ',
+            'What you expected: ',
+            '',
+            '(Please attach a screenshot if you have one)',
+          ])}">No GitHub? Email us instead →</a>
+        </div>
       </div>
       <div class="contact-footer">
         <a href="https://github.com/justinp54/CBPL-kit" target="_blank" rel="noopener" class="contact-gh-link">⟨/⟩ View on GitHub</a>
