@@ -403,7 +403,7 @@ function _renderCorrChart(model) {
   if (!el || !cache[key]) return;
   const w = el.offsetWidth || 350;
   const layout = { ...cache[key].layout, width: w, autosize: false };
-  Plotly.react(el, cache[key].data, layout, { displayModeBar: false });
+  return Plotly.react(el, cache[key].data, layout, { displayModeBar: false });
 }
 
 const _CORR_FORMULA = {
@@ -454,7 +454,7 @@ function _renderSelectivityChart() {
   if (!el || !cache['fig_selectivity']) return;
   const w = el.offsetWidth || 350;
   const layout = { ...cache['fig_selectivity'].layout, width: w, autosize: false };
-  Plotly.react(el, cache['fig_selectivity'].data, layout, { displayModeBar: false });
+  return Plotly.react(el, cache['fig_selectivity'].data, layout, { displayModeBar: false });
 }
 
 // ── Plait point panel ─────────────────────────────────────────────────────
@@ -463,17 +463,17 @@ function _renderPlaitChart() {
   if (!el || !cache['fig_plait']) return;
   const w = el.offsetWidth || 350;
   const layout = { ...cache['fig_plait'].layout, width: w, height: w, autosize: false };
-  Plotly.react(el, cache['fig_plait'].data, layout, { displayModeBar: false });
+  return Plotly.react(el, cache['fig_plait'].data, layout, { displayModeBar: false });
 }
 
 let _plaitOverlayAdded = false;
 
-function _addLoglogPlaitToTernary() {
-  const el = document.getElementById('chart-fig2a');
-  if (!el || !_plaitStats || _plaitOverlayAdded || !rendered['fig2a']) return;
+// Shared by the on-screen overlay (below) and the offscreen export render,
+// so the star marker never has to be kept in sync by hand in two places.
+function _plaitStarTrace() {
   const x = _plaitStats.carrier + 0.5 * _plaitStats.solute;
   const y = Math.sqrt(3) / 2 * _plaitStats.solute;
-  Plotly.addTraces(el, {
+  return {
     type: 'scatter', x: [x], y: [y],
     mode: 'markers',
     marker: { symbol: 'star', color: '#dc2626', size: 14,
@@ -482,7 +482,13 @@ function _addLoglogPlaitToTernary() {
     showlegend: true,
     hovertemplate:
       `<b>Plait pt. (Treybal)</b><br>${_lbls.carrier.abbr}: ${_plaitStats.carrier}%  ${_lbls.solute.abbr}: ${_plaitStats.solute}%  ${_lbls.solvent.abbr}: ${_plaitStats.solvent}%<extra></extra>`,
-  });
+  };
+}
+
+function _addLoglogPlaitToTernary() {
+  const el = document.getElementById('chart-fig2a');
+  if (!el || !_plaitStats || _plaitOverlayAdded || !rendered['fig2a']) return;
+  Plotly.addTraces(el, _plaitStarTrace());
   _plaitOverlayAdded = true;
 }
 
@@ -1220,46 +1226,76 @@ async function exportBundle() {
     zip.file('system.yaml', yamlText);
     included.push('system.yaml');
 
-    // Figures: always the equilibrium/conjugate pair; Hunter-Nash/Lever Rule
-    // only once the user has actually calculated something to show there.
-    // A tab a user never opened this session has cache[key] but its pane is
-    // still display:none, which Plotly would capture as a blank/0-size
-    // image — so briefly switch to it (restoring the original tab after)
-    // instead of assuming the DOM is already painted.
-    const figs = [['fig1', 'chart-fig1', 'fig1_equilibrium.png'], ['fig2a', 'chart-fig2a', 'fig2a_conjugate.png']];
-    if (calculated) figs.push(['fig3', 'plot-fig3', 'fig3_hunter_nash.png'], ['fig4', 'plot-fig4', 'fig4_lever_rule.png']);
-    const startTab = activeTab;
-    for (const [tabKey, elId, filename] of figs) {
-      if (!cache[tabKey]) continue;
-      if (activeTab !== tabKey) {
-        switchTab(tabKey);
-        await new Promise(r => setTimeout(r, 80));
-      }
-      const el = document.getElementById(elId);
-      if (!el || !el.data) continue;
-      const dataUrl = await Plotly.toImage(el, { format: 'png', width: 900, height: 900 });
+    // Figures: rendered into a hidden offscreen div (#export-render, see
+    // index.html) rather than the visible tab panes — so export never
+    // switches the tab/model/method the user is actually looking at, and
+    // nothing needs to be restored afterwards. cache[key].data/layout is
+    // the exact same figure Python built for the on-screen chart; the one
+    // addition is the Treybal plait-point star, which on-screen gets added
+    // live via Plotly.addTraces (see _plaitStarTrace) rather than being
+    // part of the cached figure itself.
+    const hiddenEl = document.getElementById('export-render');
+    async function _captureFig(key, w, h, filename, extraTraces) {
+      if (!cache[key] || !hiddenEl) return;
+      const data = extraTraces ? [...cache[key].data, ...extraTraces] : cache[key].data;
+      const layout = { ...cache[key].layout, width: w, height: h, autosize: false };
+      await Plotly.newPlot(hiddenEl, data, layout, { displayModeBar: false });
+      const dataUrl = await Plotly.toImage(hiddenEl, { format: 'png', width: w, height: h });
       zip.file(filename, dataUrl.split(',')[1], { base64: true });
       included.push(filename);
     }
-    if (activeTab !== startTab) switchTab(startTab);
 
-    // Tables: one results.xlsx workbook, one sheet per table (friendlier
+    const star = _plaitStats ? [_plaitStarTrace()] : null;
+    await _captureFig('fig1', 900, 900, 'fig1_equilibrium.png');
+    await _captureFig('fig2a_diagonal', 900, 900, 'fig2a_conjugate_diagonal.png', star);
+    await _captureFig('fig2a_horizontal', 900, 900, 'fig2a_conjugate_horizontal.png', star);
+    await _captureFig('fig_corr_ot', 700, 500, 'fig1_correlation_othmer_tobias.png');
+    await _captureFig('fig_corr_hand', 700, 500, 'fig1_correlation_hand.png');
+    await _captureFig('fig_corr_bachman', 700, 500, 'fig1_correlation_bachman.png');
+    await _captureFig('fig_selectivity', 700, 500, 'fig1_selectivity.png');
+    await _captureFig('fig_plait', 700, 700, 'fig2a_treybal_loglog.png');
+    if (calculated) {
+      await _captureFig('fig3', 900, 900, 'fig3_hunter_nash.png');
+      await _captureFig('fig4', 900, 900, 'fig4_lever_rule.png');
+    }
+    Plotly.purge(hiddenEl);
+
+    // Tables: one result.xlsx workbook, one sheet per table (friendlier
     // for students than a scatter of loose .csv files — table_to_sheet
     // also honors colspan/rowspan as real merged cells, so the two-row
     // tie-line header lines up properly instead of the ragged CSV row
-    // a plain text export would produce).
-    const sheets = [['Tie Lines', document.getElementById('tieline-table')],
-                     ['Plait Point Comparison', document.querySelector('#plait-stats table')]];
-    if (calculated) {
-      sheets.push(['Stream Points', document.getElementById('stream-tbody')?.closest('table')],
-                   ['Stage Results', document.getElementById('stages-tbody')?.closest('table')]);
-    }
+    // a plain text export would produce). Correlation model coefficients
+    // (a, b, R²) are appended below the Tie Lines table on the same sheet,
+    // pulled from the same _corrStats the on-screen formula panel uses.
     const wb = XLSX.utils.book_new();
-    for (const [sheetName, tableEl] of sheets) {
-      if (!tableEl || !tableEl.querySelector('tr')) continue;
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(tableEl), sheetName);
+
+    const tieEl = document.getElementById('tieline-table');
+    if (tieEl?.querySelector('tr')) {
+      const tieSheet = XLSX.utils.table_to_sheet(tieEl);
+      if (_corrStats) {
+        const range = XLSX.utils.decode_range(tieSheet['!ref']);
+        const corrRows = [[], ['Model', 'a', 'b', 'R2']];
+        for (const m of ['ot', 'hand', 'bachman']) {
+          if (_corrStats[m]) corrRows.push([_CORR_FORMULA[m].label, _corrStats[m].a, _corrStats[m].b, _corrStats[m].r2]);
+        }
+        XLSX.utils.sheet_add_aoa(tieSheet, corrRows, { origin: { r: range.e.r + 2, c: 0 } });
+      }
+      XLSX.utils.book_append_sheet(wb, tieSheet, 'Tie Lines');
     }
-    const xlsxName = 'compositions.xlsx';
+
+    const plaitTableEl = document.querySelector('#plait-stats table');
+    if (plaitTableEl?.querySelector('tr')) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(plaitTableEl), 'Plait Point Comparison');
+    }
+
+    if (calculated) {
+      const streamEl = document.getElementById('stream-tbody')?.closest('table');
+      const stageEl = document.getElementById('stages-tbody')?.closest('table');
+      if (streamEl?.querySelector('tr')) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(streamEl), 'Stream Points');
+      if (stageEl?.querySelector('tr')) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(stageEl), 'Stage Results');
+    }
+
+    const xlsxName = 'result.xlsx';
     if (wb.SheetNames.length) {
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       zip.file(xlsxName, wbout);
