@@ -72,6 +72,22 @@ const TEAM_DATA = [
       { label: 'LinkedIn', href: 'https://www.linkedin.com/in/seonglee-snu', external: true },
     ],
   },
+  {
+    name: 'Youn-Woo Lee',
+    email: 'ywlee@snu.ac.kr',
+    role: 'Advisor',
+    photo: null,
+    initials: 'YL',
+    gradient: 'linear-gradient(135deg, #0f2744 0%, #071a2e 100%)',
+    bio: [
+      'Professor Emeritus',
+      'Supercritical Fluid Process Laboratory (SFPL)',
+      'Department of Chemical and Biological Engineering',
+      'Institute of Chemical Process',
+      'Seoul National University',
+    ],
+    links: [],
+  },
 ];
 
 function renderContactPane() {
