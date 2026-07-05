@@ -13,13 +13,13 @@ try:
     from .conjugate import ConjugateCurve
     from .equilibrium import EquilibriumSystem, _DEFAULT_LABELS
     from .hunter_nash import Step
-    from .lever_rule import find_E1_prime, find_M_and_P, mixing_point
+    from .lever_rule import find_E1_prime, find_M_and_P, mixing_point, find_smin_over_f, find_smax_over_f
     from .ternary import xy_to_comp
 except ImportError:
     from conjugate import ConjugateCurve
     from equilibrium import EquilibriumSystem, _DEFAULT_LABELS
     from hunter_nash import Step
-    from lever_rule import find_E1_prime, find_M_and_P, mixing_point
+    from lever_rule import find_E1_prime, find_M_and_P, mixing_point, find_smin_over_f, find_smax_over_f
     from ternary import xy_to_comp
 
 
@@ -615,7 +615,15 @@ def fig_lever_rule_interactive(
     n_steps : int
         Number of slider positions (more = smoother, larger file).
     """
-    frac_vals = np.linspace(0.40, 0.97, n_steps)   # solvent mass fraction
+    # Solvent mass fraction range — bounded by S_min/F (pinch, see
+    # find_smin_over_f) and S_max/F (M leaves the two-phase region, see
+    # find_smax_over_f) for this specific system, falling back to the old
+    # fixed span if either can't be found (e.g. a solutropic system).
+    frac_min = find_smin_over_f(system, pt_R0, pt_Rn, pt_En1)
+    frac_max = find_smax_over_f(system, pt_R0, pt_En1)
+    frac_min = frac_min if frac_min is not None else 0.40
+    frac_max = frac_max if frac_max is not None else 0.97
+    frac_vals = np.linspace(frac_min, frac_max, n_steps)   # solvent mass fraction
 
     lb = _lb(system)
     # ── Static traces (triangle + equilibrium + fixed stream points) ─────────

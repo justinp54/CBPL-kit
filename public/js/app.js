@@ -254,7 +254,7 @@ async function initPyodide() {
       from equilibrium import EquilibriumSystem
       from conjugate import ConjugateCurve
       from hunter_nash import HunterNashSolver
-      from lever_rule import find_M_and_P, mixing_point, find_E1_prime
+      from lever_rule import find_M_and_P, mixing_point, find_E1_prime, find_smin_over_f, find_smax_over_f
       import plot_util
 
       # Build equilibrium system once (literature data — never changes)
@@ -648,6 +648,16 @@ pt_En1 = (0.0, 0.0)
 
 pt_M, pt_P = find_M_and_P(pt_E1, pt_Rn, pt_En1, pt_R0)
 
+# S:F Explorer slider bounds — the solvent-ratio range within which this
+# system can actually be extracted (S_min: below this the cascade needs
+# infinite stages; S_max: above this M leaves the two-phase region
+# entirely). Falls back to the old fixed 0.40-0.97 span if either can't
+# be found (e.g. a solutropic system — see find_smin_over_f's docstring).
+_sf_frac_min = find_smin_over_f(system, pt_R0, pt_Rn, pt_En1)
+_sf_frac_max = find_smax_over_f(system, pt_R0, pt_En1)
+sf_frac_min = round(_sf_frac_min, 4) if _sf_frac_min is not None else 0.40
+sf_frac_max = round(_sf_frac_max, 4) if _sf_frac_max is not None else 0.97
+
 solver = HunterNashSolver(system, conjugate, pt_P, pt_E1, pt_Rn)
 steps, N_theory = solver.solve()
 
@@ -695,6 +705,7 @@ json.dumps({
         'En1': {'wpa': 0.0, 'wbp': 0.0, 'ww': 100.0},
     },
     'mass_flows': {'solvent_g_min': _r(mass_En1), 'feed_g_min': _r(mass_R0_gm)},
+    'sf_range': {'min': sf_frac_min, 'max': sf_frac_max},
     'stages': [{'index': s.index, 'E': _comp(s.comp_E), 'R': _comp(s.comp_R)} for s in steps],
     'figures': _figs,
 })
@@ -766,22 +777,42 @@ document.getElementById('sf-slider').addEventListener('input', function() {
   computeExplorer('sf');
 });
 
-// S:F number input — clamp and sync
+// S:F number input — clamp (to whatever range is currently set on the
+// element, see updateSfRange) and sync
 document.getElementById('sf-num').addEventListener('change', function() {
+  const lo = parseFloat(this.min), hi = parseFloat(this.max);
   let v = parseFloat(this.value);
-  if (isNaN(v)) v = 70;
-  v = Math.max(40, Math.min(97, v));
+  if (isNaN(v)) v = (lo + hi) / 2;
+  v = Math.max(lo, Math.min(hi, v));
   updateSfLabels(v / 100);
   computeExplorer('sf');
 });
 document.getElementById('sf-num').addEventListener('input', function() {
+  const lo = parseFloat(this.min), hi = parseFloat(this.max);
   const v = parseFloat(this.value);
-  if (!isNaN(v) && v >= 40 && v <= 97) {
+  if (!isNaN(v) && v >= lo && v <= hi) {
     document.getElementById('sf-slider').value = v / 100;
     document.getElementById('sf-feed-label').textContent = `Feed ${(100-v).toFixed(0)}%`;
     computeExplorer('sf');
   }
 });
+
+// System-specific S:F range (S_min/S_max, see lever_rule.find_smin_over_f /
+// find_smax_over_f) — replaces the slider/number input's min/max on every
+// Calculate, and clamps the current position into the new range so it's
+// never left pointing at a now-invalid ratio.
+function updateSfRange(sfRange) {
+  if (!sfRange) return;
+  const slider = document.getElementById('sf-slider');
+  const num = document.getElementById('sf-num');
+  slider.min = sfRange.min;
+  slider.max = sfRange.max;
+  num.min = (sfRange.min * 100).toFixed(0);
+  num.max = (sfRange.max * 100).toFixed(0);
+
+  const clamped = Math.min(Math.max(parseFloat(slider.value), sfRange.min), sfRange.max);
+  updateSfLabels(clamped);
+}
 
 // Feed slider
 document.getElementById('feed-slider').addEventListener('input', function() {
@@ -856,6 +887,7 @@ async function calculate(requestedKeys) {
 
     renderFig(activeTab);
     showResults(data);
+    updateSfRange(data.sf_range);
     explorerReady = true;
 
     // If currently on an explorer tab, recompute it with new inputs
