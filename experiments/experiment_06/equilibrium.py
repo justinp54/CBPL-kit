@@ -138,6 +138,19 @@ class EquilibriumSystem:
         n = len(x)
         if i_peak == 0 or i_peak == n - 1:
             return i_peak, float(x[i_peak]), float(y[i_peak])
+
+        # Only correct when the raw peak is a near-tie with (at least) one
+        # neighbor — the case this refinement exists for. When the peak is
+        # decisively higher than both neighbors, the 3-point parabola's
+        # vertex can land above the highest sampled point (its symmetric-
+        # curvature assumption doesn't hold for a skewed real peak), which
+        # is never physically justified: the true curve can't be verified
+        # to exceed the highest point actually measured.
+        _NEAR_TIE_TOL = 1.0  # wt%
+        min_gap = min(y[i_peak] - y[i_peak - 1], y[i_peak] - y[i_peak + 1])
+        if min_gap >= _NEAR_TIE_TOL:
+            return i_peak, float(x[i_peak]), float(y[i_peak])
+
         xs, ys = x[i_peak - 1 : i_peak + 2], y[i_peak - 1 : i_peak + 2]
         a, b, c = np.polyfit(xs, ys, 2)
         fallback = (i_peak, float(x[i_peak]), float(y[i_peak]))
