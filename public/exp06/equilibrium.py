@@ -139,18 +139,6 @@ class EquilibriumSystem:
         if i_peak == 0 or i_peak == n - 1:
             return i_peak, float(x[i_peak]), float(y[i_peak])
 
-        # Only correct when the raw peak is a near-tie with (at least) one
-        # neighbor — the case this refinement exists for. When the peak is
-        # decisively higher than both neighbors, the 3-point parabola's
-        # vertex can land above the highest sampled point (its symmetric-
-        # curvature assumption doesn't hold for a skewed real peak), which
-        # is never physically justified: the true curve can't be verified
-        # to exceed the highest point actually measured.
-        _NEAR_TIE_TOL = 1.0  # wt%
-        min_gap = min(y[i_peak] - y[i_peak - 1], y[i_peak] - y[i_peak + 1])
-        if min_gap >= _NEAR_TIE_TOL:
-            return i_peak, float(x[i_peak]), float(y[i_peak])
-
         xs, ys = x[i_peak - 1 : i_peak + 2], y[i_peak - 1 : i_peak + 2]
         a, b, c = np.polyfit(xs, ys, 2)
         fallback = (i_peak, float(x[i_peak]), float(y[i_peak]))
@@ -164,7 +152,16 @@ class EquilibriumSystem:
         else:
             return fallback
         y_v = a * x_v ** 2 + b * x_v + c
-        if y_v < y[i_peak]:
+
+        # Accept the vertex only if it rounds the peak by a small amount.
+        # A near-tied pair of samples (the case this refinement exists for)
+        # produces a modest lift; a skewed single peak with asymmetric
+        # neighbor spacing can instead push the vertex well above every
+        # measured point, which is a parabola-fit artifact, not a real
+        # correction — the true curve can't be verified to exceed the
+        # highest point actually measured by more than a small margin.
+        _MAX_OVERSHOOT = np.sqrt(3) / 2.0 * 2.0  # ~2 wt% solute, in y-units
+        if not (y[i_peak] <= y_v <= y[i_peak] + _MAX_OVERSHOOT):
             return fallback
         return left_end, float(x_v), float(y_v)
 
