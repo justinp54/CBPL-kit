@@ -955,15 +955,16 @@ def fig_plait_loglog(data):
         ))
 
     fig.update_layout(
-        # Title is a real HTML label in index.html (above #plait-chart) instead
-        # of a Plotly title, so it renders with the exact same CSS as the
-        # "Conjugate curve construction" label next to it — Plotly draws
-        # titles as SVG text, which doesn't visually match HTML text even
-        # with identical family/size/weight.
+        # Method name lives in the chart title, matching the Othmer-Tobias
+        # correlation chart (navy, size 10, left-aligned) so the Conjugate and
+        # Tie-Lines panels read consistently. The section header
+        # ("Plait Point Estimation") stays an HTML label in index.html.
+        title=dict(text="Treybal's Method (Log-Log)",
+                   font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
         xaxis=dict(title=dict(text='log(w₂₃/w₃₃),  log(w₂/w₃)', font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text='log(w₂₁/w₁₁),  log(w₂/w₁)', font=dict(size=10)), **_axis),
         height=260,
-        margin=dict(l=44, r=10, t=10, b=40),
+        margin=dict(l=44, r=10, t=28, b=40),
         plot_bgcolor='white',
         paper_bgcolor='white',
         showlegend=False,

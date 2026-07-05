@@ -570,8 +570,7 @@ function _renderPlaitTable() {
         <th ${tdH}>${sv}%</th>
       </tr></thead>
       <tbody>${treybalRow}${conjRows}</tbody>
-    </table>
-    <div style="font-size:9.5px;color:var(--muted);margin-top:6px">Highlighted row = currently plotted on the triangle</div>`;
+    </table>`;
 }
 
 function switchConjugateMethod(method) {
