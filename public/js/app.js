@@ -140,7 +140,7 @@ function renderContactPane() {
         </div>
         <div class="contact-submit-actions">
           <a class="contact-submit-btn"
-             href="https://github.com/justinp54/CBPL-kit/issues/new?title=New+System+Submission&labels=system"
+             href="https://github.com/justinp54/CBPL-kit/issues/new?template=system-submission.yml"
              target="_blank" rel="noopener">Submit via GitHub →</a>
           <a class="contact-submit-secondary" href="${_mailtoHref('New System Submission - CBPL-kit', [
             'System name: ',
