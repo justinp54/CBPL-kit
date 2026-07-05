@@ -63,7 +63,7 @@ const TEAM_DATA = [
     gradient: 'linear-gradient(135deg, #5abade 0%, #1878a8 100%)',
     bio: [
       'Undergraduate Student',
-      '<a class="team-bio-link" href="https://fluid.snu.ac.kr/" target="_blank" rel="noopener">Microfluidics and Coating Process Laboratory (MCPL)</a>',
+      'Microfluidics and Coating Process Laboratory (MCPL)',
       'Department of Chemical and Biological Engineering',
       'Seoul National University',
     ],
