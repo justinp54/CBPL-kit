@@ -63,7 +63,7 @@ const TEAM_DATA = [
     gradient: 'linear-gradient(135deg, #5abade 0%, #1878a8 100%)',
     bio: [
       'Undergraduate Student',
-      '<a class="team-bio-link" href="https://fluid.snu.ac.kr/" target="_blank" rel="noopener">Microfluidics and Coating Process Laboratory (MCPL)</a>',
+      'Microfluidics and Coating Process Laboratory (MCPL)',
       'Department of Chemical and Biological Engineering',
       'Seoul National University',
     ],
@@ -570,8 +570,7 @@ function _renderPlaitTable() {
         <th ${tdH}>${sv}%</th>
       </tr></thead>
       <tbody>${treybalRow}${conjRows}</tbody>
-    </table>
-    <div style="font-size:9.5px;color:var(--muted);margin-top:6px">Highlighted row = currently plotted on the triangle</div>`;
+    </table>`;
 }
 
 function switchConjugateMethod(method) {
