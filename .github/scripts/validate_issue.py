@@ -7,6 +7,7 @@ stefanbuck/github-issue-parser step). Writes comment_body.md and appends
 `ok=true`/`ok=false` to $GITHUB_OUTPUT.
 """
 import os
+import re
 import sys
 
 import yaml
@@ -14,7 +15,16 @@ import yaml
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'experiments', 'experiment_06'))
 import validate_system
 
-yaml_text = os.environ.get('SYSTEM_YAML', '')
+yaml_text = os.environ.get('SYSTEM_YAML', '').strip()
+
+# The issue-parser action hands back the "System YAML" field's raw markdown,
+# which for a `render: yaml` textarea is itself a ```yaml ... ``` fenced
+# block — strip that fence defensively rather than relying on the action to
+# have already done it.
+fence_match = re.match(r'^```[^\n]*\n(.*)\n```$', yaml_text, re.DOTALL)
+if fence_match:
+    yaml_text = fence_match.group(1)
+
 ok = True
 problems = []
 
