@@ -403,16 +403,18 @@ function populateTieLineTable(comps, sel) {
   // D₁, D₂, S come straight from compute_correlations (the same full-precision
   // values the selectivity chart uses) — the table only rounds for display and
   // never recomputes the ratios from the rounded compositions in the cells.
-  // Compositions 3 dp; D₁ 4 dp (its values are small, so 3 dp would collapse
-  // distinct rows to 0.056); D₂ and S 3 dp.
-  const comp = v => Number(v).toFixed(3);
-  const d1f  = v => (v == null ? '' : Number(v).toFixed(4));
-  const dsf  = v => (v == null ? '' : Number(v).toFixed(3));
+  // Display precision by significant figures: compositions 3 dp; D₁ 4 dp (its
+  // values are small, so 3 dp would collapse distinct rows to 0.056); D₂ 3 dp
+  // and S 2 dp (both ~4 sig figs — 3 dp on S would over-state the precision).
+  const fComp = v => Number(v).toFixed(3);
+  const fD1   = v => (v == null ? '' : Number(v).toFixed(4));
+  const fD2   = v => (v == null ? '' : Number(v).toFixed(3));
+  const fS    = v => (v == null ? '' : Number(v).toFixed(2));
   tbody.innerHTML = comps.map((t, i) => `<tr>
       <td>${i+1}</td>
-      <td>${comp(t.left[1])}</td><td>${comp(t.left[0])}</td><td>${comp(t.left[2])}</td>
-      <td>${comp(t.right[1])}</td><td>${comp(t.right[0])}</td><td>${comp(t.right[2])}</td>
-      <td>${d1f(sel?.d1?.[i])}</td><td>${dsf(sel?.d2?.[i])}</td><td>${dsf(sel?.s?.[i])}</td>
+      <td>${fComp(t.left[1])}</td><td>${fComp(t.left[0])}</td><td>${fComp(t.left[2])}</td>
+      <td>${fComp(t.right[1])}</td><td>${fComp(t.right[0])}</td><td>${fComp(t.right[2])}</td>
+      <td>${fD1(sel?.d1?.[i])}</td><td>${fD2(sel?.d2?.[i])}</td><td>${fS(sel?.s?.[i])}</td>
     </tr>`).join('');
   document.getElementById('panel-fig1').classList.add('has-data');
 }
