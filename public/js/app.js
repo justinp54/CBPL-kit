@@ -76,7 +76,7 @@ const TEAM_DATA = [
     name: 'Youn-Woo Lee',
     email: 'ywlee@snu.ac.kr',
     role: 'Advisor',
-    photo: null,
+    photo: '/contact/youn-woo-lee.png',
     initials: 'YL',
     gradient: 'linear-gradient(135deg, #0f2744 0%, #071a2e 100%)',
     bio: [
@@ -403,13 +403,16 @@ function populateTieLineTable(comps, sel) {
   // D₁, D₂, S come straight from compute_correlations (the same full-precision
   // values the selectivity chart uses) — the table only rounds for display and
   // never recomputes the ratios from the rounded compositions in the cells.
-  const f2 = v => Number(v).toFixed(2);
-  const f3 = v => (v == null ? '' : Number(v).toFixed(3));
+  // Compositions 3 dp; D₁ 4 dp (its values are small, so 3 dp would collapse
+  // distinct rows to 0.056); D₂ and S 3 dp.
+  const comp = v => Number(v).toFixed(3);
+  const d1f  = v => (v == null ? '' : Number(v).toFixed(4));
+  const dsf  = v => (v == null ? '' : Number(v).toFixed(3));
   tbody.innerHTML = comps.map((t, i) => `<tr>
       <td>${i+1}</td>
-      <td>${f2(t.left[1])}</td><td>${f2(t.left[0])}</td><td>${f2(t.left[2])}</td>
-      <td>${f2(t.right[1])}</td><td>${f2(t.right[0])}</td><td>${f2(t.right[2])}</td>
-      <td>${f3(sel?.d1?.[i])}</td><td>${f3(sel?.d2?.[i])}</td><td>${f3(sel?.s?.[i])}</td>
+      <td>${comp(t.left[1])}</td><td>${comp(t.left[0])}</td><td>${comp(t.left[2])}</td>
+      <td>${comp(t.right[1])}</td><td>${comp(t.right[0])}</td><td>${comp(t.right[2])}</td>
+      <td>${d1f(sel?.d1?.[i])}</td><td>${dsf(sel?.d2?.[i])}</td><td>${dsf(sel?.s?.[i])}</td>
     </tr>`).join('');
   document.getElementById('panel-fig1').classList.add('has-data');
 }
