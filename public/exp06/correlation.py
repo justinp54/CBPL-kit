@@ -86,19 +86,17 @@ def compute_plait_loglog(system):
     """
     Log-log plait point determination chart data.
 
-    Displayed axes (natural log, ln) — transposed to match the Hand correlation panel:
+    Axes are natural log (ln) and match the Hand correlation panel:
       For binodal data (columns [wCarrier%, wSolute%, wSolvent%]):
         x = ln(wSolute / wCarrier)   = ln(wpa/wbp)
         y = ln(wSolute / wSolvent)   = ln(wpa/ww)
-      For tie-line data (same axes as Hand correlation):
+      For tie-line data (same axes as the Hand correlation):
         x = ln(w21/w11)  = ln(solute_carrier-rich / carrier_carrier-rich)
         y = ln(w23/w33)  = ln(solute_solvent-rich / solvent_solvent-rich)
 
-    Internally the plait point is solved in the original (x=solvent-side, y=carrier-
-    side) frame; its composition is frame-independent, so only the returned x/y (and
-    the chart) are transposed to the display orientation above.
-
-    Plait point: where binodal curve crosses y = x diagonal.
+    The tie-line points and their linear fit here are identical to the Hand
+    correlation chart (same points; same regression ln(w23/w33) = a + b*ln(w21/w11)).
+    Plait point: intersection of that tie-line fit line with the binodal spline.
     """
     from scipy.interpolate import splprep, splev
     from scipy.optimize import brentq
@@ -110,8 +108,8 @@ def compute_plait_loglog(system):
     for row in system.equil_data:
         wC, wS, wSv = row[0]/100, row[1]/100, row[2]/100
         if wC > _eps and wS > _eps and wSv > _eps:
-            bx.append(float(np.log(wS / wSv)))
-            by.append(float(np.log(wS / wC)))
+            bx.append(float(np.log(wS / wC)))    # x = ln(w2/w1)
+            by.append(float(np.log(wS / wSv)))   # y = ln(w2/w3)
     bx = np.array(bx)
     by = np.array(by)
 
@@ -134,8 +132,8 @@ def compute_plait_loglog(system):
         w11 = max(_eps, cR[1] / 100)
         w23 = max(_eps, cL[0] / 100)
         w33 = max(_eps, cL[2] / 100)
-        tx.append(float(np.log(w23 / w33)))
-        ty.append(float(np.log(w21 / w11)))
+        tx.append(float(np.log(w21 / w11)))   # x = ln(w21/w11)  (Hand x-axis)
+        ty.append(float(np.log(w23 / w33)))   # y = ln(w23/w33)  (Hand y-axis)
     tx = np.array(tx)
     ty = np.array(ty)
 
@@ -157,10 +155,10 @@ def compute_plait_loglog(system):
                     u_root = brentq(_f, float(u_fine[i]), float(u_fine[i + 1]))
                     px, py = splev(u_root, tck)
                     px, py = float(px), float(py)
-                    ex, ey = np.exp(px), np.exp(py)
+                    ex, ey = np.exp(px), np.exp(py)   # ex = w2/w1, ey = w2/w3
                     wS  = 1.0 / (1.0 + 1.0 / ex + 1.0 / ey)
-                    wSv = wS / ex
-                    wC  = wS / ey
+                    wC  = wS / ex
+                    wSv = wS / ey
                     plait_loglog = {'x': round(px, 4), 'y': round(py, 4)}
                     plait_comp   = {
                         'carrier': round(wC  * 100, 2),
@@ -176,24 +174,19 @@ def compute_plait_loglog(system):
     tx_fit = np.linspace(float(tx.min()), tx_end, 80)
     ty_fit = a_fit + b_fit * tx_fit
 
-    # Transpose x<->y on output so the chart axes match the Hand correlation panel
-    # (x = carrier-rich ratio, y = solvent-rich ratio). The plait point is solved in
-    # the original frame above; transposing is a pure visual mirror across y=x, so the
-    # plait composition (plait_comp) is unchanged.
-    plait_out = {'x': plait_loglog['y'], 'y': plait_loglog['x']} if plait_loglog else None
     return {
         'binodal': {
-            'x':     np.round(by,      6).tolist(),
-            'y':     np.round(bx,      6).tolist(),
-            'x_fit': np.round(by_fine, 6).tolist(),
-            'y_fit': np.round(bx_fine, 6).tolist(),
+            'x':     np.round(bx,      6).tolist(),
+            'y':     np.round(by,      6).tolist(),
+            'x_fit': np.round(bx_fine, 6).tolist(),
+            'y_fit': np.round(by_fine, 6).tolist(),
         },
         'tieline': {
-            'x':     np.round(ty,     6).tolist(),
-            'y':     np.round(tx,     6).tolist(),
-            'x_fit': np.round(ty_fit, 6).tolist(),
-            'y_fit': np.round(tx_fit, 6).tolist(),
+            'x':     np.round(tx,     6).tolist(),
+            'y':     np.round(ty,     6).tolist(),
+            'x_fit': np.round(tx_fit, 6).tolist(),
+            'y_fit': np.round(ty_fit, 6).tolist(),
         },
-        'plait':      plait_out,
+        'plait':      plait_loglog,
         'plait_comp': plait_comp,
     }
