@@ -443,9 +443,9 @@ function _renderCorrChart(model) {
 }
 
 const _CORR_FORMULA = {
-  ot:      { label: 'Othmer-Tobias', latex: '\\ln\\dfrac{1-w_{11}}{w_{11}} = a + b\\cdot\\ln\\dfrac{1-w_{33}}{w_{33}}' },
-  hand:    { label: 'Hand',          latex: '\\ln\\dfrac{w_{21}}{w_{11}} = a + b\\cdot\\ln\\dfrac{w_{23}}{w_{33}}' },
-  bachman: { label: 'Bachman',       latex: 'w_{11} = a + b\\cdot\\dfrac{w_{11}}{w_{33}}' },
+  ot:      { label: 'Othmer-Tobias', latex: '\\ln\\dfrac{1-w_{33}}{w_{33}} = a + b\\cdot\\ln\\dfrac{1-w_{11}}{w_{11}}' },
+  hand:    { label: 'Hand',          latex: '\\ln\\dfrac{w_{23}}{w_{33}} = a + b\\cdot\\ln\\dfrac{w_{21}}{w_{11}}' },
+  bachman: { label: 'Bachman',       latex: 'w_{33} = a + b\\cdot\\dfrac{w_{33}}{w_{11}}' },
 };
 
 const _SEL_LATEX = 'D_1 = \\dfrac{w_{13}}{w_{11}},\\quad D_2 = \\dfrac{w_{23}}{w_{21}},\\quad S = \\dfrac{D_2}{D_1}';

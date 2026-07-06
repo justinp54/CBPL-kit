@@ -14,9 +14,9 @@ def compute_correlations(system):
       w33 = solvent in solvent-rich phase
 
     Models:
-      Othmer-Tobias : ln[(1-w11)/w11] = a + b·ln[(1-w33)/w33]
-      Hand          : ln(w21/w11)     = a + b·ln(w23/w33)
-      Bachman       : w11             = a + b·(w11/w33)
+      Othmer-Tobias : ln[(1-w33)/w33] = a + b·ln[(1-w11)/w11]
+      Hand          : ln(w23/w33)     = a + b·ln(w21/w11)
+      Bachman       : w33             = a + b·(w33/w11)
     """
     _eps = 1e-9
 
@@ -54,14 +54,14 @@ def compute_correlations(system):
             'r2':    round(r2, 6),
         }
 
-    x_ot   = np.log((1 - w33) / w33)
-    y_ot   = np.log((1 - w11) / w11)
+    x_ot   = np.log((1 - w11) / w11)
+    y_ot   = np.log((1 - w33) / w33)
 
-    x_hand = np.log(w23 / w33)
-    y_hand = np.log(w21 / w11)
+    x_hand = np.log(w21 / w11)
+    y_hand = np.log(w23 / w33)
 
-    x_bach = w11 / w33
-    y_bach = w11.copy()
+    x_bach = w33 / w11
+    y_bach = w33.copy()
 
     # Selectivity: D1 = w13/w11 (carrier), D2 = w23/w21 (solute), S = D2/D1
     d1 = w13 / w11
@@ -86,13 +86,17 @@ def compute_plait_loglog(system):
     """
     Log-log plait point determination chart data.
 
-    For binodal data (each equilibrium_data point, columns [wCarrier%, wSolute%, wSolvent%]):
-      x = log(wSolute / wSolvent)  = log(wpa/ww)
-      y = log(wSolute / wCarrier)  = log(wpa/wbp)
+    Displayed axes (natural log, ln) — transposed to match the Hand correlation panel:
+      For binodal data (columns [wCarrier%, wSolute%, wSolvent%]):
+        x = ln(wSolute / wCarrier)   = ln(wpa/wbp)
+        y = ln(wSolute / wSolvent)   = ln(wpa/ww)
+      For tie-line data (same axes as Hand correlation):
+        x = ln(w21/w11)  = ln(solute_carrier-rich / carrier_carrier-rich)
+        y = ln(w23/w33)  = ln(solute_solvent-rich / solvent_solvent-rich)
 
-    For tie-line data (same axes as Hand correlation):
-      x = log(w23/w33)  = log(solute_solvent-rich / solvent_solvent-rich)
-      y = log(w21/w11)  = log(solute_carrier-rich / carrier_carrier-rich)
+    Internally the plait point is solved in the original (x=solvent-side, y=carrier-
+    side) frame; its composition is frame-independent, so only the returned x/y (and
+    the chart) are transposed to the display orientation above.
 
     Plait point: where binodal curve crosses y = x diagonal.
     """
@@ -172,19 +176,24 @@ def compute_plait_loglog(system):
     tx_fit = np.linspace(float(tx.min()), tx_end, 80)
     ty_fit = a_fit + b_fit * tx_fit
 
+    # Transpose x<->y on output so the chart axes match the Hand correlation panel
+    # (x = carrier-rich ratio, y = solvent-rich ratio). The plait point is solved in
+    # the original frame above; transposing is a pure visual mirror across y=x, so the
+    # plait composition (plait_comp) is unchanged.
+    plait_out = {'x': plait_loglog['y'], 'y': plait_loglog['x']} if plait_loglog else None
     return {
         'binodal': {
-            'x':     np.round(bx,      6).tolist(),
-            'y':     np.round(by,      6).tolist(),
-            'x_fit': np.round(bx_fine, 6).tolist(),
-            'y_fit': np.round(by_fine, 6).tolist(),
+            'x':     np.round(by,      6).tolist(),
+            'y':     np.round(bx,      6).tolist(),
+            'x_fit': np.round(by_fine, 6).tolist(),
+            'y_fit': np.round(bx_fine, 6).tolist(),
         },
         'tieline': {
-            'x':     np.round(tx,     6).tolist(),
-            'y':     np.round(ty,     6).tolist(),
-            'x_fit': np.round(tx_fit, 6).tolist(),
-            'y_fit': np.round(ty_fit, 6).tolist(),
+            'x':     np.round(ty,     6).tolist(),
+            'y':     np.round(tx,     6).tolist(),
+            'x_fit': np.round(ty_fit, 6).tolist(),
+            'y_fit': np.round(tx_fit, 6).tolist(),
         },
-        'plait':      plait_loglog,
+        'plait':      plait_out,
         'plait_comp': plait_comp,
     }
