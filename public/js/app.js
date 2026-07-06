@@ -468,7 +468,7 @@ function _updateCorrStats(model) {
   const d = _corrStats[model];
   const f = _CORR_FORMULA[model];
   el.innerHTML = `
-    <div class="fml-label">${f.label} Model</div>
+    <div class="fml-label">${f.label} Correlation</div>
     <div class="fml-eq">${_katex(f.latex)}</div>
     <div class="fml-params">a = ${d.a} &nbsp;&nbsp; b = ${d.b} &nbsp;&nbsp; <span class="fml-r2">R² = ${d.r2}</span></div>`;
 }
@@ -488,7 +488,7 @@ function populateSelectivityPanel(stats) {
   _renderSelectivityChart();
   const el = document.getElementById('selectivity-stats');
   if (el) el.innerHTML = `
-    <div class="fml-label">Separation Factor</div>
+    <div class="fml-label">Selectivity</div>
     <div class="fml-eq">${_katex(_SEL_LATEX)}</div>`;
 }
 
@@ -1348,7 +1348,7 @@ async function exportBundle() {
       const tieSheet = XLSX.utils.table_to_sheet(tieEl);
       if (_corrStats) {
         const range = XLSX.utils.decode_range(tieSheet['!ref']);
-        const corrRows = [[], ['Model', 'a', 'b', 'R2']];
+        const corrRows = [[], ['Correlation', 'a', 'b', 'R2']];
         for (const m of ['ot', 'hand', 'bachman']) {
           if (_corrStats[m]) corrRows.push([_CORR_FORMULA[m].label, _corrStats[m].a, _corrStats[m].b, _corrStats[m].r2]);
         }

@@ -870,7 +870,7 @@ def fig_selectivity(sel):
         hovertemplate='w₂₃: %{x:.4f}<br>S: %{y:.3f}<extra></extra>',
     ))
     fig.update_layout(
-        title=dict(text='Separation Factor S vs w₂₃', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        title=dict(text='Selectivity S vs w₂₃', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
         xaxis=dict(title=dict(text='w₂₃ (solute, solvent-rich)', font=dict(size=10)),
                    tickfont=dict(size=9), showgrid=False, nticks=4,
                    showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
