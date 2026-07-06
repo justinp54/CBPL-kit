@@ -312,15 +312,18 @@ for _mname, _conj in _conj_methods.items():
     _sf['fig2a_' + _mname] = plot_util.fig_conjugate_curve(_system, _conj).to_json()
 _sf['fig2a'] = _sf['fig2a_diagonal']
 
-# Extract tie line full compositions from pre-computed tie_coords
+# Extract tie line full compositions from pre-computed tie_coords.
+# Keep full precision here; rounding is a display-only concern handled in JS.
+# D/S are NOT computed here — they come from compute_correlations below, so
+# the whole app has a single source of truth for the ratios.
 from ternary import xy_to_comp as _xyc
 _tl_comps = []
-_clamp = lambda v: round(max(0.0, v), 2)
+_pos = lambda v: max(0.0, v)   # clamp tiny numerical negatives only
 for (_ptL, _ptR) in _system.tie_coords:
     _cL = _xyc(*_ptL)
     _cR = _xyc(*_ptR)
-    _tl_comps.append({'left': [_clamp(_cL[0]), _clamp(_cL[1]), _clamp(_cL[2])],
-                      'right': [_clamp(_cR[0]), _clamp(_cR[1]), _clamp(_cR[2])]})
+    _tl_comps.append({'left': [_pos(_cL[0]), _pos(_cL[1]), _pos(_cL[2])],
+                      'right': [_pos(_cR[0]), _pos(_cR[1]), _pos(_cR[2])]})
 _sf['tie_comps'] = _tl_comps
 
 from correlation import compute_correlations
@@ -363,7 +366,7 @@ json.dumps(_sf)
       document.getElementById('empty').style.display = 'none';
       renderFig(activeTab);
     }
-    if (figs.tie_comps) populateTieLineTable(figs.tie_comps);
+    if (figs.tie_comps) populateTieLineTable(figs.tie_comps, figs.sel_stats);
     if (figs.corr_stats) populateCorrelationPanel(figs.corr_stats);
     if (figs.sel_stats) populateSelectivityPanel(figs.sel_stats);
     _conjHorizontalSide = figs.conj_horizontal_side || null;
@@ -376,7 +379,7 @@ json.dumps(_sf)
   } catch (e) { console.error('System fig render:', e); }
 }
 
-function populateTieLineTable(comps) {
+function populateTieLineTable(comps, sel) {
   const thead = document.querySelector('#tieline-table thead');
   const tbody = document.querySelector('#tieline-table tbody');
   // Column order matches paper: carrier(w1x), solute(w2x), solvent(w3x) per phase
@@ -397,18 +400,17 @@ function populateTieLineTable(comps) {
       ${th(ca,'100w₁₁')}${th(so,'100w₂₁')}${th(sv,'100w₃₁')}
       <th></th><th></th><th></th>
     </tr>`;
-  const eps = 1e-9;
-  tbody.innerHTML = comps.map((t, i) => {
-    const d1 = Math.max(eps, t.left[1]) / Math.max(eps, t.right[1]);   // w13/w11
-    const d2 = Math.max(eps, t.left[0]) / Math.max(eps, t.right[0]);   // w23/w21
-    const sv = d2 / d1;
-    return `<tr>
+  // D₁, D₂, S come straight from compute_correlations (the same full-precision
+  // values the selectivity chart uses) — the table only rounds for display and
+  // never recomputes the ratios from the rounded compositions in the cells.
+  const f2 = v => Number(v).toFixed(2);
+  const f3 = v => (v == null ? '' : Number(v).toFixed(3));
+  tbody.innerHTML = comps.map((t, i) => `<tr>
       <td>${i+1}</td>
-      <td>${t.left[1]}</td><td>${t.left[0]}</td><td>${t.left[2]}</td>
-      <td>${t.right[1]}</td><td>${t.right[0]}</td><td>${t.right[2]}</td>
-      <td>${d1.toFixed(3)}</td><td>${d2.toFixed(3)}</td><td>${sv.toFixed(3)}</td>
-    </tr>`;
-  }).join('');
+      <td>${f2(t.left[1])}</td><td>${f2(t.left[0])}</td><td>${f2(t.left[2])}</td>
+      <td>${f2(t.right[1])}</td><td>${f2(t.right[0])}</td><td>${f2(t.right[2])}</td>
+      <td>${f3(sel?.d1?.[i])}</td><td>${f3(sel?.d2?.[i])}</td><td>${f3(sel?.s?.[i])}</td>
+    </tr>`).join('');
   document.getElementById('panel-fig1').classList.add('has-data');
 }
 

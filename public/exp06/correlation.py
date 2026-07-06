@@ -72,12 +72,16 @@ def compute_correlations(system):
         'ot':         _fit(x_ot,   y_ot),
         'hand':       _fit(x_hand, y_hand),
         'bachman':    _fit(x_bach, y_bach),
+        # Full precision on purpose: rounding is a display-only concern, done
+        # once at the point of display (JS toFixed / Plotly hover format).
+        # Pre-rounding here would double-round (e.g. 0.056451 -> 0.0565 -> 0.057
+        # instead of 0.056) and could disagree with the tie-line table/chart.
         'selectivity': {
-            'w21': np.round(w21, 6).tolist(),
-            'w23': np.round(w23, 6).tolist(),
-            'd1':  np.round(d1,  4).tolist(),
-            'd2':  np.round(d2,  4).tolist(),
-            's':   np.round(s,   4).tolist(),
+            'w21': w21.tolist(),
+            'w23': w23.tolist(),
+            'd1':  d1.tolist(),
+            'd2':  d2.tolist(),
+            's':   s.tolist(),
         },
     }
 
