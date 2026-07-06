@@ -76,7 +76,7 @@ const TEAM_DATA = [
     name: 'Youn-Woo Lee',
     email: 'ywlee@snu.ac.kr',
     role: 'Advisor',
-    photo: '/contact/youn-woo-lee.png',
+    photo: '/images/youn-woo-lee.png',
     initials: 'YL',
     gradient: 'linear-gradient(135deg, #0f2744 0%, #071a2e 100%)',
     bio: [
