@@ -11,6 +11,8 @@ function toggleSidebar() {
 // ── Sidebar collapse (desktop) ────────────────────────────────────────────
 const TABS_NEED_SIDEBAR = new Set(['fig3','fig2b','fig4','fig_sf','fig_feed']);
 const TABS_AUTO_COLLAPSE = new Set(['fig1','fig2a']);
+// Tabs with a right-side data-panel drawer (see _setDataTrigger)
+const DATA_PANEL_TABS = { fig1: 'panel-fig1', fig2a: 'panel-fig2a', fig3: 'panel-fig3', fig_sf: 'panel-fig_sf' };
 let sidebarManualOverride = false;
 
 function setSidebarCollapsed(collapsed) {
@@ -669,6 +671,20 @@ pt_Mp_exp  = mixing_point(pt_R0, pt_En1, mass_R0_gm, mass_En1)
 pt_E1p_exp = find_E1_prime(pt_Rn, pt_Mp_exp, system.spline)
 pp         = xy_to_comp(*conjugate.pt_plait)
 
+# Stages-needed trend as S:F falls toward S_min — only genuinely-computed
+# points (see stage_count_trend's docstring), so only built when a real
+# S_min was found.
+fig_sf_trend = None
+if _sf_frac_min is not None and _sf_frac_max is not None:
+    _fig_sf_trend = plot_util.fig_sf_stage_trend(system, conjugate, pt_R0, pt_Rn, pt_En1, _sf_frac_min, _sf_frac_max)
+    fig_sf_trend = _fig_sf_trend.to_json() if _fig_sf_trend is not None else None
+
+# Raw (un-fallback'd) S_min/S_max, for the reference cards — sf_frac_min/max
+# above always have a value (falls back to 0.40/0.97 for the slider), which
+# would misrepresent "no clear limit found" as a real number if used here.
+sf_min_found = round(_sf_frac_min, 4) if _sf_frac_min is not None else None
+sf_max_found = round(_sf_frac_max, 4) if _sf_frac_max is not None else None
+
 def _build(key):
     if key == 'fig1':   return plot_util.fig_ternary_equilibrium(system).to_json()
     if key == 'fig2a':  return plot_util.fig_conjugate_curve(system, conjugate).to_json()
@@ -706,6 +722,9 @@ json.dumps({
     },
     'mass_flows': {'solvent_g_min': _r(mass_En1), 'feed_g_min': _r(mass_R0_gm)},
     'sf_range': {'min': sf_frac_min, 'max': sf_frac_max},
+    'fig_sf_trend': fig_sf_trend,
+    'sf_min_found': sf_min_found,
+    'sf_max_found': sf_max_found,
     'stages': [{'index': s.index, 'E': _comp(s.comp_E), 'R': _comp(s.comp_R)} for s in steps],
     'figures': _figs,
 })
@@ -744,7 +763,9 @@ let explorerReady = false;
 
 async function computeExplorer(type) {
   if (!explorerReady) return;
-  const el = document.getElementById('plot-fig_' + type);
+  // 'sf' renders into the plot-with-panel's chart-fig_sf; 'feed' has no
+  // side panel and renders straight into plot-fig_feed.
+  const el = document.getElementById('chart-fig_' + type) || document.getElementById('plot-fig_' + type);
   try {
     let figJson;
     if (type === 'sf') {
@@ -763,7 +784,7 @@ async function computeExplorer(type) {
 function updateSfLabels(frac) {
   document.getElementById('sf-slider').value  = frac;
   document.getElementById('sf-num').value     = (frac * 100).toFixed(0);
-  document.getElementById('sf-feed-label').textContent = `Feed ${((1-frac)*100).toFixed(0)}%`;
+  document.getElementById('sf-feed-label').textContent = `Feed ${((1-frac)*100).toFixed(0)} wt%`;
 }
 
 function updateFeedLabels(wpa) {
@@ -792,26 +813,48 @@ document.getElementById('sf-num').addEventListener('input', function() {
   const v = parseFloat(this.value);
   if (!isNaN(v) && v >= lo && v <= hi) {
     document.getElementById('sf-slider').value = v / 100;
-    document.getElementById('sf-feed-label').textContent = `Feed ${(100-v).toFixed(0)}%`;
+    document.getElementById('sf-feed-label').textContent = `Feed ${(100-v).toFixed(0)} wt%`;
     computeExplorer('sf');
   }
 });
 
 // System-specific S:F range (S_min/S_max, see lever_rule.find_smin_over_f /
-// find_smax_over_f) — replaces the slider/number input's min/max on every
-// Calculate, and clamps the current position into the new range so it's
-// never left pointing at a now-invalid ratio.
+// find_smax_over_f). The background track always shows the full 0-100%
+// range (valid/invalid zones + markers) for context, but the draggable
+// #sf-slider itself is physically resized/repositioned and min/max-clamped
+// to [S_min, S_max] on every Calculate — so it's impossible to drag past
+// either limit, not just visually discouraged.
+const SF_SLIDER_LO = 0.0, SF_SLIDER_HI = 1.0;
+let _sfBounds = null;
+
 function updateSfRange(sfRange) {
   if (!sfRange) return;
+  _sfBounds = sfRange;
+  const pct = v => Math.max(0, Math.min(100, (v - SF_SLIDER_LO) / (SF_SLIDER_HI - SF_SLIDER_LO) * 100));
+  const loPct = pct(sfRange.min), hiPct = pct(sfRange.max);
+
+  // Background track: full 0-100% context, valid/invalid zones + markers.
+  document.getElementById('sf-zone-lo').style.cssText    = `left:0; width:${loPct}%`;
+  document.getElementById('sf-zone-valid').style.cssText = `left:${loPct}%; width:${Math.max(0, hiPct - loPct)}%`;
+  document.getElementById('sf-zone-hi').style.cssText    = `left:${hiPct}%; width:${100 - hiPct}%`;
+  document.getElementById('sf-marker-min').style.left = loPct + '%';
+  document.getElementById('sf-marker-max').style.left = hiPct + '%';
+
+  // Foreground (actually draggable) slider: sized/positioned to exactly the
+  // S_min-S_max slice, with its own min/max set to match — so it's
+  // physically impossible to drag past either limit, not just visually
+  // discouraged.
   const slider = document.getElementById('sf-slider');
   const num = document.getElementById('sf-num');
+  slider.style.left  = loPct + '%';
+  slider.style.width = Math.max(0, hiPct - loPct) + '%';
   slider.min = sfRange.min;
   slider.max = sfRange.max;
   num.min = (sfRange.min * 100).toFixed(0);
   num.max = (sfRange.max * 100).toFixed(0);
 
   const clamped = Math.min(Math.max(parseFloat(slider.value), sfRange.min), sfRange.max);
-  updateSfLabels(clamped);
+  if (clamped !== parseFloat(slider.value)) updateSfLabels(clamped);
 }
 
 // Feed slider
@@ -998,8 +1041,7 @@ function switchTab(key) {
   document.getElementById('tab-'  + key).setAttribute('aria-selected', 'true');
 
   closeDataDrawer();
-  _setDataTrigger(key === 'fig1' || key === 'fig2a',
-    key === 'fig1' ? 'panel-fig1' : 'panel-fig2a');
+  _setDataTrigger(key in DATA_PANEL_TABS, DATA_PANEL_TABS[key]);
 
   // Re-render all chart tabs on every tab switch so Plotly sizes to the current container.
   if (['fig1', 'fig2a', 'fig2b', 'fig3', 'fig4'].includes(key) && cache[key]) {
@@ -1040,6 +1082,7 @@ function switchTab(key) {
     feedBar.style.display = 'none';
     document.getElementById('plot-fig_sf').style.paddingTop = '52px';
     computeExplorer('sf');
+    requestAnimationFrame(() => { _renderSfTrendChart(); });
   } else if (key === 'fig_feed') {
     bar.style.display     = 'flex';
     sfBar.style.display   = 'none';
@@ -1108,22 +1151,53 @@ function showResults(data) {
   ).join('');
 
   document.getElementById('stages-tbody').innerHTML = data.stages.flatMap(s => [
-    `<tr><td>${s.index}</td><td style="color:#f87171">E</td><td>${s.E.wpa}</td><td>${s.E.wbp}</td><td>${s.E.ww}</td></tr>`,
-    `<tr><td></td><td style="color:#5abade">R</td><td>${s.R.wpa}</td><td>${s.R.wbp}</td><td>${s.R.ww}</td></tr>`,
+    `<tr><td>${s.index}</td><td style="color:#dc2626">E</td><td>${s.E.wpa}</td><td>${s.E.wbp}</td><td>${s.E.ww}</td></tr>`,
+    `<tr><td></td><td style="color:var(--blue)">R</td><td>${s.R.wpa}</td><td>${s.R.wbp}</td><td>${s.R.ww}</td></tr>`,
   ]).join('');
 
   document.getElementById('flows-text').innerHTML =
     `<strong>Solvent</strong> ${data.mass_flows.solvent_g_min} g/min<br>` +
     `<strong>Feed &nbsp;&nbsp;&nbsp;</strong> ${data.mass_flows.feed_g_min} g/min`;
 
-  document.getElementById('results-panel').classList.add('show');
+  document.getElementById('panel-fig3').classList.add('has-data');
+
+  if (data.fig_sf_trend) {
+    cache.fig_sf_trend = JSON.parse(data.fig_sf_trend);
+    _renderSfTrendChart();
+  } else {
+    cache.fig_sf_trend = null;
+    const el = document.getElementById('sf-trend-chart');
+    if (el) { try { Plotly.purge(el); } catch(e) {} }
+  }
+
+  if (data.sf_min_found != null) {
+    document.getElementById('sf-min-val').textContent = (data.sf_min_found * 100).toFixed(1) + ' wt%';
+    document.getElementById('sf-min-desc').innerHTML =
+      '<strong>How it\'s found:</strong><br>The tie line whose extension hits farthest from Rₙ sets this pinch. Below it, no stage count reaches the target.';
+  } else {
+    document.getElementById('sf-min-val').textContent = '—';
+    document.getElementById('sf-min-desc').innerHTML =
+      '<strong>Not found:</strong><br>This system\'s tie-line data doesn\'t produce a clear S_min (e.g. a solutropic system).';
+  }
+  if (data.sf_max_found != null) {
+    document.getElementById('sf-max-val').textContent = (data.sf_max_found * 100).toFixed(1) + ' wt%';
+    document.getElementById('sf-max-desc').innerHTML =
+      '<strong>How it\'s found:</strong><br>Where the feed+solvent line meets the equilibrium curve, M becomes a single phase, nothing left to split.';
+  } else {
+    document.getElementById('sf-max-val').textContent = '—';
+    document.getElementById('sf-max-desc').innerHTML =
+      '<strong>Not found:</strong><br>This system\'s equilibrium data doesn\'t produce a clear S_max.';
+  }
+
+  document.getElementById('panel-fig_sf').classList.add('has-data');
 }
 
-function toggleStages() {
-  const el  = document.getElementById('stages-detail');
-  const btn = document.getElementById('stage-toggle');
-  el.classList.toggle('show');
-  btn.textContent = (el.classList.contains('show') ? '▼' : '▶') + ' Stage breakdown';
+function _renderSfTrendChart() {
+  const el = document.getElementById('sf-trend-chart');
+  if (!el || !cache.fig_sf_trend) return;
+  const w = el.offsetWidth || 320;
+  const layout = { ...cache.fig_sf_trend.layout, width: w, autosize: false };
+  return Plotly.react(el, cache.fig_sf_trend.data, layout, { displayModeBar: false });
 }
 
 // ── System configuration ───────────────────────────────────────────────────
@@ -1283,7 +1357,7 @@ async function exportBundle() {
   try {
     const zip = new JSZip();
     const included = [];
-    const calculated = document.getElementById('results-panel').classList.contains('show');
+    const calculated = document.getElementById('panel-fig3').classList.contains('has-data');
     const dateStr = new Date().toISOString().slice(0, 10);
     const slug = (currentSystemFile || 'system.yaml').replace(/\.yaml$/, '');
 
@@ -1672,12 +1746,16 @@ _b._eready     = False
     });
     document.getElementById('panel-fig1')?.classList.remove('has-data');
     document.getElementById('panel-fig2a')?.classList.remove('has-data');
+    document.getElementById('panel-fig3')?.classList.remove('has-data');
+    document.getElementById('panel-fig_sf')?.classList.remove('has-data');
     const _ce = document.getElementById('corr-chart');
     if (_ce) { try { Plotly.purge(_ce); } catch(e) {} }
     const _se = document.getElementById('selectivity-chart');
     if (_se) { try { Plotly.purge(_se); } catch(e) {} }
     const _pe = document.getElementById('plait-chart');
     if (_pe) { try { Plotly.purge(_pe); } catch(e) {} }
+    const _sftrend = document.getElementById('sf-trend-chart');
+    if (_sftrend) { try { Plotly.purge(_sftrend); } catch(e) {} }
     _corrStats = null;
     _corrActive = 'ot';
     _selStats = null;
@@ -1698,7 +1776,6 @@ _b._eready     = False
       b.classList.toggle('active', sel);
       b.setAttribute('aria-selected', sel);
     });
-    document.getElementById('results-panel').classList.remove('show');
     if (activeTab !== 'guide' && activeTab !== 'system') {
       document.getElementById('empty').style.display = 'flex';
     }
@@ -1774,6 +1851,7 @@ window.addEventListener('resize', () => {
       if (btn) btn.style.display = 'none';
       if (activeTab === 'fig1' && _corrStats) { _renderCorrChart(_corrActive); _renderSelectivityChart(); }
       else if (activeTab === 'fig2a' && _plaitStats) { _renderPlaitChart(); }
+      else if (activeTab === 'fig_sf') { if (cache.fig_sf_trend) _renderSfTrendChart(); }
     } else {
       // Mobile/tablet: re-render active ternary chart on orientation/resize.
       // (Desktop relies on responsive:true ResizeObserver; switchTab() handles switch-back-after-resize.)
@@ -1796,5 +1874,4 @@ renderContactPane();
 loadGuide();
 initPyodide();
 // Show trigger button if starting on a data-panel tab on mobile
-_setDataTrigger(activeTab === 'fig1' || activeTab === 'fig2a',
-  activeTab === 'fig1' ? 'panel-fig1' : 'panel-fig2a');
+_setDataTrigger(activeTab in DATA_PANEL_TABS, DATA_PANEL_TABS[activeTab]);

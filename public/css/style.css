@@ -100,26 +100,15 @@
     .error-box { margin-top: 10px; background: rgba(220,38,38,.12); border: 1px solid rgba(220,38,38,.35); border-radius: 7px; color: #fca5a5; font-size: 11.5px; padding: 9px 11px; display: none; line-height: 1.5; }
     .error-box.show { display: block; }
 
-    /* Results */
-    #results-panel { display: none; }
-    #results-panel.show { display: block; }
-    .n-card { background: #0f3347; border-radius: 8px; padding: 14px 16px; text-align: center; margin-bottom: 12px; }
-    .n-label { font-size: 10.5px; font-weight: 600; letter-spacing: .03em; text-transform: none; color: #5abade; margin-bottom: 3px; }
-    .n-val   { font-size: 48px; font-weight: 700; color: #e8edf2; line-height: 1; }
-    .n-sub   { font-size: 10.5px; color: #5abade; margin-top: 5px; }
-    .comp-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #cbd5e1; }
-    .comp-table th { color: #94a3b8; font-weight: 600; padding: 3px 4px; text-align: center; border-bottom: 1px solid rgba(255,255,255,.07); }
-    .comp-table th:first-child { text-align: left; }
-    .comp-table td { padding: 4px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-variant-numeric: tabular-nums; }
-    .comp-table td:first-child { font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; color: #e2e8f0; text-align: left; }
-    .comp-table tr { border-bottom: 1px solid rgba(255,255,255,.04); }
+    /* Results (Hunter-Nash data-panel — see .data-panel table for the base
+       stream/stage table styling, matching the Equilibrium/Conjugate tabs) */
+    .n-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; text-align: center; margin-bottom: 14px; }
+    .n-label { font-size: 9.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+    .n-val   { font-size: 40px; font-weight: 700; color: var(--navy); line-height: 1; }
+    .n-sub   { font-size: 10.5px; color: var(--blue); margin-top: 5px; }
     .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
     .dot-R { background: var(--blue); } .dot-E { background: #ef4444; }
-    .toggle-btn { background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; padding: 6px 0 0; display: flex; align-items: center; gap: 4px; }
-    .toggle-btn:hover { color: #cbd5e1; }
-    #stages-detail { display: none; margin-top: 8px; }
-    #stages-detail.show { display: block; }
-    .flows-text { font-size: 10.5px; color: #94a3b8; margin-top: 10px; line-height: 1.8; }
+    .flows-text { font-size: 11px; color: var(--muted); margin-top: 12px; line-height: 1.8; }
     .dil-compact { display:flex; align-items:center; gap:8px; margin-top:5px; }
     .dil-num { width:44px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:5px; color:#cbd5e1; font-size:11px; font-family:'JetBrains Mono',monospace; text-align:right; padding:3px 5px; outline:none; }
     .dil-num:focus { border-color:var(--blue); }
@@ -128,7 +117,7 @@
     .dil-sld { flex:1; -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:rgba(255,255,255,.1); outline:none; cursor:pointer; accent-color:var(--blue); }
     .dil-sld::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--blue); cursor:pointer; box-shadow:0 0 0 3px rgba(24,120,168,.2); transition:box-shadow .15s; }
     .dil-sld::-webkit-slider-thumb:hover { box-shadow:0 0 0 5px rgba(24,120,168,.25); }
-    .flows-text strong { color: #94a3b8; }
+    .flows-text strong { color: var(--text); }
 
     /* ── Main ── */
     main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -249,9 +238,21 @@
     .plot-with-panel.active { display: flex; }
     .plot-with-panel .plot-chart { flex: 1; min-width: 0; overflow: hidden; }
     .data-panel { width: 480px; flex-shrink: 0; overflow-y: auto; overflow-x: hidden; border-left: 1px solid var(--border); background: var(--surface); padding: 14px 12px; font-size: 11.5px; display: none; }
+    /* Hunter-Nash's result tables have far fewer columns than the other
+       panels (Tie-Lines has 9) — stretching them to the same 480px just
+       leaves the columns floating with wide gaps, so this one panel is
+       narrower to match its own content instead of matching the others'
+       width. Desktop only: the mobile bottom-drawer rule below always
+       forces full width regardless. */
+    @media (min-width: 1200px) {
+      #panel-fig3 { width: 340px; }
+      /* Same reasoning as panel-fig3: these two subplots are 320px wide,
+         no need for the full 480px panel. */
+      #panel-fig_sf { width: 360px; }
+    }
     .data-panel.has-data { display: block; }
     .data-panel-title, .data-panel-heading { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
-    .data-panel-note { font-size: 11px; color: var(--muted); margin-top: 12px; line-height: 1.5; }
+    .data-panel-note { font-size: 12px; color: #414b55; margin-top: 12px; line-height: 1.55; }
     .data-panel table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
     .data-panel thead th { font-size: 9.5px; font-weight: 600; color: #1878a8; text-align: right; padding: 4px 5px 6px; border-bottom: 1.5px solid var(--border); white-space: nowrap; }
     .data-panel thead th:first-child { text-align: center; width: 28px; }
@@ -332,14 +333,54 @@
     .explorer-slider { flex: 1; accent-color: var(--blue); }
     .explorer-num { width: 58px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 5px; font-size: 13px; font-weight: 600; color: var(--text); text-align: right; outline: none; }
     .explorer-num:focus-visible { outline: 2px solid #5abade; outline-offset: 1px; }
+
+    /* S:F slider — background track always shows the full 0-100% range for
+       context (valid zone + S_min/S_max markers); the draggable #sf-slider
+       itself is resized/positioned in JS (see updateSfRange) to only span
+       [S_min, S_max], so it's physically impossible to drag past either. */
+    .sf-slider-wrap { position: relative; flex: 1; height: 20px; display: flex; align-items: center; }
+    .sf-slider-track { position: absolute; left: 0; right: 0; top: 8px; height: 4px; border-radius: 2px; background: var(--border); pointer-events: none; }
+    .sf-zone { position: absolute; top: 0; height: 4px; pointer-events: none; }
+    .sf-zone-valid { background: #1a8a5f; opacity: .3; }
+    .sf-zone-invalid { background: repeating-linear-gradient(45deg, #c0392b, #c0392b 3px, transparent 3px, transparent 6px); opacity: .45; }
+    .sf-marker { position: absolute; top: -7px; width: 2px; height: 18px; pointer-events: none; }
+    .sf-marker-min { background: #1a8a5f; }
+    .sf-marker-max { background: #c0392b; }
+    .sf-marker-label { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 8.5px; font-weight: 700; white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
+    .sf-marker-min .sf-marker-label { color: #1a8a5f; }
+    .sf-marker-max .sf-marker-label { color: #c0392b; }
+
+    /* Positioned/sized dynamically (see updateSfRange) to span exactly the
+       S_min-S_max slice of the wrap, so it's physically impossible to drag
+       past either limit while the background track still shows the full
+       0-100% context underneath. */
+    #sf-slider { position: absolute; z-index: 2; top: 0; left: 0; width: 100%; height: 20px; margin: 0; background: transparent; cursor: pointer; -webkit-appearance: none; appearance: none; }
+    #sf-slider::-webkit-slider-runnable-track { -webkit-appearance: none; height: 4px; background: transparent; }
+    #sf-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); margin-top: -6px; cursor: pointer; }
+    #sf-slider::-moz-range-track { height: 4px; background: transparent; border: none; }
+    #sf-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); cursor: pointer; }
     #feed-num { width: 62px; }
+
+    /* How S_min/S_max were calculated, color-coded to match the slider's
+       own min/max markers above. A rule + inline label/value reads as a
+       reference note, not a dashboard stat card. */
+    .sf-limit-block { border-top: 2px solid var(--border); padding-top: 10px; margin-top: 16px; }
+    .sf-limit-min { border-top-color: #1a8a5f; }
+    .sf-limit-max { border-top-color: #c0392b; }
+    .sf-limit-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 5px; }
+    .sf-limit-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .sf-limit-min .sf-limit-label { color: #1a8a5f; }
+    .sf-limit-max .sf-limit-label { color: #c0392b; }
+    .sf-limit-val { font-size: 19px; font-weight: 700; color: var(--navy); }
+    .sf-limit-desc { font-size: 13px; color: #414b55; line-height: 1.6; margin: 0; }
+    .sf-limit-desc strong { color: var(--text); font-weight: 700; }
 
     /* ── Skip link ── */
     .skip-link { position: absolute; top: -40px; left: 0; background: var(--blue); color: #fff; padding: 8px 16px; z-index: 50; font-size: 13px; font-weight: 600; border-radius: 0 0 6px 0; transition: top .15s; }
     .skip-link:focus { top: 0; }
 
     /* ── Focus styles ── */
-    .tab-btn:focus-visible, .btn-calc:focus-visible, .toggle-btn:focus-visible, .menu-toggle:focus-visible { outline: 2px solid #5abade; outline-offset: 2px; }
+    .tab-btn:focus-visible, .btn-calc:focus-visible, .menu-toggle:focus-visible { outline: 2px solid #5abade; outline-offset: 2px; }
     .field-input:focus-visible, .field-slider:focus-visible, .dil-num:focus-visible, .dil-sld:focus-visible { outline: 2px solid #5abade; outline-offset: 1px; }
     .btn-apply:focus-visible, .sys-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 

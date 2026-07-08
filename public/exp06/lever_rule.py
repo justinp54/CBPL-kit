@@ -75,14 +75,12 @@ def find_E1_prime(
         return float(spline(x)) - (m * x + b)
 
     x_scan = np.linspace(0.0, min(pt_Rn[0], pt_Mp[0]), 10_000)
-    xL = xR = None
-    for i in range(len(x_scan) - 1):
-        if diff(x_scan[i]) * diff(x_scan[i + 1]) < 0:
-            xL, xR = x_scan[i], x_scan[i + 1]
-            break
-
-    if xL is None:
+    diffs = spline(x_scan) - (m * x_scan + b)
+    sign_change = np.where(np.diff(np.sign(diffs)) != 0)[0]
+    if len(sign_change) == 0:
         return None
+    i = sign_change[0]
+    xL, xR = x_scan[i], x_scan[i + 1]
     x_E1p = brentq(diff, xL, xR)
     return (float(x_E1p), float(spline(x_E1p)))
 
@@ -121,11 +119,27 @@ def _line_curve_intersect(
 
     lo, hi = sorted((x_lo, x_hi))
     x_scan = np.linspace(lo, hi, n)
-    for i in range(len(x_scan) - 1):
-        if diff(x_scan[i]) * diff(x_scan[i + 1]) < 0:
-            x_hit = brentq(diff, x_scan[i], x_scan[i + 1])
-            return (float(x_hit), float(spline(x_hit)))
+    diffs = spline(x_scan) - (m * x_scan + b)
+    sign_change = np.where(np.diff(np.sign(diffs)) != 0)[0]
+    if len(sign_change) > 0:
+        i = sign_change[0]
+        x_hit = brentq(diff, x_scan[i], x_scan[i + 1])
+        return (float(x_hit), float(spline(x_hit)))
     return None
+
+
+def find_smax_point(
+    system,
+    pt_R0: tuple[float, float],
+    pt_En1: tuple[float, float],
+) -> tuple[float, float] | None:
+    """
+    M_max: as M moves from F(=R0) toward S(=En1), the extraction stops being
+    physically possible once M reaches the equilibrium curve itself (the
+    mixture becomes a single phase) — this is that point. None if the F-S
+    line never reaches the curve.
+    """
+    return _line_curve_intersect(pt_R0, pt_En1, system.spline, system.x_domain[0], pt_R0[0])
 
 
 def find_smax_over_f(
@@ -133,17 +147,134 @@ def find_smax_over_f(
     pt_R0: tuple[float, float],
     pt_En1: tuple[float, float],
 ) -> float | None:
-    """
-    S_max/F: as M moves from F(=R0) toward S(=En1), the extraction stops
-    being physically possible once M reaches the equilibrium curve itself
-    (the mixture becomes a single phase). Returns frac_max — the same
-    `frac` (solvent mass share) the slider already uses — or None if the
-    F-S line never reaches the curve.
-    """
-    pt_Mmax = _line_curve_intersect(pt_R0, pt_En1, system.spline, system.x_domain[0], pt_R0[0])
+    """S_max/F as `frac` (solvent mass share, same as the slider) — see find_smax_point."""
+    pt_Mmax = find_smax_point(system, pt_R0, pt_En1)
     if pt_Mmax is None:
         return None
     return _frac_along(pt_R0, pt_En1, pt_Mmax)
+
+
+def _operating_point_at_frac(
+    system,
+    pt_R0: tuple[float, float],
+    pt_Rn: tuple[float, float],
+    pt_En1: tuple[float, float],
+    frac: float,
+) -> tuple[float, float] | None:
+    """The operating point P (a.k.a. the difference point Δ) for a
+    hypothetical S:F ratio `frac`: the overall mixing point M(frac) on the
+    R0-En1 line determines E1' (via find_E1_prime), and P follows from
+    find_M_and_P. P always lies on the fixed Rn-En1 line, regardless of
+    frac — only its position along that line moves.
+    """
+    pt_Mp = mixing_point(pt_R0, pt_En1, mass_A=1 - frac, mass_B=frac)
+    pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
+    if pt_E1p is None:
+        return None
+    _, pt_P = find_M_and_P(pt_E1p, pt_Rn, pt_En1, pt_R0)
+    return pt_P
+
+
+def find_smin_construction(
+    system,
+    pt_R0: tuple[float, float],
+    pt_Rn: tuple[float, float],
+    pt_En1: tuple[float, float],
+    n_scan: int = 300,
+) -> dict | None:
+    """
+    S_min/F is the largest `frac` (solvent mass share) at which the
+    operating point P(frac) — see _operating_point_at_frac — lands exactly
+    on a real measured tie line, extended. Below that ratio, that stage's
+    operating step and its equilibrium tie line coincide (zero driving
+    force there), so no finite number of stages can pass it.
+
+    P always lies on the fixed Rn-En1 line, so "P(frac) lands on tie line
+    i" is just "P(frac)'s position along Rn-En1 equals tie line i's own
+    (frac-independent) intersection with Rn-En1" — a 1-D scalar match
+    rather than a 2-D one.
+
+    As frac decreases from 1, P(frac)'s position along Rn-En1 doesn't move
+    monotonically toward Rn: on real systems it commonly sweeps away from
+    En1 (through negative territory, past the pure-solvent corner) long
+    before ever approaching Rn from the far side. A tie line living on
+    that first (negative) leg of the sweep is encountered — and pinches —
+    before any tie line on the far (t>1, beyond Rn) leg ever would, no
+    matter how far away it looks on the raw ternary diagram. Earlier
+    versions of this function only checked the t>1 leg, which happened to
+    work for every system checked at the time (their real tie lines all
+    sat on that leg) but wrongly reported "no S_min" for systems whose
+    tie lines sit on the negative leg instead (found via w_acoh_dipe).
+
+    So: scan frac from just under 1 down to just above 0, tracking where
+    P(frac) sits along Rn-En1, and stop at the first frac (i.e. the
+    largest) where that position crosses any real tie line's own position
+    on the same line. That's S_min. Large jumps between consecutive scan
+    samples are P(frac) sweeping through the point at infinity (a normal
+    feature of this parametrization, not a real crossing) and are ignored.
+
+    Returns a dict with every point of that construction (pt_tie_L/R: the
+    real tie line that produced the pinch; pt_P_pinch; pt_E1_pinch;
+    pt_Mmin; frac_min), for building a reference figure that shows the
+    construction itself — or None if no tie line is ever crossed (a
+    genuine gap: this system's real tie-line data alone doesn't imply a
+    finite-stage limit by this method).
+    """
+    L_ol = _line_coeffs(pt_En1, pt_Rn)
+    tie_t = []
+    for pt_L, pt_R in system.tie_coords:
+        P = _intersect(_line_coeffs(pt_L, pt_R), L_ol)
+        if P is None:
+            continue
+        tie_t.append((_frac_along(pt_En1, pt_Rn, P), pt_L, pt_R))
+    if not tie_t:
+        return None
+
+    JUMP = 20.0  # a swing larger than this between adjacent samples is P(frac) crossing infinity, not a real tie-line hit
+    fracs = np.linspace(0.999, 0.001, n_scan)
+    prev_frac, prev_t = None, None
+    frac_hi = frac_lo = None
+    winner = None
+
+    for frac in fracs:
+        P = _operating_point_at_frac(system, pt_R0, pt_Rn, pt_En1, frac)
+        t = _frac_along(pt_En1, pt_Rn, P) if P is not None else None
+        if prev_t is not None and t is not None and abs(t - prev_t) < JUMP:
+            # Among tie lines whose t_i falls between prev_t and t, the one
+            # closest to prev_t is crossed first (t moves monotonically
+            # within a pole-free interval).
+            candidates = [(t_i, pt_L, pt_R) for t_i, pt_L, pt_R in tie_t
+                          if (prev_t - t_i) * (t - t_i) <= 0]
+            if candidates:
+                t_i, pt_L, pt_R = min(candidates, key=lambda c: abs(c[0] - prev_t))
+                winner = (t_i, pt_L, pt_R)
+                frac_hi, frac_lo = prev_frac, frac  # prev_frac > frac
+                break
+        prev_frac, prev_t = frac, t
+
+    if winner is None:
+        return None
+    t_i, pt_L, pt_R = winner
+
+    def h(frac):
+        P = _operating_point_at_frac(system, pt_R0, pt_Rn, pt_En1, frac)
+        return (_frac_along(pt_En1, pt_Rn, P) if P is not None else t_i) - t_i
+
+    try:
+        frac_min = brentq(h, frac_lo, frac_hi)
+    except ValueError:
+        frac_min = (frac_lo + frac_hi) / 2
+
+    pt_P_pinch = _operating_point_at_frac(system, pt_R0, pt_Rn, pt_En1, frac_min)
+    pt_Mmin = mixing_point(pt_R0, pt_En1, mass_A=1 - frac_min, mass_B=frac_min)
+    pt_E1_pinch = find_E1_prime(pt_Rn, pt_Mmin, system.spline)
+    if pt_P_pinch is None or pt_E1_pinch is None:
+        return None
+    return {
+        'pt_tie_L': pt_L, 'pt_tie_R': pt_R,
+        'pt_P_pinch': pt_P_pinch, 'pt_E1_pinch': pt_E1_pinch, 'pt_Mmin': pt_Mmin,
+        'frac_min': frac_min,
+    }
 
 
 def find_smin_over_f(
@@ -152,35 +283,8 @@ def find_smin_over_f(
     pt_Rn: tuple[float, float],
     pt_En1: tuple[float, float],
 ) -> float | None:
-    """
-    S_min/F: the solvent ratio below which no finite number of stages can
-    reach Rn (a "pinch" — an operating tie line coincides with the curve).
-
-    Graphical method (Treybal): extend the operating line OL (En1-Rn) and
-    every real tie line; among the intersections that fall beyond Rn (away
-    from En1) on OL, the one farthest from Rn is the pinch point P_min.
-    Extending F-P_min to the extract branch gives the pinch E1, from which
-    M_min (and so S_min/F, as `frac`) follows the same way S_max/F does.
-
-    Returns None if no tie line pinches on the raffinate side (e.g. a
-    strongly solutropic system, where the textbook method needs the
-    extract-side check too — not handled here, treated as a known gap).
-    """
-    L_ol = _line_coeffs(pt_En1, pt_Rn)
-    best_t, best_P = -np.inf, None
-    for pt_L, pt_R in system.tie_coords:
-        P = _intersect(_line_coeffs(pt_L, pt_R), L_ol)
-        if P is None:
-            continue
-        t = _frac_along(pt_En1, pt_Rn, P)  # 0 at En1, 1 at Rn
-        if t > 1.0 and t > best_t:
-            best_t, best_P = t, P
-
-    if best_P is None:
+    """S_min/F as `frac` (solvent mass share, same as the slider) — see find_smin_construction."""
+    c = find_smin_construction(system, pt_R0, pt_Rn, pt_En1)
+    if c is None:
         return None
-
-    pt_E1_pinch = _line_curve_intersect(pt_R0, best_P, system.spline, system.x_domain[0], pt_R0[0])
-    if pt_E1_pinch is None:
-        return None
-    pt_Mmin, _ = find_M_and_P(pt_E1_pinch, pt_Rn, pt_En1, pt_R0)
-    return _frac_along(pt_R0, pt_En1, pt_Mmin)
+    return c['frac_min']

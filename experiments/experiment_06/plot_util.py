@@ -12,14 +12,14 @@ import plotly.graph_objects as go
 try:
     from .conjugate import ConjugateCurve
     from .equilibrium import EquilibriumSystem, _DEFAULT_LABELS
-    from .hunter_nash import Step
-    from .lever_rule import find_E1_prime, find_M_and_P, mixing_point, find_smin_over_f, find_smax_over_f
+    from .hunter_nash import Step, stage_count_trend
+    from .lever_rule import find_E1_prime, find_M_and_P, mixing_point
     from .ternary import xy_to_comp
 except ImportError:
     from conjugate import ConjugateCurve
     from equilibrium import EquilibriumSystem, _DEFAULT_LABELS
-    from hunter_nash import Step
-    from lever_rule import find_E1_prime, find_M_and_P, mixing_point, find_smin_over_f, find_smax_over_f
+    from hunter_nash import Step, stage_count_trend
+    from lever_rule import find_E1_prime, find_M_and_P, mixing_point
     from ternary import xy_to_comp
 
 
@@ -615,15 +615,7 @@ def fig_lever_rule_interactive(
     n_steps : int
         Number of slider positions (more = smoother, larger file).
     """
-    # Solvent mass fraction range — bounded by S_min/F (pinch, see
-    # find_smin_over_f) and S_max/F (M leaves the two-phase region, see
-    # find_smax_over_f) for this specific system, falling back to the old
-    # fixed span if either can't be found (e.g. a solutropic system).
-    frac_min = find_smin_over_f(system, pt_R0, pt_Rn, pt_En1)
-    frac_max = find_smax_over_f(system, pt_R0, pt_En1)
-    frac_min = frac_min if frac_min is not None else 0.40
-    frac_max = frac_max if frac_max is not None else 0.97
-    frac_vals = np.linspace(frac_min, frac_max, n_steps)   # solvent mass fraction
+    frac_vals = np.linspace(0.0, 1.0, n_steps)   # solvent mass fraction
 
     lb = _lb(system)
     # ── Static traces (triangle + equilibrium + fixed stream points) ─────────
@@ -694,6 +686,64 @@ def fig_lever_rule_interactive(
         updatemenus=[],   # suppress default play button
     )
     fig.update_layout(height=850)   # extra height to accommodate slider
+    return fig
+
+
+def fig_sf_stage_trend(
+    system: EquilibriumSystem,
+    conjugate: ConjugateCurve,
+    pt_R0: tuple[float, float],
+    pt_Rn: tuple[float, float],
+    pt_En1: tuple[float, float],
+    frac_min: float,
+    frac_max: float,
+) -> go.Figure | None:
+    """Stages needed vs S:F ratio, using only genuinely-computed (never
+    guessed-at) points from stage_count_trend — see its docstring for why
+    the trend stops short of frac_min itself rather than trying to reach
+    or demonstrate the boundary directly.
+
+    Computed once during Calculate, not tied to the live slider drag.
+    Returns None if fewer than 2 usable points were found (too little to
+    draw a trend from).
+    """
+    points = stage_count_trend(system, conjugate, pt_R0, pt_Rn, pt_En1, frac_min, frac_max)
+    if len(points) < 2:
+        return None
+
+    xs = [p[0] * 100 for p in points]
+    ys = [p[1] for p in points]
+    _axis = dict(tickfont=dict(size=9), showgrid=False, nticks=4,
+                 showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=xs, y=ys,
+        mode='lines+markers',
+        line=dict(color='steelblue', width=1.5),
+        marker=dict(color='steelblue', size=6, line=dict(width=0.5, color='white')),
+        showlegend=False,
+        hovertemplate='S:F %{x:.0f} wt%<br>%{y:.1f} stages<extra></extra>',
+    ))
+    fig.update_layout(
+        title=dict(text='Stages needed as S:F falls', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text='Solvent : Feed (wt%)', font=dict(size=10)), autorange='reversed', **_axis),
+        yaxis=dict(title=dict(text='Theoretical stages', font=dict(size=10)), rangemode='tozero', **_axis),
+        margin=dict(l=34, r=10, t=28, b=36),
+        width=320, height=260,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+    )
+    fig.add_vline(
+        x=frac_min * 100,
+        line_dash='dash',
+        line_color='#1a8a5f',
+        line_width=1,
+        annotation_text='S_min',
+        annotation_position='top right',
+        annotation_font_size=9,
+        annotation_font_color='#1a8a5f',
+    )
     return fig
 
 

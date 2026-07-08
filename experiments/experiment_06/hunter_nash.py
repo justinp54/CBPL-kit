@@ -8,10 +8,12 @@ from scipy.optimize import brentq
 try:
     from .conjugate import ConjugateCurve
     from .equilibrium import EquilibriumSystem
+    from .lever_rule import find_M_and_P, find_E1_prime, mixing_point
     from .ternary import xy_to_comp
 except ImportError:
     from conjugate import ConjugateCurve
     from equilibrium import EquilibriumSystem
+    from lever_rule import find_M_and_P, find_E1_prime, mixing_point
     from ternary import xy_to_comp
 
 
@@ -45,9 +47,25 @@ class HunterNashSolver:
     max_steps: int = 50
 
     def solve(self) -> tuple[list[Step], float]:
+        """Sets self.status to one of:
+        - 'converged':  R_k actually reached Rn (the normal, expected case)
+        - 'stalled':    consecutive E points stopped moving before reaching
+                         Rn — the construction found a fixed point unrelated
+                         to the target, not a slow approach to it. Distinct
+                         from 'converged' because len(steps) alone can't
+                         tell them apart (found via the S:F Explorer's S_min
+                         preview: a hypothetical operating point can produce
+                         a Step sequence that climbs steadily away from Rn
+                         for dozens of stages before stalling, which looks
+                         superficially like "just needs more stages" if you
+                         only look at the count).
+        - 'max_steps':  ran out of max_steps still actively moving toward
+                         Rn (genuinely still converging, just slowly).
+        """
         steps: list[Step] = []
         current_E = self.pt_E1
         y_Rn = self.pt_Rn[1]
+        self.status = 'max_steps'
 
         for i in range(1, self.max_steps + 1):
             pt_R, pt_inter = self._E_to_R(current_E)
@@ -60,6 +78,7 @@ class HunterNashSolver:
                 comp_R=xy_to_comp(*pt_R),
             ))
             if pt_R[1] <= y_Rn + 1e-6:
+                self.status = 'converged'
                 if len(steps) >= 2:
                     y_prev = steps[-2].pt_R[1]
                     y_curr = pt_R[1]
@@ -72,6 +91,7 @@ class HunterNashSolver:
                 # Separation limit: last step barely advances — exclude it
                 if len(steps) > 1:
                     steps = steps[:-1]
+                self.status = 'stalled'
                 break
             current_E = next_E
 
@@ -119,3 +139,55 @@ class HunterNashSolver:
         line = lambda x: m * x + b
         xE = self._find_on_spline(line, self.system.x_domain[0], self.conjugate.pt_plait[0])
         return (float(xE), float(line(xE)))
+
+
+def stage_count_trend(
+    system: EquilibriumSystem,
+    conjugate: ConjugateCurve,
+    pt_R0: tuple[float, float],
+    pt_Rn: tuple[float, float],
+    pt_En1: tuple[float, float],
+    frac_min: float,
+    frac_max: float,
+    n: int = 7,
+    max_steps: int = 100,
+) -> list[tuple[float, float]]:
+    """Stage count vs S:F ratio (`frac`), sampled from frac_max down toward
+    frac_min, for the S:F Explorer's S_min reference.
+
+    Sampled points near frac_max (close to the single-phase limit) can fail
+    for reasons unrelated to S_min — an unrelated edge case, skipped rather
+    than treated as "reached the S_min boundary". Once a real descending
+    trend has started, though, the first failure marks the edge of what can
+    be reliably computed and ends the trend there: every returned point is
+    a genuine, unambiguous stage count, never a guess near the
+    stalled/still-converging boundary (see fig_sf_smin_reference's
+    docstring for why that boundary itself is avoided).
+    """
+    points: list[tuple[float, float]] = []
+    for t in np.linspace(0.9, 0.05, n):
+        frac = frac_min + t * (frac_max - frac_min)
+        pt_Mp = mixing_point(pt_R0, pt_En1, mass_A=1 - frac, mass_B=frac)
+        pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
+        if pt_E1p is None:
+            if points:
+                break
+            continue
+        _, pt_Pp = find_M_and_P(pt_E1p, pt_Rn, pt_En1, pt_R0)
+        if pt_Pp is None:
+            if points:
+                break
+            continue
+        solver = HunterNashSolver(system, conjugate, pt_Pp, pt_E1p, pt_Rn, max_steps=max_steps)
+        try:
+            _, N = solver.solve()
+        except ValueError:
+            if points:
+                break
+            continue
+        if solver.status != 'converged':
+            if points:
+                break
+            continue
+        points.append((float(frac), N))
+    return points
