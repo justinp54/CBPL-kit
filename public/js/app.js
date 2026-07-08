@@ -12,7 +12,7 @@ function toggleSidebar() {
 const TABS_NEED_SIDEBAR = new Set(['fig3','fig2b','fig4','fig_sf','fig_feed']);
 const TABS_AUTO_COLLAPSE = new Set(['fig1','fig2a']);
 // Tabs with a right-side data-panel drawer (see _setDataTrigger)
-const DATA_PANEL_TABS = { fig1: 'panel-fig1', fig2a: 'panel-fig2a', fig3: 'panel-fig3', fig_sf: 'panel-fig_sf' };
+const DATA_PANEL_TABS = { fig1: 'panel-fig1', fig2a: 'panel-fig2a', fig3: 'panel-fig3', fig_sf: 'panel-fig_sf', fig_feed: 'panel-fig_feed' };
 let sidebarManualOverride = false;
 
 function setSidebarCollapsed(collapsed) {
@@ -692,6 +692,12 @@ if _sf_frac_min is not None and _sf_frac_max is not None:
 sf_min_found = round(_sf_frac_min, 4) if _sf_frac_min is not None else None
 sf_max_found = round(_sf_frac_max, 4) if _sf_frac_max is not None else None
 
+# Stages-needed trend as Feed PA falls, over the Feed Explorer's existing
+# slider range (10-55 wt%) — see feed_stage_count_trend's docstring for why
+# there's no named limit line, unlike the S:F trend.
+_fig_feed_trend = plot_util.fig_feed_stage_trend(system, conjugate, pt_E1, pt_Rn, pt_En1)
+fig_feed_trend = _fig_feed_trend.to_json() if _fig_feed_trend is not None else None
+
 def _build(key):
     if key == 'fig1':   return plot_util.fig_ternary_equilibrium(system).to_json()
     if key == 'fig2a':  return plot_util.fig_conjugate_curve(system, conjugate).to_json()
@@ -732,6 +738,7 @@ json.dumps({
     'fig_sf_trend': fig_sf_trend,
     'sf_min_found': sf_min_found,
     'sf_max_found': sf_max_found,
+    'fig_feed_trend': fig_feed_trend,
     'stages': [{'index': s.index, 'E': _comp(s.comp_E), 'R': _comp(s.comp_R)} for s in steps],
     'figures': _figs,
 })
@@ -1096,6 +1103,7 @@ function switchTab(key) {
     feedBar.style.display = 'flex';
     document.getElementById('plot-fig_feed').style.paddingTop = '52px';
     computeExplorer('feed');
+    requestAnimationFrame(() => { _renderFeedTrendChart(); });
   } else {
     bar.style.display = 'none';
     document.getElementById('plot-fig_sf').style.paddingTop   = '0';
@@ -1197,6 +1205,24 @@ function showResults(data) {
   }
 
   document.getElementById('panel-fig_sf').classList.add('has-data');
+
+  if (data.fig_feed_trend) {
+    cache.fig_feed_trend = JSON.parse(data.fig_feed_trend);
+    _renderFeedTrendChart();
+  } else {
+    cache.fig_feed_trend = null;
+    const el = document.getElementById('feed-trend-chart');
+    if (el) { try { Plotly.purge(el); } catch(e) {} }
+  }
+  document.getElementById('panel-fig_feed').classList.add('has-data');
+}
+
+function _renderFeedTrendChart() {
+  const el = document.getElementById('feed-trend-chart');
+  if (!el || !cache.fig_feed_trend) return;
+  const w = el.offsetWidth || 320;
+  const layout = { ...cache.fig_feed_trend.layout, width: w, autosize: false };
+  return Plotly.react(el, cache.fig_feed_trend.data, layout, { displayModeBar: false });
 }
 
 function _renderSfTrendChart() {
@@ -1755,6 +1781,7 @@ _b._eready     = False
     document.getElementById('panel-fig2a')?.classList.remove('has-data');
     document.getElementById('panel-fig3')?.classList.remove('has-data');
     document.getElementById('panel-fig_sf')?.classList.remove('has-data');
+    document.getElementById('panel-fig_feed')?.classList.remove('has-data');
     const _ce = document.getElementById('corr-chart');
     if (_ce) { try { Plotly.purge(_ce); } catch(e) {} }
     const _se = document.getElementById('selectivity-chart');
@@ -1763,6 +1790,8 @@ _b._eready     = False
     if (_pe) { try { Plotly.purge(_pe); } catch(e) {} }
     const _sftrend = document.getElementById('sf-trend-chart');
     if (_sftrend) { try { Plotly.purge(_sftrend); } catch(e) {} }
+    const _feedtrend = document.getElementById('feed-trend-chart');
+    if (_feedtrend) { try { Plotly.purge(_feedtrend); } catch(e) {} }
     _corrStats = null;
     _corrActive = 'ot';
     _selStats = null;
@@ -1859,6 +1888,7 @@ window.addEventListener('resize', () => {
       if (activeTab === 'fig1' && _corrStats) { _renderCorrChart(_corrActive); _renderSelectivityChart(); }
       else if (activeTab === 'fig2a' && _plaitStats) { _renderPlaitChart(); }
       else if (activeTab === 'fig_sf') { if (cache.fig_sf_trend) _renderSfTrendChart(); }
+      else if (activeTab === 'fig_feed') { if (cache.fig_feed_trend) _renderFeedTrendChart(); }
     } else {
       // Mobile/tablet: re-render active ternary chart on orientation/resize.
       // (Desktop relies on responsive:true ResizeObserver; switchTab() handles switch-back-after-resize.)

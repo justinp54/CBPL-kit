@@ -249,6 +249,7 @@
       /* Same reasoning as panel-fig3: these two subplots are 320px wide,
          no need for the full 480px panel. */
       #panel-fig_sf { width: 360px; }
+      #panel-fig_feed { width: 340px; }
     }
     .data-panel.has-data { display: block; }
     .data-panel-title, .data-panel-heading { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
@@ -359,6 +360,16 @@
     #sf-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); margin-top: -6px; cursor: pointer; }
     #sf-slider::-moz-range-track { height: 4px; background: transparent; border: none; }
     #sf-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); cursor: pointer; }
+
+    /* Feed Explorer's slider has no valid/invalid zone overlay (no S_min-
+       style theory for feed concentration — see feed_stage_count_trend),
+       but uses the same thumb/track look as #sf-slider for visual
+       consistency between the two explorer tabs. */
+    #feed-slider { height: 20px; margin: 0; cursor: pointer; -webkit-appearance: none; appearance: none; }
+    #feed-slider::-webkit-slider-runnable-track { -webkit-appearance: none; height: 4px; background: rgba(26,138,95,.3); border-radius: 2px; }
+    #feed-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); margin-top: -6px; cursor: pointer; }
+    #feed-slider::-moz-range-track { height: 4px; background: rgba(26,138,95,.3); border-radius: 2px; }
+    #feed-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); cursor: pointer; }
     #feed-num { width: 62px; }
 
     /* How S_min/S_max were calculated, color-coded to match the slider's

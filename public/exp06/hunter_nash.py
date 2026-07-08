@@ -191,3 +191,48 @@ def stage_count_trend(
             continue
         points.append((float(frac), N))
     return points
+
+
+def feed_stage_count_trend(
+    system: EquilibriumSystem,
+    conjugate: ConjugateCurve,
+    pt_E1: tuple[float, float],
+    pt_Rn: tuple[float, float],
+    pt_En1: tuple[float, float],
+    wpa_lo: float = 10.0,
+    wpa_hi: float = 55.0,
+    n: int = 7,
+    max_steps: int = 100,
+) -> list[tuple[float, float]]:
+    """Stage count vs Feed PA wt% (`wpa`), sampled from wpa_hi (concentrated,
+    safe) down toward wpa_lo (dilute), for the Feed Explorer.
+
+    Unlike S_min/S_max, there's no named textbook limit for feed
+    concentration — this just samples the existing slider's practical
+    range and reports genuine, unambiguous stage counts (same
+    converged-only, break-on-first-failure discipline as
+    stage_count_trend), stopping wherever the real data stops supporting
+    a clean answer rather than implying a "Feed_min"-style boundary exists.
+    """
+    points: list[tuple[float, float]] = []
+    for wpa in np.linspace(wpa_hi, wpa_lo, n):
+        wbp = 100.0 - wpa
+        pt_R0 = (wbp + 0.5 * wpa, np.sqrt(3) / 2.0 * wpa)
+        _, pt_P = find_M_and_P(pt_E1, pt_Rn, pt_En1, pt_R0)
+        if pt_P is None:
+            if points:
+                break
+            continue
+        solver = HunterNashSolver(system, conjugate, pt_P, pt_E1, pt_Rn, max_steps=max_steps)
+        try:
+            _, N = solver.solve()
+        except ValueError:
+            if points:
+                break
+            continue
+        if solver.status != 'converged':
+            if points:
+                break
+            continue
+        points.append((float(wpa), N))
+    return points

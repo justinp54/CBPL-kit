@@ -290,7 +290,17 @@
           </div>
         </div>
       </div>
-      <div class="plot-pane" id="plot-fig_feed" role="tabpanel" aria-labelledby="tab-fig_feed"></div>
+      <div class="plot-pane plot-with-panel" id="plot-fig_feed" role="tabpanel" aria-labelledby="tab-fig_feed">
+        <div class="plot-chart" id="chart-fig_feed"></div>
+        <div class="data-panel" id="panel-fig_feed">
+          <div class="data-panel-drawer-hd">
+            <div class="drawer-handle"></div>
+            <button class="drawer-close-btn" onclick="closeDataDrawer()" aria-label="Close">×</button>
+          </div>
+          <div class="data-panel-heading">Feed Explorer Reference</div>
+          <div id="feed-trend-chart"></div>
+        </div>
+      </div>
       <div class="plot-pane system-pane" id="plot-system" role="tabpanel" aria-labelledby="tab-system">
         <div class="system-content">
           <h2>System Configuration</h2>

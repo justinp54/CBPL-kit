@@ -12,13 +12,13 @@ import plotly.graph_objects as go
 try:
     from .conjugate import ConjugateCurve
     from .equilibrium import EquilibriumSystem, _DEFAULT_LABELS
-    from .hunter_nash import Step, stage_count_trend
+    from .hunter_nash import Step, stage_count_trend, feed_stage_count_trend
     from .lever_rule import find_E1_prime, find_M_and_P, mixing_point
     from .ternary import xy_to_comp
 except ImportError:
     from conjugate import ConjugateCurve
     from equilibrium import EquilibriumSystem, _DEFAULT_LABELS
-    from hunter_nash import Step, stage_count_trend
+    from hunter_nash import Step, stage_count_trend, feed_stage_count_trend
     from lever_rule import find_E1_prime, find_M_and_P, mixing_point
     from ternary import xy_to_comp
 
@@ -743,6 +743,52 @@ def fig_sf_stage_trend(
         annotation_position='top right',
         annotation_font_size=9,
         annotation_font_color='#1a8a5f',
+    )
+    return fig
+
+
+def fig_feed_stage_trend(
+    system: EquilibriumSystem,
+    conjugate: ConjugateCurve,
+    pt_E1: tuple[float, float],
+    pt_Rn: tuple[float, float],
+    pt_En1: tuple[float, float],
+    wpa_lo: float = 10.0,
+    wpa_hi: float = 55.0,
+) -> go.Figure | None:
+    """Stages needed vs Feed PA wt%, using only genuinely-computed points
+    from feed_stage_count_trend. No named limit line (see its docstring) —
+    just the trend itself.
+
+    Computed once during Calculate, not tied to the live slider drag.
+    Returns None if fewer than 2 usable points were found.
+    """
+    points = feed_stage_count_trend(system, conjugate, pt_E1, pt_Rn, pt_En1, wpa_lo, wpa_hi)
+    if len(points) < 2:
+        return None
+
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    _axis = dict(tickfont=dict(size=9), showgrid=False, nticks=4,
+                 showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=xs, y=ys,
+        mode='lines+markers',
+        line=dict(color='steelblue', width=1.5),
+        marker=dict(color='steelblue', size=6, line=dict(width=0.5, color='white')),
+        showlegend=False,
+        hovertemplate='Feed %{x:.0f} wt%<br>%{y:.1f} stages<extra></extra>',
+    ))
+    fig.update_layout(
+        title=dict(text='Stages needed as Feed PA falls', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text='Feed PA (wt%)', font=dict(size=10)), **_axis),
+        yaxis=dict(title=dict(text='Theoretical stages', font=dict(size=10)), rangemode='tozero', **_axis),
+        margin=dict(l=34, r=10, t=28, b=36),
+        width=320, height=260,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
     )
     return fig
 
