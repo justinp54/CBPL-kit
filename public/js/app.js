@@ -78,7 +78,7 @@ const TEAM_DATA = [
     name: 'Youn-Woo Lee',
     email: 'ywlee@snu.ac.kr',
     role: 'Advisor',
-    photo: null,
+    photo: '/images/youn-woo-lee.png',
     initials: 'YL',
     gradient: 'linear-gradient(135deg, #0f2744 0%, #071a2e 100%)',
     bio: [
@@ -314,15 +314,18 @@ for _mname, _conj in _conj_methods.items():
     _sf['fig2a_' + _mname] = plot_util.fig_conjugate_curve(_system, _conj).to_json()
 _sf['fig2a'] = _sf['fig2a_diagonal']
 
-# Extract tie line full compositions from pre-computed tie_coords
+# Extract tie line full compositions from pre-computed tie_coords.
+# Keep full precision here; rounding is a display-only concern handled in JS.
+# D/S are NOT computed here — they come from compute_correlations below, so
+# the whole app has a single source of truth for the ratios.
 from ternary import xy_to_comp as _xyc
 _tl_comps = []
-_clamp = lambda v: round(max(0.0, v), 2)
+_pos = lambda v: max(0.0, v)   # clamp tiny numerical negatives only
 for (_ptL, _ptR) in _system.tie_coords:
     _cL = _xyc(*_ptL)
     _cR = _xyc(*_ptR)
-    _tl_comps.append({'left': [_clamp(_cL[0]), _clamp(_cL[1]), _clamp(_cL[2])],
-                      'right': [_clamp(_cR[0]), _clamp(_cR[1]), _clamp(_cR[2])]})
+    _tl_comps.append({'left': [_pos(_cL[0]), _pos(_cL[1]), _pos(_cL[2])],
+                      'right': [_pos(_cR[0]), _pos(_cR[1]), _pos(_cR[2])]})
 _sf['tie_comps'] = _tl_comps
 
 from correlation import compute_correlations
@@ -365,7 +368,7 @@ json.dumps(_sf)
       document.getElementById('empty').style.display = 'none';
       renderFig(activeTab);
     }
-    if (figs.tie_comps) populateTieLineTable(figs.tie_comps);
+    if (figs.tie_comps) populateTieLineTable(figs.tie_comps, figs.sel_stats);
     if (figs.corr_stats) populateCorrelationPanel(figs.corr_stats);
     if (figs.sel_stats) populateSelectivityPanel(figs.sel_stats);
     _conjHorizontalSide = figs.conj_horizontal_side || null;
@@ -378,7 +381,7 @@ json.dumps(_sf)
   } catch (e) { console.error('System fig render:', e); }
 }
 
-function populateTieLineTable(comps) {
+function populateTieLineTable(comps, sel) {
   const thead = document.querySelector('#tieline-table thead');
   const tbody = document.querySelector('#tieline-table tbody');
   // Column order matches paper: carrier(w1x), solute(w2x), solvent(w3x) per phase
@@ -399,18 +402,22 @@ function populateTieLineTable(comps) {
       ${th(ca,'100w₁₁')}${th(so,'100w₂₁')}${th(sv,'100w₃₁')}
       <th></th><th></th><th></th>
     </tr>`;
-  const eps = 1e-9;
-  tbody.innerHTML = comps.map((t, i) => {
-    const d1 = Math.max(eps, t.left[1]) / Math.max(eps, t.right[1]);   // w13/w11
-    const d2 = Math.max(eps, t.left[0]) / Math.max(eps, t.right[0]);   // w23/w21
-    const sv = d2 / d1;
-    return `<tr>
+  // D₁, D₂, S come straight from compute_correlations (the same full-precision
+  // values the selectivity chart uses) — the table only rounds for display and
+  // never recomputes the ratios from the rounded compositions in the cells.
+  // Display precision by significant figures: compositions 3 dp; D₁ 4 dp (its
+  // values are small, so 3 dp would collapse distinct rows to 0.056); D₂ 3 dp
+  // and S 2 dp (both ~4 sig figs — 3 dp on S would over-state the precision).
+  const fComp = v => Number(v).toFixed(3);
+  const fD1   = v => (v == null ? '' : Number(v).toFixed(4));
+  const fD2   = v => (v == null ? '' : Number(v).toFixed(3));
+  const fS    = v => (v == null ? '' : Number(v).toFixed(2));
+  tbody.innerHTML = comps.map((t, i) => `<tr>
       <td>${i+1}</td>
-      <td>${t.left[1]}</td><td>${t.left[0]}</td><td>${t.left[2]}</td>
-      <td>${t.right[1]}</td><td>${t.right[0]}</td><td>${t.right[2]}</td>
-      <td>${d1.toFixed(3)}</td><td>${d2.toFixed(3)}</td><td>${sv.toFixed(3)}</td>
-    </tr>`;
-  }).join('');
+      <td>${fComp(t.left[1])}</td><td>${fComp(t.left[0])}</td><td>${fComp(t.left[2])}</td>
+      <td>${fComp(t.right[1])}</td><td>${fComp(t.right[0])}</td><td>${fComp(t.right[2])}</td>
+      <td>${fD1(sel?.d1?.[i])}</td><td>${fD2(sel?.d2?.[i])}</td><td>${fS(sel?.s?.[i])}</td>
+    </tr>`).join('');
   document.getElementById('panel-fig1').classList.add('has-data');
 }
 
@@ -445,9 +452,9 @@ function _renderCorrChart(model) {
 }
 
 const _CORR_FORMULA = {
-  ot:      { label: 'Othmer-Tobias', latex: '\\ln\\dfrac{1-w_{11}}{w_{11}} = a + b\\cdot\\ln\\dfrac{1-w_{33}}{w_{33}}' },
-  hand:    { label: 'Hand',          latex: '\\ln\\dfrac{w_{21}}{w_{11}} = a + b\\cdot\\ln\\dfrac{w_{23}}{w_{33}}' },
-  bachman: { label: 'Bachman',       latex: 'w_{11} = a + b\\cdot\\dfrac{w_{11}}{w_{33}}' },
+  ot:      { label: 'Othmer-Tobias', latex: '\\ln\\dfrac{1-w_{33}}{w_{33}} = a + b\\cdot\\ln\\dfrac{1-w_{11}}{w_{11}}' },
+  hand:    { label: 'Hand',          latex: '\\ln\\dfrac{w_{23}}{w_{33}} = a + b\\cdot\\ln\\dfrac{w_{21}}{w_{11}}' },
+  bachman: { label: 'Bachman',       latex: 'w_{33} = a + b\\cdot\\dfrac{w_{33}}{w_{11}}' },
 };
 
 const _SEL_LATEX = 'D_1 = \\dfrac{w_{13}}{w_{11}},\\quad D_2 = \\dfrac{w_{23}}{w_{21}},\\quad S = \\dfrac{D_2}{D_1}';
@@ -463,7 +470,7 @@ function _updateCorrStats(model) {
   const d = _corrStats[model];
   const f = _CORR_FORMULA[model];
   el.innerHTML = `
-    <div class="fml-label">${f.label} Model</div>
+    <div class="fml-label">${f.label} Correlation</div>
     <div class="fml-eq">${_katex(f.latex)}</div>
     <div class="fml-params">a = ${d.a} &nbsp;&nbsp; b = ${d.b} &nbsp;&nbsp; <span class="fml-r2">R² = ${d.r2}</span></div>`;
 }
@@ -483,7 +490,7 @@ function populateSelectivityPanel(stats) {
   _renderSelectivityChart();
   const el = document.getElementById('selectivity-stats');
   if (el) el.innerHTML = `
-    <div class="fml-label">Separation Factor</div>
+    <div class="fml-label">Selectivity</div>
     <div class="fml-eq">${_katex(_SEL_LATEX)}</div>`;
 }
 
@@ -1415,7 +1422,7 @@ async function exportBundle() {
       const tieSheet = XLSX.utils.table_to_sheet(tieEl);
       if (_corrStats) {
         const range = XLSX.utils.decode_range(tieSheet['!ref']);
-        const corrRows = [[], ['Model', 'a', 'b', 'R2']];
+        const corrRows = [[], ['Correlation', 'a', 'b', 'R2']];
         for (const m of ['ot', 'hand', 'bachman']) {
           if (_corrStats[m]) corrRows.push([_CORR_FORMULA[m].label, _corrStats[m].a, _corrStats[m].b, _corrStats[m].r2]);
         }

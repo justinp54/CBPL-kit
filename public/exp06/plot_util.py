@@ -861,18 +861,18 @@ def fig_correlation(corr, model):
     _META = {
         'ot': {
             'title': 'Othmer-Tobias Correlation',
-            'xlabel': 'ln[(1−w₃₃)/w₃₃]',
-            'ylabel': 'ln[(1−w₁₁)/w₁₁]',
+            'xlabel': 'ln[(1−w₁₁)/w₁₁]',
+            'ylabel': 'ln[(1−w₃₃)/w₃₃]',
         },
         'hand': {
             'title': 'Hand Correlation',
-            'xlabel': 'ln(w₂₃/w₃₃)',
-            'ylabel': 'ln(w₂₁/w₁₁)',
+            'xlabel': 'ln(w₂₁/w₁₁)',
+            'ylabel': 'ln(w₂₃/w₃₃)',
         },
         'bachman': {
             'title': 'Bachman Correlation',
-            'xlabel': 'w₁₁/w₃₃',
-            'ylabel': 'w₁₁',
+            'xlabel': 'w₃₃/w₁₁',
+            'ylabel': 'w₃₃',
         },
     }
     m = _META[model]
@@ -912,16 +912,16 @@ def fig_selectivity(sel):
     """
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=sel['w21'], y=sel['s'],
+        x=sel['w23'], y=sel['s'],
         mode='markers',
         marker=dict(color='#1878a8', size=6, symbol='circle',
                     line=dict(width=0.5, color='white')),
         showlegend=False,
-        hovertemplate='w₂₁: %{x:.4f}<br>S: %{y:.3f}<extra></extra>',
+        hovertemplate='w₂₃: %{x:.4f}<br>S: %{y:.3f}<extra></extra>',
     ))
     fig.update_layout(
-        title=dict(text='Separation Factor S vs w₂₁', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='w₂₁ (solute, carrier-rich)', font=dict(size=10)),
+        title=dict(text='Selectivity S vs w₂₃', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text='w₂₃ (solute, solvent-rich)', font=dict(size=10)),
                    tickfont=dict(size=9), showgrid=False, nticks=4,
                    showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
         yaxis=dict(title=dict(text='S', font=dict(size=10)),
@@ -1019,8 +1019,8 @@ def fig_plait_loglog(data):
         # ("Plait Point Estimation") stays an HTML label in index.html.
         title=dict(text="Treybal's Method (Log-Log)",
                    font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='log(w₂₃/w₃₃),  log(w₂/w₃)', font=dict(size=10)), **_axis),
-        yaxis=dict(title=dict(text='log(w₂₁/w₁₁),  log(w₂/w₁)', font=dict(size=10)), **_axis),
+        xaxis=dict(title=dict(text='ln(w₂₁/w₁₁),  ln(w₂/w₁)', font=dict(size=10)), **_axis),
+        yaxis=dict(title=dict(text='ln(w₂₃/w₃₃),  ln(w₂/w₃)', font=dict(size=10)), **_axis),
         height=260,
         margin=dict(l=44, r=10, t=28, b=40),
         plot_bgcolor='white',

@@ -14,9 +14,9 @@ def compute_correlations(system):
       w33 = solvent in solvent-rich phase
 
     Models:
-      Othmer-Tobias : ln[(1-w11)/w11] = a + b·ln[(1-w33)/w33]
-      Hand          : ln(w21/w11)     = a + b·ln(w23/w33)
-      Bachman       : w11             = a + b·(w11/w33)
+      Othmer-Tobias : ln[(1-w33)/w33] = a + b·ln[(1-w11)/w11]
+      Hand          : ln(w23/w33)     = a + b·ln(w21/w11)
+      Bachman       : w33             = a + b·(w33/w11)
     """
     _eps = 1e-9
 
@@ -54,14 +54,14 @@ def compute_correlations(system):
             'r2':    round(r2, 6),
         }
 
-    x_ot   = np.log((1 - w33) / w33)
-    y_ot   = np.log((1 - w11) / w11)
+    x_ot   = np.log((1 - w11) / w11)
+    y_ot   = np.log((1 - w33) / w33)
 
-    x_hand = np.log(w23 / w33)
-    y_hand = np.log(w21 / w11)
+    x_hand = np.log(w21 / w11)
+    y_hand = np.log(w23 / w33)
 
-    x_bach = w11 / w33
-    y_bach = w11.copy()
+    x_bach = w33 / w11
+    y_bach = w33.copy()
 
     # Selectivity: D1 = w13/w11 (carrier), D2 = w23/w21 (solute), S = D2/D1
     d1 = w13 / w11
@@ -72,12 +72,16 @@ def compute_correlations(system):
         'ot':         _fit(x_ot,   y_ot),
         'hand':       _fit(x_hand, y_hand),
         'bachman':    _fit(x_bach, y_bach),
+        # Full precision on purpose: rounding is a display-only concern, done
+        # once at the point of display (JS toFixed / Plotly hover format).
+        # Pre-rounding here would double-round (e.g. 0.056451 -> 0.0565 -> 0.057
+        # instead of 0.056) and could disagree with the tie-line table/chart.
         'selectivity': {
-            'w21': np.round(w21, 6).tolist(),
-            'w23': np.round(w23, 6).tolist(),
-            'd1':  np.round(d1,  4).tolist(),
-            'd2':  np.round(d2,  4).tolist(),
-            's':   np.round(s,   4).tolist(),
+            'w21': w21.tolist(),
+            'w23': w23.tolist(),
+            'd1':  d1.tolist(),
+            'd2':  d2.tolist(),
+            's':   s.tolist(),
         },
     }
 
@@ -86,15 +90,17 @@ def compute_plait_loglog(system):
     """
     Log-log plait point determination chart data.
 
-    For binodal data (each equilibrium_data point, columns [wCarrier%, wSolute%, wSolvent%]):
-      x = log(wSolute / wSolvent)  = log(wpa/ww)
-      y = log(wSolute / wCarrier)  = log(wpa/wbp)
+    Axes are natural log (ln) and match the Hand correlation panel:
+      For binodal data (columns [wCarrier%, wSolute%, wSolvent%]):
+        x = ln(wSolute / wCarrier)   = ln(wpa/wbp)
+        y = ln(wSolute / wSolvent)   = ln(wpa/ww)
+      For tie-line data (same axes as the Hand correlation):
+        x = ln(w21/w11)  = ln(solute_carrier-rich / carrier_carrier-rich)
+        y = ln(w23/w33)  = ln(solute_solvent-rich / solvent_solvent-rich)
 
-    For tie-line data (same axes as Hand correlation):
-      x = log(w23/w33)  = log(solute_solvent-rich / solvent_solvent-rich)
-      y = log(w21/w11)  = log(solute_carrier-rich / carrier_carrier-rich)
-
-    Plait point: where binodal curve crosses y = x diagonal.
+    The tie-line points and their linear fit here are identical to the Hand
+    correlation chart (same points; same regression ln(w23/w33) = a + b*ln(w21/w11)).
+    Plait point: intersection of that tie-line fit line with the binodal spline.
     """
     from scipy.interpolate import splprep, splev
     from scipy.optimize import brentq
@@ -106,8 +112,8 @@ def compute_plait_loglog(system):
     for row in system.equil_data:
         wC, wS, wSv = row[0]/100, row[1]/100, row[2]/100
         if wC > _eps and wS > _eps and wSv > _eps:
-            bx.append(float(np.log(wS / wSv)))
-            by.append(float(np.log(wS / wC)))
+            bx.append(float(np.log(wS / wC)))    # x = ln(w2/w1)
+            by.append(float(np.log(wS / wSv)))   # y = ln(w2/w3)
     bx = np.array(bx)
     by = np.array(by)
 
@@ -130,8 +136,8 @@ def compute_plait_loglog(system):
         w11 = max(_eps, cR[1] / 100)
         w23 = max(_eps, cL[0] / 100)
         w33 = max(_eps, cL[2] / 100)
-        tx.append(float(np.log(w23 / w33)))
-        ty.append(float(np.log(w21 / w11)))
+        tx.append(float(np.log(w21 / w11)))   # x = ln(w21/w11)  (Hand x-axis)
+        ty.append(float(np.log(w23 / w33)))   # y = ln(w23/w33)  (Hand y-axis)
     tx = np.array(tx)
     ty = np.array(ty)
 
@@ -153,10 +159,10 @@ def compute_plait_loglog(system):
                     u_root = brentq(_f, float(u_fine[i]), float(u_fine[i + 1]))
                     px, py = splev(u_root, tck)
                     px, py = float(px), float(py)
-                    ex, ey = np.exp(px), np.exp(py)
+                    ex, ey = np.exp(px), np.exp(py)   # ex = w2/w1, ey = w2/w3
                     wS  = 1.0 / (1.0 + 1.0 / ex + 1.0 / ey)
-                    wSv = wS / ex
-                    wC  = wS / ey
+                    wC  = wS / ex
+                    wSv = wS / ey
                     plait_loglog = {'x': round(px, 4), 'y': round(py, 4)}
                     plait_comp   = {
                         'carrier': round(wC  * 100, 2),
