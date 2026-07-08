@@ -305,12 +305,14 @@
         z-index: 1;
       }
       .drawer-handle {
-        flex: 1;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 36px;
         height: 4px;
         background: #cbd5e1;
         border-radius: 2px;
-        margin: 0 auto;
-        max-width: 36px;
       }
       .drawer-close-btn {
         background: none;
