@@ -94,7 +94,7 @@ def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
         a=a, b=b, c=c,
         mode="lines", name="Binodal curve",
         line=dict(color="black", width=2.5),
-        hovertemplate=f"{s}:%{{a:.1f}}%  {sv}:%{{b:.1f}}%  {d}:%{{c:.1f}}%<extra>Binodal curve</extra>",
+        hovertemplate=f"{d}:%{{c:.1f}}%  {s}:%{{a:.1f}}%  {sv}:%{{b:.1f}}%<extra>Binodal curve</extra>",
     )
     a_pts = system.equil_data[:, 1].tolist()
     b_pts = system.equil_data[:, 2].tolist()
@@ -103,7 +103,7 @@ def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
         a=a_pts, b=b_pts, c=c_pts,
         mode="markers", name="Equil. data",
         marker=dict(color="black", size=7),
-        hovertemplate=f"{s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%  {d}:%{{c:.2f}}%<extra>Equil. data</extra>",
+        hovertemplate=f"{d}:%{{c:.2f}}%  {s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%<extra>Equil. data</extra>",
     )
     return [curve, pts]
 
@@ -122,7 +122,7 @@ def _tie_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
             marker=dict(size=5, color="steelblue"),
             name="Tie-lines" if i == 0 else None,
             showlegend=(i == 0),
-            hovertemplate=f"{s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%  {d}:%{{c:.2f}}%<extra>Tie-line</extra>",
+            hovertemplate=f"{d}:%{{c:.2f}}%  {s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%<extra>Tie-line</extra>",
         ))
     return traces
 
@@ -399,9 +399,22 @@ def fig_conjugate_curve(
                 showlegend=False, hoverinfo="skip",
             ))
 
-    traces.append(_cart_point_trace(
-        conjugate.pt_plait, "Plait pt. (Conj. Curve)", "darkorange", symbol="star", size=14,
-        labels=_lb(system), show_text=False,
+    # Plait star built inline (not via shared _cart_point_trace) so its hover
+    # can list components in carrier → solute → solvent order without changing
+    # the other cart points (R₀, Rₙ, E₁, P, M, …) that share that helper.
+    _lbp = _lb(system)
+    _cabbr, _sabbr, _svabbr = _lbp['carrier']['abbr'], _lbp['solute']['abbr'], _lbp['solvent']['abbr']
+    _px, _py = conjugate.pt_plait
+    _wpa, _wbp, _ww = xy_to_comp(_px, _py)
+    traces.append(go.Scatter(
+        x=[_px], y=[_py],
+        mode="markers",
+        name="Plait pt. (Conj. Curve)",
+        marker=dict(color="darkorange", size=14, symbol="star"),
+        hovertemplate=(
+            f"<b>Plait pt. (Conj. Curve)</b><br>"
+            f"{_cabbr}:{_wbp:.2f}%  {_sabbr}:{_wpa:.2f}%  {_svabbr}:{_ww:.2f}%<extra></extra>"
+        ),
     ))
 
     fig = go.Figure(data=traces)
