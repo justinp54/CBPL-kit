@@ -490,7 +490,7 @@ def fig_hunter_nash(
     when P lies outside the ternary triangle.
     """
     lb = _lb(system)
-    traces = _cart_triangle_traces(system) + _cart_equil_traces(system)
+    traces = _cart_triangle_traces(system) + _cart_equil_traces(system, hover_comp=True)
 
     # Key stream and operating points
     traces += [
