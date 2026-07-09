@@ -345,7 +345,8 @@ _sf['plait_stats'] = _plait_data['plait_comp']
 _conj_plait_by_method = {}
 for _mname, _conj in _conj_methods.items():
     _pp = _xyc(*_conj.pt_plait)
-    _conj_plait_by_method[_mname] = {'carrier': round(max(0.0, _pp[1]), 2), 'solute': round(max(0.0, _pp[0]), 2), 'solvent': round(max(0.0, _pp[2]), 2)}
+    # Full precision on purpose — rounded once at display (toFixed) in _renderPlaitTable.
+    _conj_plait_by_method[_mname] = {'carrier': max(0.0, _pp[1]), 'solute': max(0.0, _pp[0]), 'solvent': max(0.0, _pp[2])}
 _sf['conj_plait_by_method'] = _conj_plait_by_method
 _sf['conj_plait'] = _conj_plait_by_method['diagonal']
 _sf['conj_horizontal_side'] = _conj_h.horizontal_side
@@ -526,7 +527,7 @@ function _plaitStarTrace() {
     name: 'Plait pt. (Treybal)',
     showlegend: true,
     hovertemplate:
-      `<b>Plait pt. (Treybal)</b><br>${_lbls.carrier.abbr}: ${_plaitStats.carrier}%  ${_lbls.solute.abbr}: ${_plaitStats.solute}%  ${_lbls.solvent.abbr}: ${_plaitStats.solvent}%<extra></extra>`,
+      `<b>Plait pt. (Treybal)</b><br>${_lbls.carrier.abbr}: ${_plaitStats.carrier.toFixed(1)}%  ${_lbls.solute.abbr}: ${_plaitStats.solute.toFixed(1)}%  ${_lbls.solvent.abbr}: ${_plaitStats.solvent.toFixed(1)}%<extra></extra>`,
   };
 }
 
@@ -550,13 +551,14 @@ function _renderPlaitTable() {
   if (!el) return;
 
   const c = _lbls.carrier.abbr, s = _lbls.solute.abbr, sv = _lbls.solvent.abbr;
+  const f1 = v => Number(v).toFixed(1);   // display/export: 1 decimal place (computation stays full precision)
   const tdH = `style="text-align:right;padding:3px 5px 5px;font-size:9.5px;font-weight:600;color:#1878a8"`;
   const tdN = `style="text-align:left;padding:3px 5px 5px;font-size:9.5px;font-weight:600;color:#1878a8"`;
   const td  = (active) => `style="text-align:right;padding:3px 4px;font-family:'JetBrains Mono',monospace;font-size:10px;font-variant-numeric:tabular-nums;border-bottom:1px solid #f0f1f3${active ? ';background:var(--blue-lt)' : ''}"`;
   const tdL = (active) => `style="text-align:left;padding:3px 4px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:10.5px;color:var(--text);border-bottom:1px solid #f0f1f3;white-space:nowrap${active ? ';background:var(--blue-lt)' : ''}"`;
 
   const treybalRow = _plaitStats
-    ? `<tr><td ${tdL(false)}><span style="color:#dc2626;margin-right:5px">★</span>Treybal (log-log)</td><td ${td(false)}>${_plaitStats.carrier}</td><td ${td(false)}>${_plaitStats.solute}</td><td ${td(false)}>${_plaitStats.solvent}</td></tr>`
+    ? `<tr><td ${tdL(false)}><span style="color:#dc2626;margin-right:5px">★</span>Treybal (log-log)</td><td ${td(false)}>${f1(_plaitStats.carrier)}</td><td ${td(false)}>${f1(_plaitStats.solute)}</td><td ${td(false)}>${f1(_plaitStats.solvent)}</td></tr>`
     : `<tr><td colspan="4" style="text-align:center;padding:4px;color:var(--muted);font-size:10px">Treybal: not found in range</td></tr>`;
 
   const conjRows = _conjPlaitByMethod
@@ -565,7 +567,7 @@ function _renderPlaitTable() {
         if (!st) return '';
         const active = m === _conjMethod;
         const suffix = (m === 'horizontal' && _conjHorizontalSide) ? ` (${_conjHorizontalSide} endpoint)` : '';
-        return `<tr><td ${tdL(active)}><span style="color:darkorange;margin-right:5px">★</span>Conj. Curve — ${label}${suffix}</td><td ${td(active)}>${st.carrier}</td><td ${td(active)}>${st.solute}</td><td ${td(active)}>${st.solvent}</td></tr>`;
+        return `<tr><td ${tdL(active)}><span style="color:darkorange;margin-right:5px">★</span>Conj. Curve — ${label}${suffix}</td><td ${td(active)}>${f1(st.carrier)}</td><td ${td(active)}>${f1(st.solute)}</td><td ${td(active)}>${f1(st.solvent)}</td></tr>`;
       }).join('')
     : '';
 
