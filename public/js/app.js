@@ -692,10 +692,13 @@ if _sf_frac_min is not None and _sf_frac_max is not None:
 sf_min_found = round(_sf_frac_min, 4) if _sf_frac_min is not None else None
 sf_max_found = round(_sf_frac_max, 4) if _sf_frac_max is not None else None
 
-# Stages-needed trend as Feed PA falls, over the Feed Explorer's existing
-# slider range (10-55 wt%) — see feed_stage_count_trend's docstring for why
-# there's no named limit line, unlike the S:F trend.
-_fig_feed_trend = plot_util.fig_feed_stage_trend(system, conjugate, pt_E1, pt_Rn, pt_En1)
+# Stages-needed trend over the Feed Explorer's existing slider range
+# (10-55 wt%) — E1 is recomputed per wpa via mass balance (mass_R0_gm/
+# mass_En1), matching fig_lever_rule_interactive_feed's own construction,
+# not held at its real fixed value. See feed_stage_count_trend's docstring
+# for why there's no named limit line and why the shape isn't necessarily
+# monotonic.
+_fig_feed_trend = plot_util.fig_feed_stage_trend(system, conjugate, pt_Rn, pt_En1, mass_R0_gm, mass_En1)
 fig_feed_trend = _fig_feed_trend.to_json() if _fig_feed_trend is not None else None
 
 def _build(key):

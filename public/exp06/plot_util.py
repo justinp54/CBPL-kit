@@ -750,20 +750,23 @@ def fig_sf_stage_trend(
 def fig_feed_stage_trend(
     system: EquilibriumSystem,
     conjugate: ConjugateCurve,
-    pt_E1: tuple[float, float],
     pt_Rn: tuple[float, float],
     pt_En1: tuple[float, float],
+    mass_R0: float,
+    mass_En1: float,
     wpa_lo: float = 10.0,
     wpa_hi: float = 55.0,
 ) -> go.Figure | None:
     """Stages needed vs Feed PA wt%, using only genuinely-computed points
     from feed_stage_count_trend. No named limit line (see its docstring) —
-    just the trend itself.
+    just the trend itself. Not necessarily monotonic (see
+    feed_stage_count_trend's docstring) — don't caption this as "rising"
+    or "falling", the shape is whatever the real geometry gives.
 
     Computed once during Calculate, not tied to the live slider drag.
     Returns None if fewer than 2 usable points were found.
     """
-    points = feed_stage_count_trend(system, conjugate, pt_E1, pt_Rn, pt_En1, wpa_lo, wpa_hi)
+    points = feed_stage_count_trend(system, conjugate, pt_Rn, pt_En1, mass_R0, mass_En1, wpa_lo, wpa_hi)
     if len(points) < 2:
         return None
 
@@ -782,7 +785,7 @@ def fig_feed_stage_trend(
         hovertemplate='Feed %{x:.0f} wt%<br>%{y:.1f} stages<extra></extra>',
     ))
     fig.update_layout(
-        title=dict(text='Stages needed as Feed PA falls', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        title=dict(text='Stages needed vs Feed PA', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
         xaxis=dict(title=dict(text='Feed PA (wt%)', font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text='Theoretical stages', font=dict(size=10)), rangemode='tozero', **_axis),
         margin=dict(l=34, r=10, t=28, b=36),

@@ -196,9 +196,10 @@ def stage_count_trend(
 def feed_stage_count_trend(
     system: EquilibriumSystem,
     conjugate: ConjugateCurve,
-    pt_E1: tuple[float, float],
     pt_Rn: tuple[float, float],
     pt_En1: tuple[float, float],
+    mass_R0: float,
+    mass_En1: float,
     wpa_lo: float = 10.0,
     wpa_hi: float = 55.0,
     n: int = 7,
@@ -207,23 +208,41 @@ def feed_stage_count_trend(
     """Stage count vs Feed PA wt% (`wpa`), sampled from wpa_hi (concentrated,
     safe) down toward wpa_lo (dilute), for the Feed Explorer.
 
+    E1 is NOT held at its real, measured value here — a different
+    hypothetical feed concentration implies a different mixing point M'
+    (mass_R0/mass_En1 are the real, fixed mass flow rates) and therefore a
+    different E1', exactly like fig_lever_rule_interactive_feed's own
+    slider already computes on this same tab. Reusing the real fixed E1
+    while only moving R0 ignores mass balance and produces a backwards
+    trend (verified: it made stage count fall as feed got more dilute,
+    which isn't real — R0 was just sliding towards Rn's own, very dilute
+    composition).
+
     Unlike S_min/S_max, there's no named textbook limit for feed
     concentration — this just samples the existing slider's practical
     range and reports genuine, unambiguous stage counts (same
     converged-only, break-on-first-failure discipline as
-    stage_count_trend), stopping wherever the real data stops supporting
-    a clean answer rather than implying a "Feed_min"-style boundary exists.
+    stage_count_trend). The resulting trend is not necessarily monotonic:
+    since Rn is fixed and typically very dilute, R0 can end up
+    geometrically close to Rn at low wpa, which drops the stage count for
+    reasons unrelated to any equilibrium/pinch limit.
     """
     points: list[tuple[float, float]] = []
     for wpa in np.linspace(wpa_hi, wpa_lo, n):
         wbp = 100.0 - wpa
         pt_R0 = (wbp + 0.5 * wpa, np.sqrt(3) / 2.0 * wpa)
-        _, pt_P = find_M_and_P(pt_E1, pt_Rn, pt_En1, pt_R0)
+        pt_Mp = mixing_point(pt_R0, pt_En1, mass_A=mass_R0, mass_B=mass_En1)
+        pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
+        if pt_E1p is None:
+            if points:
+                break
+            continue
+        _, pt_P = find_M_and_P(pt_E1p, pt_Rn, pt_En1, pt_R0)
         if pt_P is None:
             if points:
                 break
             continue
-        solver = HunterNashSolver(system, conjugate, pt_P, pt_E1, pt_Rn, max_steps=max_steps)
+        solver = HunterNashSolver(system, conjugate, pt_P, pt_E1p, pt_Rn, max_steps=max_steps)
         try:
             _, N = solver.solve()
         except ValueError:
