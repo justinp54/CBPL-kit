@@ -164,10 +164,15 @@ def compute_plait_loglog(system):
                     wC  = wS / ex
                     wSv = wS / ey
                     plait_loglog = {'x': round(px, 4), 'y': round(py, 4)}
+                    # Full precision on purpose: rounding is a display-only
+                    # concern, applied once in JS (toFixed) at the table/hover.
+                    # Pre-rounding here would double-round (e.g. 28.548 -> 28.55
+                    # -> "28.6" instead of "28.5") and also shift the on-triangle
+                    # star marker.
                     plait_comp   = {
-                        'carrier': round(wC  * 100, 2),
-                        'solute':  round(wS  * 100, 2),
-                        'solvent': round(wSv * 100, 2),
+                        'carrier': wC  * 100,
+                        'solute':  wS  * 100,
+                        'solvent': wSv * 100,
                     }
                 except Exception:
                     pass

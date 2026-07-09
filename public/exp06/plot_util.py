@@ -94,7 +94,7 @@ def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
         a=a, b=b, c=c,
         mode="lines", name="Binodal curve",
         line=dict(color="black", width=2.5),
-        hovertemplate=f"{s}:%{{a:.1f}}%  {sv}:%{{b:.1f}}%  {d}:%{{c:.1f}}%<extra>Binodal curve</extra>",
+        hovertemplate=f"{d}:%{{c:.1f}}%  {s}:%{{a:.1f}}%  {sv}:%{{b:.1f}}%<extra>Binodal curve</extra>",
     )
     a_pts = system.equil_data[:, 1].tolist()
     b_pts = system.equil_data[:, 2].tolist()
@@ -103,7 +103,7 @@ def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
         a=a_pts, b=b_pts, c=c_pts,
         mode="markers", name="Equil. data",
         marker=dict(color="black", size=7),
-        hovertemplate=f"{s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%  {d}:%{{c:.2f}}%<extra>Equil. data</extra>",
+        hovertemplate=f"{d}:%{{c:.2f}}%  {s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%<extra>Equil. data</extra>",
     )
     return [curve, pts]
 
@@ -122,7 +122,7 @@ def _tie_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
             marker=dict(size=5, color="steelblue"),
             name="Tie-lines" if i == 0 else None,
             showlegend=(i == 0),
-            hovertemplate=f"{s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%  {d}:%{{c:.2f}}%<extra>Tie-line</extra>",
+            hovertemplate=f"{d}:%{{c:.2f}}%  {s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%<extra>Tie-line</extra>",
         ))
     return traces
 
@@ -263,36 +263,84 @@ def _cart_triangle_traces(system: EquilibriumSystem) -> list:
     return traces
 
 
-def _cart_equil_traces(system: EquilibriumSystem) -> list:
-    """Binodal curve + data points as go.Scatter."""
+def _comp_customdata(xs, ys) -> list:
+    """Per-point [carrier, solute, solvent] wt% for a composition hover."""
+    out = []
+    for xx, yy in zip(xs, ys):
+        wpa, wbp, ww = xy_to_comp(float(xx), float(yy))
+        out.append([wbp, wpa, ww])   # carrier, solute, solvent
+    return out
+
+
+def _cart_equil_traces(system: EquilibriumSystem, hover_comp: bool = False) -> list:
+    """Binodal curve + data points as go.Scatter.
+
+    hover_comp=True shows a composition hover (carrier, solute, solvent — abbr +
+    value, same as the Equilibrium-tab ternary traces) instead of the default
+    internal (x, y) Cartesian readout. Default False keeps the (x, y) hover for
+    every other Cartesian figure that shares this builder.
+    """
     mask = _valid_mask(system.x_smooth, system.y_smooth)
-    return [
-        go.Scatter(
-            x=system.x_smooth[mask], y=system.y_smooth[mask],
-            mode="lines", name="Binodal curve",
-            line=dict(color="black", width=2.5),
-        ),
-        go.Scatter(
-            x=system.x_equil, y=system.y_equil,
-            mode="markers", name="Equil. data",
-            marker=dict(color="black", size=7),
-        ),
-    ]
+    bx, by = system.x_smooth[mask], system.y_smooth[mask]
+    binodal = go.Scatter(
+        x=bx, y=by,
+        mode="lines", name="Binodal curve",
+        line=dict(color="black", width=2.5),
+    )
+    equil = go.Scatter(
+        x=system.x_equil, y=system.y_equil,
+        mode="markers", name="Equil. data",
+        marker=dict(color="black", size=7),
+    )
+    if hover_comp:
+        lb = _lb(system)
+        ca, so, sv = lb['carrier']['abbr'], lb['solute']['abbr'], lb['solvent']['abbr']
+        binodal.update(
+            customdata=_comp_customdata(bx, by),
+            hovertemplate=(
+                f"{ca}:%{{customdata[0]:.1f}}%  {so}:%{{customdata[1]:.1f}}%  "
+                f"{sv}:%{{customdata[2]:.1f}}%<extra>Binodal curve</extra>"
+            ),
+        )
+        equil.update(
+            customdata=_comp_customdata(system.x_equil, system.y_equil),
+            hovertemplate=(
+                f"{ca}:%{{customdata[0]:.2f}}%  {so}:%{{customdata[1]:.2f}}%  "
+                f"{sv}:%{{customdata[2]:.2f}}%<extra>Equil. data</extra>"
+            ),
+        )
+    return [binodal, equil]
 
 
-def _cart_tie_traces(system: EquilibriumSystem) -> list:
-    """Tie-lines as go.Scatter."""
+def _cart_tie_traces(system: EquilibriumSystem, hover_comp: bool = False) -> list:
+    """Tie-lines as go.Scatter.
+
+    hover_comp=True adds a composition hover (carrier, solute, solvent) at each
+    endpoint; default keeps the current no-hover (hoverinfo="skip") behavior.
+    """
+    lb = _lb(system)
+    ca, so, sv = lb['carrier']['abbr'], lb['solute']['abbr'], lb['solvent']['abbr']
     traces = []
     for i, ((x1, y1), (x2, y2)) in enumerate(system.tie_coords):
-        traces.append(go.Scatter(
+        tr = go.Scatter(
             x=[x1, x2], y=[y1, y2],
             mode="lines+markers",
             line=dict(color="steelblue", width=1, dash="dot"),
             marker=dict(size=5, color="steelblue"),
             name="Tie-lines" if i == 0 else None,
             showlegend=(i == 0),
-            hoverinfo="skip",
-        ))
+        )
+        if hover_comp:
+            tr.update(
+                customdata=_comp_customdata([x1, x2], [y1, y2]),
+                hovertemplate=(
+                    f"{ca}:%{{customdata[0]:.2f}}%  {so}:%{{customdata[1]:.2f}}%  "
+                    f"{sv}:%{{customdata[2]:.2f}}%<extra>Tie-line</extra>"
+                ),
+            )
+        else:
+            tr.update(hoverinfo="skip")
+        traces.append(tr)
     return traces
 
 
@@ -360,8 +408,8 @@ def fig_conjugate_curve(
     """
     traces = (
         _cart_triangle_traces(system)
-        + _cart_equil_traces(system)
-        + _cart_tie_traces(system)
+        + _cart_equil_traces(system, hover_comp=True)
+        + _cart_tie_traces(system, hover_comp=True)
     )
 
     # Conjugate curve — full range including extrapolation below triangle
@@ -399,9 +447,22 @@ def fig_conjugate_curve(
                 showlegend=False, hoverinfo="skip",
             ))
 
-    traces.append(_cart_point_trace(
-        conjugate.pt_plait, "Plait pt. (Conj. Curve)", "darkorange", symbol="star", size=14,
-        labels=_lb(system), show_text=False,
+    # Plait star built inline (not via shared _cart_point_trace) so its hover
+    # can list components in carrier → solute → solvent order without changing
+    # the other cart points (R₀, Rₙ, E₁, P, M, …) that share that helper.
+    _lbp = _lb(system)
+    _cabbr, _sabbr, _svabbr = _lbp['carrier']['abbr'], _lbp['solute']['abbr'], _lbp['solvent']['abbr']
+    _px, _py = conjugate.pt_plait
+    _wpa, _wbp, _ww = xy_to_comp(_px, _py)
+    traces.append(go.Scatter(
+        x=[_px], y=[_py],
+        mode="markers",
+        name="Plait pt. (Conj. Curve)",
+        marker=dict(color="darkorange", size=14, symbol="star"),
+        hovertemplate=(
+            f"<b>Plait pt. (Conj. Curve)</b><br>"
+            f"{_cabbr}:{_wbp:.2f}%  {_sabbr}:{_wpa:.2f}%  {_svabbr}:{_ww:.2f}%<extra></extra>"
+        ),
     ))
 
     fig = go.Figure(data=traces)
@@ -429,7 +490,7 @@ def fig_hunter_nash(
     when P lies outside the ternary triangle.
     """
     lb = _lb(system)
-    traces = _cart_triangle_traces(system) + _cart_equil_traces(system)
+    traces = _cart_triangle_traces(system) + _cart_equil_traces(system, hover_comp=True)
 
     # Key stream and operating points
     traces += [
@@ -1029,7 +1090,7 @@ def fig_plait_loglog(data):
         mode='markers',
         marker=dict(symbol='square', color='black', size=6),
         showlegend=False,
-        hovertemplate='(%{x:.3f}, %{y:.3f})<extra>Binodal</extra>',
+        hovertemplate='(%{x:.3f}, %{y:.3f})<extra>Equil. data</extra>',
     ))
 
     # 3. Tie-line linear fit (no hover, no legend)
