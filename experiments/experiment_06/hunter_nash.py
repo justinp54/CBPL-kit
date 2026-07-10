@@ -149,7 +149,7 @@ def stage_count_trend(
     pt_En1: tuple[float, float],
     frac_min: float,
     frac_max: float,
-    n: int = 7,
+    n: int = 12,
     max_steps: int = 100,
 ) -> list[tuple[float, float]]:
     """Stage count vs S:F ratio (`frac`), sampled from frac_max down toward
