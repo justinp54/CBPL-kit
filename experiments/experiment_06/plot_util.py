@@ -820,7 +820,7 @@ def fig_feed_stage_trend(
     wpa_lo: float = 10.0,
     wpa_hi: float = 55.0,
 ) -> go.Figure | None:
-    """Stages needed vs Feed PA wt%, using only genuinely-computed points
+    """Stages needed vs Feed solute wt%, using only genuinely-computed points
     from feed_stage_count_trend. No named limit line (see its docstring) —
     just the trend itself. Not necessarily monotonic (see
     feed_stage_count_trend's docstring) — don't caption this as "rising"
@@ -833,6 +833,7 @@ def fig_feed_stage_trend(
     if len(points) < 2:
         return None
 
+    s = _lb(system)['solute']['abbr']
     xs = [p[0] for p in points]
     ys = [p[1] for p in points]
     _axis = dict(tickfont=dict(size=9), showgrid=False, nticks=4,
@@ -844,11 +845,11 @@ def fig_feed_stage_trend(
         mode='markers',
         marker=dict(color='steelblue', size=6, line=dict(width=0.5, color='white')),
         showlegend=False,
-        hovertemplate='Feed %{x:.0f} wt%<br>%{y:.1f} stages<extra></extra>',
+        hovertemplate=f'Feed {s} %{{x:.0f}} wt%<br>%{{y:.1f}} stages<extra></extra>',
     ))
     fig.update_layout(
-        title=dict(text='Stages needed vs Feed PA', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='Feed PA (wt%)', font=dict(size=10)), **_axis),
+        title=dict(text=f'Stages needed vs Feed {s}', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text=f'Feed {s} (wt%)', font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text='Theoretical stages', font=dict(size=10)), rangemode='tozero', **_axis),
         margin=dict(l=34, r=34, t=28, b=36),
         width=320, height=260,
@@ -944,12 +945,12 @@ def fig_lever_rule_interactive_feed(
         for wpa in wpa_vals
     ]
     fig.update_layout(
-        **_cart_layout("Lever Rule: Drag slider to adjust Feed PA wt%"),
+        **_cart_layout(f"Lever Rule: Drag slider to adjust Feed {lb['solute']['abbr']} wt%"),
         sliders=[dict(
             active=0,
             steps=slider_steps,
             currentvalue=dict(
-                prefix="Feed PA = ",
+                prefix=f"Feed {lb['solute']['abbr']} = ",
                 visible=True,
                 font=dict(size=12),
             ),

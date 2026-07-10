@@ -784,10 +784,11 @@ pt_R0h = (wbp + 0.5*wpa, math.sqrt(3)/2 * wpa)
 pt_Mh, _ = find_M_and_P(_b._ept_E1, _b._ept_Rn, _b._ept_En1, pt_R0h)
 pt_Mph = mixing_point(pt_R0h, _b._ept_En1, mass_A=_b._emass_R0, mass_B=_b._emass_En1)
 pt_E1ph = find_E1_prime(_b._ept_Rn, pt_Mph, _b._esystem.spline)
+_solute_abbr = _b._esystem.labels['solute']['abbr']
 plot_util.fig_lever_rule(
     _b._esystem, pt_R0h, _b._ept_Rn, _b._ept_E1, _b._ept_En1,
     pt_Mh, pt_Mph, pt_E1ph,
-    title=f"Feed  PA {wpa:.1f} wt%",
+    title=f"Feed {_solute_abbr} {wpa:.1f} wt%",
     pt_R0_actual=_b._ept_R0
 ).to_json()
 `;
@@ -1205,6 +1206,7 @@ function updateTableHeaders() {
     `<tr><th>Stream</th><th>${s}%</th><th>${c}%</th><th>${sv}%</th></tr>`;
   document.getElementById('stages-thead').innerHTML =
     `<tr><th>#</th><th></th><th>${s}%</th><th>${c}%</th><th>${sv}%</th></tr>`;
+  document.getElementById('feed-pa-label').textContent = `Feed ${s}`;
 }
 updateTableHeaders();
 
