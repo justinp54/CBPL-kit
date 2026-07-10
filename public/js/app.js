@@ -1190,23 +1190,29 @@ function showResults(data) {
     if (el) { try { Plotly.purge(el); } catch(e) {} }
   }
 
+  // frac is S/(F+S) (the slider's own convention); (S/F)_min/max is the
+  // textbook solvent-to-feed ratio itself, S/F = frac/(1-frac).
+  const sfRatio = frac => (frac / (1 - frac)).toFixed(2);
+
   if (data.sf_min_found != null) {
-    document.getElementById('sf-min-val').textContent = (data.sf_min_found * 100).toFixed(1) + ' wt%';
+    document.getElementById('sf-min-val').textContent =
+      sfRatio(data.sf_min_found) + ' (solvent ' + (data.sf_min_found * 100).toFixed(1) + ' wt%)';
     document.getElementById('sf-min-desc').innerHTML =
       '<strong>How it\'s found:</strong><br>The tie line whose extension hits farthest from Rₙ sets this pinch. Below it, no stage count reaches the target.';
   } else {
     document.getElementById('sf-min-val').textContent = '—';
     document.getElementById('sf-min-desc').innerHTML =
-      '<strong>Not found:</strong><br>This system\'s tie-line data doesn\'t produce a clear S_min (e.g. a solutropic system).';
+      '<strong>Not found:</strong><br>This system\'s tie-line data doesn\'t produce a clear (S/F)<sub>min</sub> (e.g. a solutropic system).';
   }
   if (data.sf_max_found != null) {
-    document.getElementById('sf-max-val').textContent = (data.sf_max_found * 100).toFixed(1) + ' wt%';
+    document.getElementById('sf-max-val').textContent =
+      sfRatio(data.sf_max_found) + ' (solvent ' + (data.sf_max_found * 100).toFixed(1) + ' wt%)';
     document.getElementById('sf-max-desc').innerHTML =
       '<strong>How it\'s found:</strong><br>Where the feed+solvent line meets the equilibrium curve, M becomes a single phase, nothing left to split.';
   } else {
     document.getElementById('sf-max-val').textContent = '—';
     document.getElementById('sf-max-desc').innerHTML =
-      '<strong>Not found:</strong><br>This system\'s equilibrium data doesn\'t produce a clear S_max.';
+      '<strong>Not found:</strong><br>This system\'s equilibrium data doesn\'t produce a clear (S/F)<sub>max</sub>.';
   }
 
   document.getElementById('panel-fig_sf').classList.add('has-data');

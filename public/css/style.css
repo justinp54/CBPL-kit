@@ -381,7 +381,8 @@
     .sf-limit-min { border-top-color: #1a8a5f; }
     .sf-limit-max { border-top-color: #c0392b; }
     .sf-limit-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 5px; }
-    .sf-limit-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .sf-limit-label { font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .sf-limit-label sub { font-size: 0.75em; }
     .sf-limit-min .sf-limit-label { color: #1a8a5f; }
     .sf-limit-max .sf-limit-label { color: #c0392b; }
     .sf-limit-val { font-size: 19px; font-weight: 700; color: var(--navy); }

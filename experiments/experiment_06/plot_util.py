@@ -800,7 +800,7 @@ def fig_sf_stage_trend(
         line_dash='dash',
         line_color='#1a8a5f',
         line_width=1,
-        annotation_text='S_min',
+        annotation_text='(S/F)<sub>min</sub>',
         annotation_position='top right',
         annotation_font_size=9,
         annotation_font_color='#1a8a5f',
