@@ -772,7 +772,10 @@ def fig_sf_stage_trend(
     if len(points) < 2:
         return None
 
-    xs = [p[0] * 100 for p in points]
+    # S/F (w/w), not S/(S+F) wt% — matches the (S/F)_min/(S/F)_max cards
+    # below, and reads left-to-right increasing like any normal axis
+    # (frac is monotonic in S/F, so no reversal is needed).
+    xs = [p[0] / (1 - p[0]) for p in points]
     ys = [p[1] for p in points]
     _axis = dict(tickfont=dict(size=9), showgrid=False, nticks=4,
                  showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True)
@@ -783,24 +786,24 @@ def fig_sf_stage_trend(
         mode='markers',
         marker=dict(color='steelblue', size=6, line=dict(width=0.5, color='white')),
         showlegend=False,
-        hovertemplate='S:F %{x:.0f} wt%<br>%{y:.1f} stages<extra></extra>',
+        hovertemplate='S/F %{x:.2f}<br>%{y:.1f} stages<extra></extra>',
     ))
     fig.update_layout(
         title=dict(text='Stages needed as S:F falls', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='Solvent : Feed (wt%)', font=dict(size=10)), autorange='reversed', **_axis),
+        xaxis=dict(title=dict(text='S/F (w/w)', font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text='Theoretical stages', font=dict(size=10)), rangemode='tozero', **_axis),
-        margin=dict(l=34, r=10, t=28, b=36),
+        margin=dict(l=34, r=34, t=28, b=36),
         width=320, height=260,
         plot_bgcolor='white',
         paper_bgcolor='white',
     )
     fig.add_vline(
-        x=frac_min * 100,
+        x=frac_min / (1 - frac_min),
         line_dash='dash',
         line_color='#1a8a5f',
         line_width=1,
         annotation_text='(S/F)<sub>min</sub>',
-        annotation_position='top right',
+        annotation_position='bottom right',
         annotation_font_size=9,
         annotation_font_color='#1a8a5f',
     )
@@ -847,7 +850,7 @@ def fig_feed_stage_trend(
         title=dict(text='Stages needed vs Feed PA', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
         xaxis=dict(title=dict(text='Feed PA (wt%)', font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text='Theoretical stages', font=dict(size=10)), rangemode='tozero', **_axis),
-        margin=dict(l=34, r=10, t=28, b=36),
+        margin=dict(l=34, r=34, t=28, b=36),
         width=320, height=260,
         plot_bgcolor='white',
         paper_bgcolor='white',

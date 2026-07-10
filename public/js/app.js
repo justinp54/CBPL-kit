@@ -814,9 +814,19 @@ async function computeExplorer(type) {
 }
 
 // ── Explorer control sync (slider ↔ number input) ─────────────────────────
+// S/F derived from the same rounded wt% shown in #sf-num (not the raw
+// frac), so a hand-check against the displayed % always reconciles — see
+// the same fix applied to the (S/F)_min/(S/F)_max reference cards.
+function _sfRatioText(wtPctStr) {
+  const wt = parseFloat(wtPctStr);
+  return `S/F: ${(wt / (100 - wt)).toFixed(2)}`;
+}
+
 function updateSfLabels(frac) {
   document.getElementById('sf-slider').value  = frac;
-  document.getElementById('sf-num').value     = (frac * 100).toFixed(0);
+  const wt = (frac * 100).toFixed(0);
+  document.getElementById('sf-num').value     = wt;
+  document.getElementById('sf-ratio-label').textContent = _sfRatioText(wt);
   document.getElementById('sf-feed-label').textContent = `Feed ${((1-frac)*100).toFixed(0)} wt%`;
 }
 
@@ -846,6 +856,7 @@ document.getElementById('sf-num').addEventListener('input', function() {
   const v = parseFloat(this.value);
   if (!isNaN(v) && v >= lo && v <= hi) {
     document.getElementById('sf-slider').value = v / 100;
+    document.getElementById('sf-ratio-label').textContent = _sfRatioText(v.toFixed(0));
     document.getElementById('sf-feed-label').textContent = `Feed ${(100-v).toFixed(0)} wt%`;
     computeExplorer('sf');
   }
@@ -888,7 +899,10 @@ function updateSfRange(sfRange) {
   num.max = (sfRange.max * 100).toFixed(0);
 
   const clamped = Math.min(Math.max(parseFloat(slider.value), sfRange.min), sfRange.max);
-  if (clamped !== parseFloat(slider.value)) updateSfLabels(clamped);
+  // Always refresh (not just on clamp) — the S/F ratio label needs to
+  // populate on the very first Calculate even when the default value
+  // didn't need to move.
+  updateSfLabels(clamped);
 }
 
 // System-specific feed-composition range (lever_rule.find_feed_bounds —
@@ -1230,16 +1244,26 @@ function showResults(data) {
   }
 
   // frac is S/(F+S) (the slider's own convention); (S/F)_min/max is the
-  // textbook solvent-to-feed ratio itself, S/F = frac/(1-frac).
-  const sfRatio = frac => (frac / (1 - frac)).toFixed(2);
+  // textbook solvent-to-feed ratio itself, S/F = frac/(1-frac). Derive the
+  // ratio from the ALREADY-ROUNDED wt% (not the raw frac) so a reader who
+  // hand-checks S/F from the displayed wt% gets exactly the number shown
+  // — two independently-rounded views of the same frac can otherwise
+  // silently disagree at the displayed precision (e.g. 92.4 wt% by hand
+  // gives 12.16, not a separately-rounded 12.14).
+  const sfWtPct = frac => (frac * 100).toFixed(1);
+  const sfRatioFromWt = wtStr => {
+    const wt = parseFloat(wtStr);
+    return (wt / (100 - wt)).toFixed(2);
+  };
 
   // Stash the raw computed limits for the zip export (result.xlsx), so the
   // exported values come from the same numbers the cards below display.
   _sfLimits = { min: data.sf_min_found, max: data.sf_max_found };
 
   if (data.sf_min_found != null) {
+    const wt = sfWtPct(data.sf_min_found);
     document.getElementById('sf-min-val').textContent =
-      sfRatio(data.sf_min_found) + ' (solvent ' + (data.sf_min_found * 100).toFixed(1) + ' wt%)';
+      sfRatioFromWt(wt) + ' (solvent ' + wt + ' wt%)';
     document.getElementById('sf-min-desc').innerHTML =
       '<strong>How it\'s found:</strong><br>The tie line whose extension hits farthest from Rₙ sets this pinch. Below it, no stage count reaches the target.';
   } else {
@@ -1248,8 +1272,9 @@ function showResults(data) {
       '<strong>Not found:</strong><br>This system\'s tie-line data doesn\'t produce a clear (S/F)<sub>min</sub> (e.g. a solutropic system).';
   }
   if (data.sf_max_found != null) {
+    const wt = sfWtPct(data.sf_max_found);
     document.getElementById('sf-max-val').textContent =
-      sfRatio(data.sf_max_found) + ' (solvent ' + (data.sf_max_found * 100).toFixed(1) + ' wt%)';
+      sfRatioFromWt(wt) + ' (solvent ' + wt + ' wt%)';
     document.getElementById('sf-max-desc').innerHTML =
       '<strong>How it\'s found:</strong><br>Where the feed+solvent line meets the equilibrium curve, M becomes a single phase, nothing left to split.';
   } else {
@@ -1530,14 +1555,17 @@ async function exportBundle() {
       if (streamEl?.querySelector('tr')) {
         const streamSheet = XLSX.utils.table_to_sheet(streamEl);
         // S/F limits appended below the stream table, same pattern as the
-        // correlation coefficients under Tie Lines. Values reuse the raw
-        // fracs the S:F Explorer cards display, at the same precision the
-        // cards show (wt%, 1 decimal) plus the w/w ratio form.
+        // correlation coefficients under Tie Lines. The w/w ratio is
+        // derived from the rounded wt% (not the raw frac) so it matches
+        // the S:F Explorer cards exactly and reconciles under hand
+        // calculation from the wt% column shown right next to it.
         if (_sfLimits && (_sfLimits.min != null || _sfLimits.max != null)) {
           const range = XLSX.utils.decode_range(streamSheet['!ref']);
           const sfRows = [[], ['S/F limits', 'S/(S+F) (wt%)', 'S/F (w/w)']];
-          if (_sfLimits.min != null) sfRows.push(['(S/F)_min', Number((_sfLimits.min * 100).toFixed(1)), Number((_sfLimits.min / (1 - _sfLimits.min)).toFixed(2))]);
-          if (_sfLimits.max != null) sfRows.push(['(S/F)_max', Number((_sfLimits.max * 100).toFixed(1)), Number((_sfLimits.max / (1 - _sfLimits.max)).toFixed(2))]);
+          const sfWtNum = frac => Number((frac * 100).toFixed(1));
+          const sfRatioNum = wt => Number((wt / (100 - wt)).toFixed(2));
+          if (_sfLimits.min != null) { const wt = sfWtNum(_sfLimits.min); sfRows.push(['(S/F)_min', wt, sfRatioNum(wt)]); }
+          if (_sfLimits.max != null) { const wt = sfWtNum(_sfLimits.max); sfRows.push(['(S/F)_max', wt, sfRatioNum(wt)]); }
           XLSX.utils.sheet_add_aoa(streamSheet, sfRows, { origin: { r: range.e.r + 2, c: 0 } });
         }
         XLSX.utils.book_append_sheet(wb, streamSheet, 'Stream Points');
