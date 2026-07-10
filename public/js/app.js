@@ -1007,13 +1007,14 @@ async function calculate(requestedKeys) {
 }
 
 function getDefaultKeys() {
-  const keys = ['fig3'];
+  // fig2b (interpolated tie-lines) and fig4 (lever rule) are always
+  // computed so the zip export can include them even if their tabs were
+  // never opened.
+  const keys = ['fig3', 'fig2b', 'fig4'];
   if (cache['fig_sf']   || activeTab === 'fig_sf')   keys.push('fig_sf');
   if (cache['fig_feed'] || activeTab === 'fig_feed') keys.push('fig_feed');
   if (cache['fig1']  || activeTab === 'fig1')  keys.push('fig1');
   if (cache['fig2a'] || activeTab === 'fig2a') keys.push('fig2a');
-  if (cache['fig2b'] || activeTab === 'fig2b') keys.push('fig2b');
-  if (cache['fig4']  || activeTab === 'fig4')  keys.push('fig4');
   return keys;
 }
 
@@ -1469,20 +1470,23 @@ async function exportBundle() {
       included.push(filename);
     }
 
+    // Export filenames are numbered in their own presentation order
+    // (fig1..fig10), independent of the internal cache keys.
     const star = _plaitStats ? [_plaitStarTrace()] : null;
-    await _captureFig('fig1', 900, 900, 'fig1_equilibrium.png');
-    await _captureFig('fig2a_diagonal', 900, 900, 'fig2a_conjugate_diagonal.png', star);
-    await _captureFig('fig2a_horizontal', 900, 900, 'fig2a_conjugate_horizontal.png', star);
-    await _captureFig('fig_corr_ot', 700, 500, 'fig1_correlation_othmer_tobias.png');
-    await _captureFig('fig_corr_hand', 700, 500, 'fig1_correlation_hand.png');
-    await _captureFig('fig_corr_bachman', 700, 500, 'fig1_correlation_bachman.png');
-    await _captureFig('fig_selectivity', 700, 500, 'fig1_selectivity.png');
-    await _captureFig('fig_plait', 700, 700, 'fig2a_treybal_loglog.png');
+    await _captureFig('fig1', 900, 900, 'fig1_LLE_ternary_diagram.png');
+    await _captureFig('fig_corr_ot', 700, 500, 'fig2a_correlation_OT.png');
+    await _captureFig('fig_corr_hand', 700, 500, 'fig2b_correlation_Hand.png');
+    await _captureFig('fig_corr_bachman', 700, 500, 'fig2c_correlation_Bachman.png');
+    await _captureFig('fig_selectivity', 700, 500, 'fig3_selectivity.png');
+    await _captureFig('fig2a_diagonal', 900, 900, 'fig4a_conjugate_curve_diagonal.png', star);
+    await _captureFig('fig2a_horizontal', 900, 900, 'fig4b_conjugate_curve_horizontal.png', star);
+    await _captureFig('fig_plait', 700, 700, 'fig5_treybal_plait_point.png');
     if (calculated) {
-      await _captureFig('fig3', 900, 900, 'fig3_hunter_nash.png');
-      await _captureFig('fig4', 900, 900, 'fig4_lever_rule.png');
-      await _captureFig('fig_sf_trend', 320, 260, 'fig5_sf_stage_trend.png', null, 3);
-      await _captureFig('fig_feed_trend', 320, 260, 'fig6_feed_stage_trend.png', null, 3);
+      await _captureFig('fig3', 900, 900, 'fig6_Hunter_Nash.png');
+      await _captureFig('fig2b', 900, 900, 'fig7_interpolated_tie_lines.png');
+      await _captureFig('fig4', 900, 900, 'fig8_lever_rule.png');
+      await _captureFig('fig_sf_trend', 320, 260, 'fig9_sf_stage_trend.png', null, 3);
+      await _captureFig('fig_feed_trend', 320, 260, 'fig10_feed_stage_trend.png', null, 3);
     }
     Plotly.purge(hiddenEl);
 
@@ -1547,9 +1551,8 @@ async function exportBundle() {
     let manifest = `CBPL-kit export — ${slug} — ${dateStr}\n\nIncluded:\n`
       + included.map(f => '  ' + f).join('\n');
     if (!calculated) {
-      manifest += '\n\nNot included: Hunter-Nash results (fig3, fig4, the S:F and Feed Explorer stage-count charts fig5/fig6,\n'
-        + '  the Stream Points sheet with the S/F limits, and the Stage Results sheet)\n'
-        + '  -> Run "Calculate" with titration inputs first, then export again to include these.';
+      manifest += '\n\nNot included: LLE Hunter-Nash analysis results\n'
+        + '  -> Run "Calculate" with titration volumes and flow rates, then export again to include these.';
     }
     zip.file('README.txt', manifest);
 
