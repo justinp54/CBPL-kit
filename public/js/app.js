@@ -859,6 +859,7 @@ document.getElementById('sf-num').addEventListener('input', function() {
 // either limit, not just visually discouraged.
 const SF_SLIDER_LO = 0.0, SF_SLIDER_HI = 1.0;
 let _sfBounds = null;
+let _sfLimits = null;   // raw S_min/S_max fracs from the last Calculate, for export
 
 function updateSfRange(sfRange) {
   if (!sfRange) return;
@@ -1227,6 +1228,10 @@ function showResults(data) {
     if (el) { try { Plotly.purge(el); } catch(e) {} }
   }
 
+  // Stash the raw computed limits for the zip export (result.xlsx), so the
+  // exported values come from the same numbers the cards below display.
+  _sfLimits = { min: data.sf_min_found, max: data.sf_max_found };
+
   if (data.sf_min_found != null) {
     document.getElementById('sf-min-val').textContent = (data.sf_min_found * 100).toFixed(1) + ' wt%';
     document.getElementById('sf-min-desc').innerHTML =
@@ -1451,12 +1456,15 @@ async function exportBundle() {
     // live via Plotly.addTraces (see _plaitStarTrace) rather than being
     // part of the cached figure itself.
     const hiddenEl = document.getElementById('export-render');
-    async function _captureFig(key, w, h, filename, extraTraces) {
+    // `scale` multiplies the PNG resolution without touching the layout —
+    // used for the small explorer trend charts, whose 320x260 layouts and
+    // 9-10 pt fonts would look sparse if stretched to 900 px instead.
+    async function _captureFig(key, w, h, filename, extraTraces, scale) {
       if (!cache[key] || !hiddenEl) return;
       const data = extraTraces ? [...cache[key].data, ...extraTraces] : cache[key].data;
       const layout = { ...cache[key].layout, width: w, height: h, autosize: false };
       await Plotly.newPlot(hiddenEl, data, layout, { displayModeBar: false });
-      const dataUrl = await Plotly.toImage(hiddenEl, { format: 'png', width: w, height: h });
+      const dataUrl = await Plotly.toImage(hiddenEl, { format: 'png', width: w, height: h, scale: scale || 1 });
       zip.file(filename, dataUrl.split(',')[1], { base64: true });
       included.push(filename);
     }
@@ -1473,6 +1481,8 @@ async function exportBundle() {
     if (calculated) {
       await _captureFig('fig3', 900, 900, 'fig3_hunter_nash.png');
       await _captureFig('fig4', 900, 900, 'fig4_lever_rule.png');
+      await _captureFig('fig_sf_trend', 320, 260, 'fig5_sf_stage_trend.png', null, 3);
+      await _captureFig('fig_feed_trend', 320, 260, 'fig6_feed_stage_trend.png', null, 3);
     }
     Plotly.purge(hiddenEl);
 
@@ -1507,7 +1517,21 @@ async function exportBundle() {
     if (calculated) {
       const streamEl = document.getElementById('stream-tbody')?.closest('table');
       const stageEl = document.getElementById('stages-tbody')?.closest('table');
-      if (streamEl?.querySelector('tr')) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(streamEl), 'Stream Points');
+      if (streamEl?.querySelector('tr')) {
+        const streamSheet = XLSX.utils.table_to_sheet(streamEl);
+        // S/F limits appended below the stream table, same pattern as the
+        // correlation coefficients under Tie Lines. Values reuse the raw
+        // fracs the S:F Explorer cards display, at the same precision the
+        // cards show (wt%, 1 decimal) plus the w/w ratio form.
+        if (_sfLimits && (_sfLimits.min != null || _sfLimits.max != null)) {
+          const range = XLSX.utils.decode_range(streamSheet['!ref']);
+          const sfRows = [[], ['S/F limits', 'S/(S+F) (wt%)', 'S/F (w/w)']];
+          if (_sfLimits.min != null) sfRows.push(['(S/F)_min', Number((_sfLimits.min * 100).toFixed(1)), Number((_sfLimits.min / (1 - _sfLimits.min)).toFixed(2))]);
+          if (_sfLimits.max != null) sfRows.push(['(S/F)_max', Number((_sfLimits.max * 100).toFixed(1)), Number((_sfLimits.max / (1 - _sfLimits.max)).toFixed(2))]);
+          XLSX.utils.sheet_add_aoa(streamSheet, sfRows, { origin: { r: range.e.r + 2, c: 0 } });
+        }
+        XLSX.utils.book_append_sheet(wb, streamSheet, 'Stream Points');
+      }
       if (stageEl?.querySelector('tr')) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(stageEl), 'Stage Results');
     }
 
@@ -1523,7 +1547,8 @@ async function exportBundle() {
     let manifest = `CBPL-kit export — ${slug} — ${dateStr}\n\nIncluded:\n`
       + included.map(f => '  ' + f).join('\n');
     if (!calculated) {
-      manifest += '\n\nNot included: Hunter-Nash results (fig3, fig4, and the Stream Points / Stage Results sheets)\n'
+      manifest += '\n\nNot included: Hunter-Nash results (fig3, fig4, the S:F and Feed Explorer stage-count charts fig5/fig6,\n'
+        + '  the Stream Points sheet with the S/F limits, and the Stage Results sheet)\n'
         + '  -> Run "Calculate" with titration inputs first, then export again to include these.';
     }
     zip.file('README.txt', manifest);
