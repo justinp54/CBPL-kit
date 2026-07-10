@@ -256,7 +256,7 @@ async function initPyodide() {
       from equilibrium import EquilibriumSystem
       from conjugate import ConjugateCurve
       from hunter_nash import HunterNashSolver
-      from lever_rule import find_M_and_P, mixing_point, find_E1_prime, find_smin_over_f, find_smax_over_f
+      from lever_rule import find_M_and_P, mixing_point, find_E1_prime, find_smin_over_f, find_smax_over_f, find_feed_bounds
       import plot_util
 
       # Build equilibrium system once (literature data — never changes)
@@ -633,7 +633,7 @@ document.addEventListener('keydown', e => {
 
 // ── Core Python computation ────────────────────────────────────────────────
 const PY_COMPUTE = `
-import json
+import json, math
 from config import RHO_BP, RHO_PA, RHO_W, MW_PA, FLOW_SOLVENT_ML_MIN, FLOW_FEED_ML_MIN
 
 def _c(v, dil): return 0.05 * v * float(dil)
@@ -694,13 +694,26 @@ if _sf_frac_min is not None and _sf_frac_max is not None:
 sf_min_found = round(_sf_frac_min, 4) if _sf_frac_min is not None else None
 sf_max_found = round(_sf_frac_max, 4) if _sf_frac_max is not None else None
 
-# Stages-needed trend over the Feed Explorer's existing slider range
-# (10-55 wt%) — E1 is recomputed per wpa via mass balance (mass_R0_gm/
-# mass_En1), matching fig_lever_rule_interactive_feed's own construction,
-# not held at its real fixed value. See feed_stage_count_trend's docstring
-# for why there's no named limit line and why the shape isn't necessarily
+# Feed Explorer slider bounds — the feasible feed-composition span for
+# this system and these flows, probed outward from the experimental feed
+# (see lever_rule.find_feed_bounds). No named textbook limit exists here
+# (unlike S_min/S_max), so this is presented only as the slider's range.
+# Falls back to the legacy fixed 10-55 span if the probe fails. Rounded
+# inward to the slider's 0.5 step so the endpoints stay feasible.
+_feed_bounds = find_feed_bounds(system, pt_Rn, pt_En1, mass_R0_gm, mass_En1, wpa_R0)
+if _feed_bounds is not None:
+    feed_wpa_lo = math.ceil(_feed_bounds[0] * 2) / 2
+    feed_wpa_hi = math.floor(_feed_bounds[1] * 2) / 2
+else:
+    feed_wpa_lo, feed_wpa_hi = 10.0, 55.0
+
+# Stages-needed trend over the Feed Explorer's slider range — E1 is
+# recomputed per wpa via mass balance (mass_R0_gm/mass_En1), matching
+# fig_lever_rule_interactive_feed's own construction, not held at its
+# real fixed value. See feed_stage_count_trend's docstring for why
+# there's no named limit line and why the shape isn't necessarily
 # monotonic.
-_fig_feed_trend = plot_util.fig_feed_stage_trend(system, conjugate, pt_Rn, pt_En1, mass_R0_gm, mass_En1)
+_fig_feed_trend = plot_util.fig_feed_stage_trend(system, conjugate, pt_Rn, pt_En1, mass_R0_gm, mass_En1, feed_wpa_lo, feed_wpa_hi)
 fig_feed_trend = _fig_feed_trend.to_json() if _fig_feed_trend is not None else None
 
 def _build(key):
@@ -710,7 +723,7 @@ def _build(key):
     if key == 'fig3':   return plot_util.fig_hunter_nash(system, steps, N_theory, pt_R0, pt_Rn, pt_E1, pt_En1, pt_P).to_json()
     if key == 'fig4':   return plot_util.fig_lever_rule(system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M, pt_Mp_exp, pt_E1p_exp, title='Lever Rule — Experimental Flow Ratio').to_json()
     if key == 'fig_sf': return plot_util.fig_lever_rule_interactive(system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M, n_steps=30).to_json()
-    if key == 'fig_feed': return plot_util.fig_lever_rule_interactive_feed(system, pt_Rn, pt_E1, pt_En1, mass_R0=mass_R0_gm, mass_En1=mass_En1, pt_R0_actual=pt_R0, n_steps=30).to_json()
+    if key == 'fig_feed': return plot_util.fig_lever_rule_interactive_feed(system, pt_Rn, pt_E1, pt_En1, mass_R0=mass_R0_gm, mass_En1=mass_En1, pt_R0_actual=pt_R0, wpa_range=(feed_wpa_lo, feed_wpa_hi), n_steps=30).to_json()
     return ''
 
 # Save state for real-time explorer sliders
@@ -740,6 +753,7 @@ json.dumps({
     },
     'mass_flows': {'solvent_g_min': _r(mass_En1), 'feed_g_min': _r(mass_R0_gm)},
     'sf_range': {'min': sf_frac_min, 'max': sf_frac_max},
+    'feed_range': {'min': feed_wpa_lo, 'max': feed_wpa_hi},
     'fig_sf_trend': fig_sf_trend,
     'sf_min_found': sf_min_found,
     'sf_max_found': sf_max_found,
@@ -845,6 +859,7 @@ document.getElementById('sf-num').addEventListener('input', function() {
 // either limit, not just visually discouraged.
 const SF_SLIDER_LO = 0.0, SF_SLIDER_HI = 1.0;
 let _sfBounds = null;
+let _sfLimits = null;   // raw S_min/S_max fracs from the last Calculate, for export
 
 function updateSfRange(sfRange) {
   if (!sfRange) return;
@@ -876,23 +891,45 @@ function updateSfRange(sfRange) {
   if (clamped !== parseFloat(slider.value)) updateSfLabels(clamped);
 }
 
+// System-specific feed-composition range (lever_rule.find_feed_bounds —
+// the probed feasible span for the current system and flows, or the fixed
+// legacy 10-55 fallback). Applied to both the slider and the number input
+// on every Calculate; the current value is clamped into the new range,
+// falling back to the experimental feed composition.
+function updateFeedRange(feedRange, wpaExp) {
+  if (!feedRange) return;
+  const slider = document.getElementById('feed-slider');
+  const num = document.getElementById('feed-num');
+  slider.min = feedRange.min;
+  slider.max = feedRange.max;
+  num.min = feedRange.min;
+  num.max = feedRange.max;
+  let v = parseFloat(slider.value);
+  if (isNaN(v)) v = wpaExp;
+  v = Math.max(feedRange.min, Math.min(feedRange.max, v));
+  updateFeedLabels(v);
+}
+
 // Feed slider
 document.getElementById('feed-slider').addEventListener('input', function() {
   updateFeedLabels(parseFloat(this.value));
   computeExplorer('feed');
 });
 
-// Feed number input
+// Feed number input — clamp to whatever range is currently set on the
+// element (see updateFeedRange) and sync
 document.getElementById('feed-num').addEventListener('change', function() {
+  const lo = parseFloat(this.min), hi = parseFloat(this.max);
   let v = parseFloat(this.value);
-  if (isNaN(v)) v = 33;
-  v = Math.max(10, Math.min(55, v));
+  if (isNaN(v)) v = (lo + hi) / 2;
+  v = Math.max(lo, Math.min(hi, v));
   updateFeedLabels(v);
   computeExplorer('feed');
 });
 document.getElementById('feed-num').addEventListener('input', function() {
+  const lo = parseFloat(this.min), hi = parseFloat(this.max);
   const v = parseFloat(this.value);
-  if (!isNaN(v) && v >= 10 && v <= 55) {
+  if (!isNaN(v) && v >= lo && v <= hi) {
     document.getElementById('feed-slider').value = v;
     computeExplorer('feed');
   }
@@ -950,6 +987,7 @@ async function calculate(requestedKeys) {
     renderFig(activeTab);
     showResults(data);
     updateSfRange(data.sf_range);
+    updateFeedRange(data.feed_range, data.stream_points.R0.wpa);
     explorerReady = true;
 
     // If currently on an explorer tab, recompute it with new inputs
@@ -969,13 +1007,14 @@ async function calculate(requestedKeys) {
 }
 
 function getDefaultKeys() {
-  const keys = ['fig3'];
+  // fig2b (interpolated tie-lines) and fig4 (lever rule) are always
+  // computed so the zip export can include them even if their tabs were
+  // never opened.
+  const keys = ['fig3', 'fig2b', 'fig4'];
   if (cache['fig_sf']   || activeTab === 'fig_sf')   keys.push('fig_sf');
   if (cache['fig_feed'] || activeTab === 'fig_feed') keys.push('fig_feed');
   if (cache['fig1']  || activeTab === 'fig1')  keys.push('fig1');
   if (cache['fig2a'] || activeTab === 'fig2a') keys.push('fig2a');
-  if (cache['fig2b'] || activeTab === 'fig2b') keys.push('fig2b');
-  if (cache['fig4']  || activeTab === 'fig4')  keys.push('fig4');
   return keys;
 }
 
@@ -1193,6 +1232,10 @@ function showResults(data) {
   // frac is S/(F+S) (the slider's own convention); (S/F)_min/max is the
   // textbook solvent-to-feed ratio itself, S/F = frac/(1-frac).
   const sfRatio = frac => (frac / (1 - frac)).toFixed(2);
+
+  // Stash the raw computed limits for the zip export (result.xlsx), so the
+  // exported values come from the same numbers the cards below display.
+  _sfLimits = { min: data.sf_min_found, max: data.sf_max_found };
 
   if (data.sf_min_found != null) {
     document.getElementById('sf-min-val').textContent =
@@ -1420,28 +1463,36 @@ async function exportBundle() {
     // live via Plotly.addTraces (see _plaitStarTrace) rather than being
     // part of the cached figure itself.
     const hiddenEl = document.getElementById('export-render');
-    async function _captureFig(key, w, h, filename, extraTraces) {
+    // `scale` multiplies the PNG resolution without touching the layout —
+    // used for the small explorer trend charts, whose 320x260 layouts and
+    // 9-10 pt fonts would look sparse if stretched to 900 px instead.
+    async function _captureFig(key, w, h, filename, extraTraces, scale) {
       if (!cache[key] || !hiddenEl) return;
       const data = extraTraces ? [...cache[key].data, ...extraTraces] : cache[key].data;
       const layout = { ...cache[key].layout, width: w, height: h, autosize: false };
       await Plotly.newPlot(hiddenEl, data, layout, { displayModeBar: false });
-      const dataUrl = await Plotly.toImage(hiddenEl, { format: 'png', width: w, height: h });
+      const dataUrl = await Plotly.toImage(hiddenEl, { format: 'png', width: w, height: h, scale: scale || 1 });
       zip.file(filename, dataUrl.split(',')[1], { base64: true });
       included.push(filename);
     }
 
+    // Export filenames are numbered in their own presentation order
+    // (fig1..fig10), independent of the internal cache keys.
     const star = _plaitStats ? [_plaitStarTrace()] : null;
-    await _captureFig('fig1', 900, 900, 'fig1_equilibrium.png');
-    await _captureFig('fig2a_diagonal', 900, 900, 'fig2a_conjugate_diagonal.png', star);
-    await _captureFig('fig2a_horizontal', 900, 900, 'fig2a_conjugate_horizontal.png', star);
-    await _captureFig('fig_corr_ot', 700, 500, 'fig1_correlation_othmer_tobias.png');
-    await _captureFig('fig_corr_hand', 700, 500, 'fig1_correlation_hand.png');
-    await _captureFig('fig_corr_bachman', 700, 500, 'fig1_correlation_bachman.png');
-    await _captureFig('fig_selectivity', 700, 500, 'fig1_selectivity.png');
-    await _captureFig('fig_plait', 700, 700, 'fig2a_treybal_loglog.png');
+    await _captureFig('fig1', 900, 900, 'fig1_LLE_ternary_diagram.png');
+    await _captureFig('fig_corr_ot', 700, 500, 'fig2a_correlation_OT.png');
+    await _captureFig('fig_corr_hand', 700, 500, 'fig2b_correlation_Hand.png');
+    await _captureFig('fig_corr_bachman', 700, 500, 'fig2c_correlation_Bachman.png');
+    await _captureFig('fig_selectivity', 700, 500, 'fig3_selectivity.png');
+    await _captureFig('fig2a_diagonal', 900, 900, 'fig4a_conjugate_curve_diagonal.png', star);
+    await _captureFig('fig2a_horizontal', 900, 900, 'fig4b_conjugate_curve_horizontal.png', star);
+    await _captureFig('fig_plait', 700, 700, 'fig5_treybal_plait_point.png');
     if (calculated) {
-      await _captureFig('fig3', 900, 900, 'fig3_hunter_nash.png');
-      await _captureFig('fig4', 900, 900, 'fig4_lever_rule.png');
+      await _captureFig('fig3', 900, 900, 'fig6_Hunter_Nash.png');
+      await _captureFig('fig2b', 900, 900, 'fig7_interpolated_tie_lines.png');
+      await _captureFig('fig4', 900, 900, 'fig8_lever_rule.png');
+      await _captureFig('fig_sf_trend', 320, 260, 'fig9_sf_stage_trend.png', null, 3);
+      await _captureFig('fig_feed_trend', 320, 260, 'fig10_feed_stage_trend.png', null, 3);
     }
     Plotly.purge(hiddenEl);
 
@@ -1476,7 +1527,21 @@ async function exportBundle() {
     if (calculated) {
       const streamEl = document.getElementById('stream-tbody')?.closest('table');
       const stageEl = document.getElementById('stages-tbody')?.closest('table');
-      if (streamEl?.querySelector('tr')) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(streamEl), 'Stream Points');
+      if (streamEl?.querySelector('tr')) {
+        const streamSheet = XLSX.utils.table_to_sheet(streamEl);
+        // S/F limits appended below the stream table, same pattern as the
+        // correlation coefficients under Tie Lines. Values reuse the raw
+        // fracs the S:F Explorer cards display, at the same precision the
+        // cards show (wt%, 1 decimal) plus the w/w ratio form.
+        if (_sfLimits && (_sfLimits.min != null || _sfLimits.max != null)) {
+          const range = XLSX.utils.decode_range(streamSheet['!ref']);
+          const sfRows = [[], ['S/F limits', 'S/(S+F) (wt%)', 'S/F (w/w)']];
+          if (_sfLimits.min != null) sfRows.push(['(S/F)_min', Number((_sfLimits.min * 100).toFixed(1)), Number((_sfLimits.min / (1 - _sfLimits.min)).toFixed(2))]);
+          if (_sfLimits.max != null) sfRows.push(['(S/F)_max', Number((_sfLimits.max * 100).toFixed(1)), Number((_sfLimits.max / (1 - _sfLimits.max)).toFixed(2))]);
+          XLSX.utils.sheet_add_aoa(streamSheet, sfRows, { origin: { r: range.e.r + 2, c: 0 } });
+        }
+        XLSX.utils.book_append_sheet(wb, streamSheet, 'Stream Points');
+      }
       if (stageEl?.querySelector('tr')) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(stageEl), 'Stage Results');
     }
 
@@ -1492,8 +1557,8 @@ async function exportBundle() {
     let manifest = `CBPL-kit export — ${slug} — ${dateStr}\n\nIncluded:\n`
       + included.map(f => '  ' + f).join('\n');
     if (!calculated) {
-      manifest += '\n\nNot included: Hunter-Nash results (fig3, fig4, and the Stream Points / Stage Results sheets)\n'
-        + '  -> Run "Calculate" with titration inputs first, then export again to include these.';
+      manifest += '\n\nNot included: LLE Hunter-Nash analysis results\n'
+        + '  -> Run "Calculate" with titration volumes and flow rates, then export again to include these.';
     }
     zip.file('README.txt', manifest);
 
