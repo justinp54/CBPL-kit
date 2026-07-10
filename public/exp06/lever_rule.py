@@ -288,3 +288,100 @@ def find_smin_over_f(
     if c is None:
         return None
     return c['frac_min']
+
+
+def _feed_construction_ok(
+    system,
+    wpa: float,
+    pt_Rn: tuple[float, float],
+    pt_En1: tuple[float, float],
+    mass_R0: float,
+    mass_En1: float,
+) -> bool:
+    """True if the Feed Explorer construction exists for a hypothetical
+    binary (carrier + solute, no solvent) feed of `wpa` solute wt% at the
+    fixed experimental mass flows: the mixing point M' must yield an E1'
+    on the binodal (find_E1_prime) and a finite operating point P. This is
+    exactly what the Feed Explorer's slider figure draws, so it is the
+    right feasibility test for the slider's own range.
+    """
+    pt_R0 = (100.0 - 0.5 * wpa, np.sqrt(3) / 2.0 * wpa)
+    pt_Mp = mixing_point(pt_R0, pt_En1, mass_A=mass_R0, mass_B=mass_En1)
+    pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
+    if pt_E1p is None:
+        return False
+    _, pt_P = find_M_and_P(pt_E1p, pt_Rn, pt_En1, pt_R0)
+    return pt_P is not None
+
+
+def find_feed_bounds(
+    system,
+    pt_Rn: tuple[float, float],
+    pt_En1: tuple[float, float],
+    mass_R0: float,
+    mass_En1: float,
+    wpa_anchor: float,
+    step: float = 2.0,
+    refine_iters: int = 6,
+) -> tuple[float, float] | None:
+    """Feasible feed-composition span (wpa_lo, wpa_hi) for the Feed
+    Explorer slider, probed outward from the experimental feed
+    (`wpa_anchor`) until the construction first fails on each side, then
+    bisected to ~step/2**refine_iters precision.
+
+    Unlike S_min/S_max there is no named textbook limit for feed
+    concentration, and the failure geometry differs between systems, so no
+    boundary shape is assumed: walking outward from a known-good anchor
+    also keeps the result to the contiguous feasible span containing the
+    real experiment, in case feasibility is not contiguous. The dilute end
+    is additionally floored just above the raffinate target composition —
+    a feed leaner than the target raffinate has nothing to extract.
+
+    Returns None if the anchor itself is infeasible; callers fall back to
+    the legacy fixed 10-55 span.
+    """
+    def ok(w: float) -> bool:
+        return _feed_construction_ok(system, w, pt_Rn, pt_En1, mass_R0, mass_En1)
+
+    if not ok(wpa_anchor):
+        return None
+
+    # Dilute-side floor: raffinate solute wt% (from its y-coordinate) plus
+    # a small margin, never below 0.5 wt%.
+    rn_wpa = pt_Rn[1] * 2.0 / np.sqrt(3)
+    floor = max(rn_wpa + 0.5, 0.5)
+    ceil = 99.5
+
+    # Rich side: walk up until the first failure, then bisect the bracket.
+    hi_good, w = wpa_anchor, wpa_anchor + step
+    while w < ceil and ok(w):
+        hi_good, w = w, w + step
+    if w >= ceil:
+        hi = ceil if ok(ceil) else hi_good
+    else:
+        good, bad = hi_good, w
+        for _ in range(refine_iters):
+            mid = 0.5 * (good + bad)
+            if ok(mid):
+                good = mid
+            else:
+                bad = mid
+        hi = good
+
+    # Dilute side: walk down until the first failure or the floor.
+    lo_good, w = wpa_anchor, wpa_anchor - step
+    while w > floor and ok(w):
+        lo_good, w = w, w - step
+    if w <= floor:
+        lo = floor if ok(floor) else lo_good
+    else:
+        good, bad = lo_good, w
+        for _ in range(refine_iters):
+            mid = 0.5 * (good + bad)
+            if ok(mid):
+                good = mid
+            else:
+                bad = mid
+        lo = good
+
+    return (float(lo), float(hi))

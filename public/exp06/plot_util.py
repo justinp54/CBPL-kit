@@ -838,8 +838,7 @@ def fig_feed_stage_trend(
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=xs, y=ys,
-        mode='lines+markers',
-        line=dict(color='steelblue', width=1.5),
+        mode='markers',
         marker=dict(color='steelblue', size=6, line=dict(width=0.5, color='white')),
         showlegend=False,
         hovertemplate='Feed %{x:.0f} wt%<br>%{y:.1f} stages<extra></extra>',

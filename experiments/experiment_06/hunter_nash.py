@@ -202,11 +202,15 @@ def feed_stage_count_trend(
     mass_En1: float,
     wpa_lo: float = 10.0,
     wpa_hi: float = 55.0,
-    n: int = 7,
+    n: int = 12,
     max_steps: int = 100,
 ) -> list[tuple[float, float]]:
     """Stage count vs Feed PA wt% (`wpa`), sampled from wpa_hi (concentrated,
     safe) down toward wpa_lo (dilute), for the Feed Explorer.
+
+    wpa_lo/wpa_hi normally come from lever_rule.find_feed_bounds (the
+    probed feasible span for the current system and flows); the 10-55
+    defaults are only the legacy fallback for when that probe fails.
 
     E1 is NOT held at its real, measured value here — a different
     hypothetical feed concentration implies a different mixing point M'

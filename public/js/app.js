@@ -256,7 +256,7 @@ async function initPyodide() {
       from equilibrium import EquilibriumSystem
       from conjugate import ConjugateCurve
       from hunter_nash import HunterNashSolver
-      from lever_rule import find_M_and_P, mixing_point, find_E1_prime, find_smin_over_f, find_smax_over_f
+      from lever_rule import find_M_and_P, mixing_point, find_E1_prime, find_smin_over_f, find_smax_over_f, find_feed_bounds
       import plot_util
 
       # Build equilibrium system once (literature data — never changes)
@@ -633,7 +633,7 @@ document.addEventListener('keydown', e => {
 
 // ── Core Python computation ────────────────────────────────────────────────
 const PY_COMPUTE = `
-import json
+import json, math
 from config import RHO_BP, RHO_PA, RHO_W, MW_PA, FLOW_SOLVENT_ML_MIN, FLOW_FEED_ML_MIN
 
 def _c(v, dil): return 0.05 * v * float(dil)
@@ -694,13 +694,26 @@ if _sf_frac_min is not None and _sf_frac_max is not None:
 sf_min_found = round(_sf_frac_min, 4) if _sf_frac_min is not None else None
 sf_max_found = round(_sf_frac_max, 4) if _sf_frac_max is not None else None
 
-# Stages-needed trend over the Feed Explorer's existing slider range
-# (10-55 wt%) — E1 is recomputed per wpa via mass balance (mass_R0_gm/
-# mass_En1), matching fig_lever_rule_interactive_feed's own construction,
-# not held at its real fixed value. See feed_stage_count_trend's docstring
-# for why there's no named limit line and why the shape isn't necessarily
+# Feed Explorer slider bounds — the feasible feed-composition span for
+# this system and these flows, probed outward from the experimental feed
+# (see lever_rule.find_feed_bounds). No named textbook limit exists here
+# (unlike S_min/S_max), so this is presented only as the slider's range.
+# Falls back to the legacy fixed 10-55 span if the probe fails. Rounded
+# inward to the slider's 0.5 step so the endpoints stay feasible.
+_feed_bounds = find_feed_bounds(system, pt_Rn, pt_En1, mass_R0_gm, mass_En1, wpa_R0)
+if _feed_bounds is not None:
+    feed_wpa_lo = math.ceil(_feed_bounds[0] * 2) / 2
+    feed_wpa_hi = math.floor(_feed_bounds[1] * 2) / 2
+else:
+    feed_wpa_lo, feed_wpa_hi = 10.0, 55.0
+
+# Stages-needed trend over the Feed Explorer's slider range — E1 is
+# recomputed per wpa via mass balance (mass_R0_gm/mass_En1), matching
+# fig_lever_rule_interactive_feed's own construction, not held at its
+# real fixed value. See feed_stage_count_trend's docstring for why
+# there's no named limit line and why the shape isn't necessarily
 # monotonic.
-_fig_feed_trend = plot_util.fig_feed_stage_trend(system, conjugate, pt_Rn, pt_En1, mass_R0_gm, mass_En1)
+_fig_feed_trend = plot_util.fig_feed_stage_trend(system, conjugate, pt_Rn, pt_En1, mass_R0_gm, mass_En1, feed_wpa_lo, feed_wpa_hi)
 fig_feed_trend = _fig_feed_trend.to_json() if _fig_feed_trend is not None else None
 
 def _build(key):
@@ -710,7 +723,7 @@ def _build(key):
     if key == 'fig3':   return plot_util.fig_hunter_nash(system, steps, N_theory, pt_R0, pt_Rn, pt_E1, pt_En1, pt_P).to_json()
     if key == 'fig4':   return plot_util.fig_lever_rule(system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M, pt_Mp_exp, pt_E1p_exp, title='Lever Rule — Experimental Flow Ratio').to_json()
     if key == 'fig_sf': return plot_util.fig_lever_rule_interactive(system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M, n_steps=30).to_json()
-    if key == 'fig_feed': return plot_util.fig_lever_rule_interactive_feed(system, pt_Rn, pt_E1, pt_En1, mass_R0=mass_R0_gm, mass_En1=mass_En1, pt_R0_actual=pt_R0, n_steps=30).to_json()
+    if key == 'fig_feed': return plot_util.fig_lever_rule_interactive_feed(system, pt_Rn, pt_E1, pt_En1, mass_R0=mass_R0_gm, mass_En1=mass_En1, pt_R0_actual=pt_R0, wpa_range=(feed_wpa_lo, feed_wpa_hi), n_steps=30).to_json()
     return ''
 
 # Save state for real-time explorer sliders
@@ -740,6 +753,7 @@ json.dumps({
     },
     'mass_flows': {'solvent_g_min': _r(mass_En1), 'feed_g_min': _r(mass_R0_gm)},
     'sf_range': {'min': sf_frac_min, 'max': sf_frac_max},
+    'feed_range': {'min': feed_wpa_lo, 'max': feed_wpa_hi},
     'fig_sf_trend': fig_sf_trend,
     'sf_min_found': sf_min_found,
     'sf_max_found': sf_max_found,
@@ -876,23 +890,45 @@ function updateSfRange(sfRange) {
   if (clamped !== parseFloat(slider.value)) updateSfLabels(clamped);
 }
 
+// System-specific feed-composition range (lever_rule.find_feed_bounds —
+// the probed feasible span for the current system and flows, or the fixed
+// legacy 10-55 fallback). Applied to both the slider and the number input
+// on every Calculate; the current value is clamped into the new range,
+// falling back to the experimental feed composition.
+function updateFeedRange(feedRange, wpaExp) {
+  if (!feedRange) return;
+  const slider = document.getElementById('feed-slider');
+  const num = document.getElementById('feed-num');
+  slider.min = feedRange.min;
+  slider.max = feedRange.max;
+  num.min = feedRange.min;
+  num.max = feedRange.max;
+  let v = parseFloat(slider.value);
+  if (isNaN(v)) v = wpaExp;
+  v = Math.max(feedRange.min, Math.min(feedRange.max, v));
+  updateFeedLabels(v);
+}
+
 // Feed slider
 document.getElementById('feed-slider').addEventListener('input', function() {
   updateFeedLabels(parseFloat(this.value));
   computeExplorer('feed');
 });
 
-// Feed number input
+// Feed number input — clamp to whatever range is currently set on the
+// element (see updateFeedRange) and sync
 document.getElementById('feed-num').addEventListener('change', function() {
+  const lo = parseFloat(this.min), hi = parseFloat(this.max);
   let v = parseFloat(this.value);
-  if (isNaN(v)) v = 33;
-  v = Math.max(10, Math.min(55, v));
+  if (isNaN(v)) v = (lo + hi) / 2;
+  v = Math.max(lo, Math.min(hi, v));
   updateFeedLabels(v);
   computeExplorer('feed');
 });
 document.getElementById('feed-num').addEventListener('input', function() {
+  const lo = parseFloat(this.min), hi = parseFloat(this.max);
   const v = parseFloat(this.value);
-  if (!isNaN(v) && v >= 10 && v <= 55) {
+  if (!isNaN(v) && v >= lo && v <= hi) {
     document.getElementById('feed-slider').value = v;
     computeExplorer('feed');
   }
@@ -950,6 +986,7 @@ async function calculate(requestedKeys) {
     renderFig(activeTab);
     showResults(data);
     updateSfRange(data.sf_range);
+    updateFeedRange(data.feed_range, data.stream_points.R0.wpa);
     explorerReady = true;
 
     // If currently on an explorer tab, recompute it with new inputs
