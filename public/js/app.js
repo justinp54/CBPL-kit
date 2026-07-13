@@ -267,8 +267,13 @@ async function initPyodide() {
     setProgress(100, 'Ready!');
     pyReady = true;
 
-    // Auto-render system figures (no titration data needed)
-    await renderSystemFigs();
+    // Auto-render system figures (no titration data needed).
+    // Non-fatal here: a figure failure must not block the rest of init
+    // (overlay hide, button enable) — the error surfaces on the System tab.
+    await renderSystemFigs().catch(e => {
+      console.error('Initial system figs:', e);
+      setSysMsg('Default system figures failed to render: ' + pyErrMsg(e), 'error');
+    });
 
     // Hide init overlay; only show empty state on extraction tabs
     setTimeout(() => {
@@ -290,7 +295,7 @@ async function initPyodide() {
     document.getElementById('export-btn').disabled = false;
 
   } catch (err) {
-    setProgress(100, '⚠ ' + err.message);
+    setProgress(100, '⚠ ' + pyErrMsg(err));
     document.getElementById('progress-bar').style.background = '#dc2626';
     console.error(err);
   }
@@ -379,7 +384,7 @@ json.dumps(_sf)
       if (activeTab === 'fig1') { _renderCorrChart(_corrActive); _renderSelectivityChart(); }
       else if (activeTab === 'fig2a') { _renderPlaitChart(); _addLoglogPlaitToTernary(); }
     });
-  } catch (e) { console.error('System fig render:', e); }
+  } catch (e) { console.error('System fig render:', e); throw e; }
 }
 
 function populateTieLineTable(comps, sel) {
@@ -1774,6 +1779,11 @@ function removeTieRow() {
   syncYamlFromForm();
 }
 
+function pyErrMsg(e) {
+  const lines = (e.message || String(e)).split('\n').map(l => l.trim()).filter(Boolean);
+  return lines[lines.length - 1] || String(e);
+}
+
 function setSysMsg(text, type) {
   const el = document.getElementById('sys-msg');
   el.textContent = text;
@@ -1926,7 +1936,7 @@ _b._eready     = False
     return true;
 
   } catch (e) {
-    setSysMsg('Failed to build system: ' + e.message, 'error');
+    setSysMsg('Failed to build system: ' + pyErrMsg(e), 'error');
     return false;
   }
 }
