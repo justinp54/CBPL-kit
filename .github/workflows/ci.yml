@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install lint tools
+        run: pip install ruff
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Verify dual-copy sync
+        run: python scripts/check_dual_copy.py
+
+      - name: Run tests (if present)
+        run: |
+          if [ -d experiments/experiment_06/tests ]; then
+            # plotly: main.py imports plot_util at module load, which needs it
+            pip install pytest pyyaml numpy scipy plotly
+            python -m pytest experiments/experiment_06/tests/ -v
+          else
+            echo "no tests yet, skipping"
+          fi
