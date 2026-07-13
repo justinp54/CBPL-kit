@@ -1580,7 +1580,7 @@ async function exportBundle() {
         }
         XLSX.utils.book_append_sheet(wb, streamSheet, 'Stream Points');
       }
-      if (stageEl?.querySelector('tr')) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(stageEl), 'Stage Results');
+      if (stageEl?.querySelector('tr')) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(stageEl), 'Stage-by-Stage Compositions');
     }
 
     const xlsxName = 'result.xlsx';
