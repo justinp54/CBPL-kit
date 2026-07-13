@@ -1179,7 +1179,10 @@ function switchTab(key) {
       renderFig(key);
       if (key === 'fig1') requestAnimationFrame(() => { _renderCorrChart(_corrActive); _renderSelectivityChart(); });
       if (key === 'fig2a') requestAnimationFrame(() => { _renderPlaitChart(); _addLoglogPlaitToTernary(); });
-    } else if (pyReady && cache['fig3']) {
+    } else if (pyReady && cache['fig3'] && key.startsWith('fig')) {
+      // Only figure tabs may be requested from Python — a non-figure tab
+      // (contact) would make PY_COMPUTE's _build() return '' and crash
+      // JSON.parse with "Unexpected end of JSON input".
       calculate([key]);
     } else if (pyReady && !TABS_AUTO_COLLAPSE.has(key)) {
       document.getElementById('empty').style.display = 'flex';
