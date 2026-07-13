@@ -1,0 +1,45 @@
+# System Configuration
+components:
+  carrier: { name: "Water", abbr: "W" }   # (1)
+  solute: { name: "tert-Butyl Alcohol", abbr: "TBA" }   # (2)
+  solvent: { name: "Diisobutylene", abbr: "DIB" }   # (3)
+properties:
+  rho_carrier: 0.997   # g/mL
+  rho_solute: 0.781   # g/mL
+  rho_solvent: 0.711   # g/mL
+  mw_solute: 74.12   # g/mol
+# Each row: [Carrier wt%, Solute wt%, Solvent wt%]
+# (100w1, 100w2, 100w3; sorted by increasing carrier)
+equilibrium_data:
+  - [0.02, 2.59, 97.39]
+  - [0.05, 8.34, 91.61]
+  - [1.14, 15.04, 83.82]
+  - [1.50, 23.38, 75.12]
+  - [3.19, 33.80, 63.01]
+  - [5.32, 40.85, 53.83]
+  - [8.82, 48.77, 42.42]
+  - [15.07, 56.38, 28.55]
+  - [23.78, 58.36, 17.85]
+  - [75.57, 24.07, 0.36]
+  - [79.32, 20.47, 0.21]
+  - [80.55, 19.29, 0.16]
+  - [81.85, 17.99, 0.16]
+  - [83.24, 16.59, 0.16]
+  - [84.70, 15.13, 0.17]
+  - [86.57, 13.27, 0.17]
+  - [89.75, 10.13, 0.11]
+  - [92.49, 7.45, 0.06]
+# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]
+# (100w23, 100w21; sorted by increasing solute)
+tie_lines:
+  - [2.59, 7.45]
+  - [8.34, 10.13]
+  - [15.04, 13.27]
+  - [23.38, 15.13]
+  - [33.80, 16.59]
+  - [40.85, 17.99]
+  - [48.77, 19.29]
+  - [56.38, 20.47]
+  - [58.36, 24.07]
+# data source, temperature, etc. - free text
+note: "25 °C, Lee et al., J. Chem. Eng. Data 33(3) (1988)"
