@@ -11,6 +11,16 @@ dependencies = [
     "ipywidgets>=8.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pyyaml",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["experiments/experiment_06/tests"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
@@ -30,8 +40,13 @@ ignore = [
 exclude = ["*.ipynb"]
 
 [tool.ruff.lint.per-file-ignores]
-"experiments/experiment_04/*" = ["I"]   # legacy import style
-"experiments/experiment_05/*" = ["I"]
+"experiments/experiment_04/*" = ["I", "W", "UP"]         # legacy: import style, whitespace, old typing
+"experiments/experiment_05/*" = ["I", "W", "F401", "UP"]  # legacy: import style, whitespace, unused typing imports, old typing
+"experiments/experiment_06/legacy/*" = ["E402", "E701", "I001", "W"]  # legacy reference script
+"experiments/experiment_06/tests/*" = ["F401", "I001"]   # test suite: unused imports, import order
+"experiments/experiment_06/*.py" = ["I001", "F821", "UP037"]  # pre-existing import sort / annotation issues (tracked in HANDOFF A2)
+"public/exp06/*.py" = ["I001", "F821", "UP037"]          # pre-existing import sort / annotation issues (tracked in HANDOFF A2)
+"paper/*.py" = ["E741"]                                  # ambiguous variable name `l` in extract_manuscript.py
 
 [tool.ruff.format]
 quote-style = "double"
