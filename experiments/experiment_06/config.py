@@ -28,10 +28,29 @@ MW_PA:  float = float(_p["mw_solute"])     # g/mol — solute molar mass (NaOH t
 MW_BP: float = 122.99   # g/mol — n-Bromopropane
 MW_W:  float = 18.015   # g/mol — Water
 
+# Titration protocol — override with your actual setup
+C_NAOH:       float = 0.5    # mol/L — NaOH titrant concentration
+V_ALIQUOT_ML: float = 10.0   # mL    — sample aliquot volume titrated
+
 # Experiment defaults — override with your actual titration results
 V_R0: float = 10.78   # feed   (10× diluted) [mL]
 V_E1: float = 3.80    # first extract (10× diluted) [mL]
 V_RN: float = 0.64    # raffinate (undiluted) [mL]
 
+F_R0: float = 10.0   # feed dilution factor
+F_E1: float = 10.0   # first extract dilution factor
+F_RN: float = 1.0    # raffinate dilution factor (undiluted)
+
 FLOW_SOLVENT_ML_MIN: float = 100.0   # pure water (solvent) [mL/min]
 FLOW_FEED_ML_MIN:    float = 40.0    # feed stream [mL/min]
+
+
+def conc_from_titration(v_naoh_mL: float, f: float = 1.0) -> float:
+    """NaOH titration volume → solute molar concentration [mol/L].
+
+    C = C_NAOH · V_NaOH · f / V_ALIQUOT_ML, where f is the dilution factor,
+    assuming 1:1 acid-base neutralization. Reads C_NAOH / V_ALIQUOT_ML at
+    call time so runtime overrides (config.C_NAOH = ...) from the web
+    sidebar take effect.
+    """
+    return C_NAOH * float(v_naoh_mL) * float(f) / V_ALIQUOT_ML

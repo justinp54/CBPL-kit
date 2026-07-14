@@ -17,6 +17,9 @@ from pathlib import Path
 try:
     from . import plot_util
     from .config import (
+        F_E1,
+        F_R0,
+        F_RN,
         FLOW_FEED_ML_MIN,
         FLOW_SOLVENT_ML_MIN,
         MW_PA,
@@ -25,6 +28,7 @@ try:
         V_E1,
         V_R0,
         V_RN,
+        conc_from_titration,
     )
     from .conjugate import ConjugateCurve
     from .equilibrium import EquilibriumSystem
@@ -34,6 +38,9 @@ try:
 except ImportError:
     import plot_util
     from config import (
+        F_E1,
+        F_R0,
+        F_RN,
         FLOW_FEED_ML_MIN,
         FLOW_SOLVENT_ML_MIN,
         MW_PA,
@@ -42,6 +49,7 @@ except ImportError:
         V_E1,
         V_R0,
         V_RN,
+        conc_from_titration,
     )
     from conjugate import ConjugateCurve
     from equilibrium import EquilibriumSystem
@@ -65,16 +73,11 @@ class StreamPoints:
     wbp_R0: float                 # n-BP wt% in feed
 
 
-def _titration_concentration(v_mL: float, diluted_10x: bool) -> float:
-    """0.5 M NaOH titration volume → PA molar concentration [mol/L]."""
-    return 0.05 * v_mL * (10.0 if diluted_10x else 1.0)
-
-
 def compute_stream_points(system: EquilibriumSystem) -> StreamPoints:
     """Derive R0, E1, Rn Cartesian coordinates from titration results in config.py."""
-    c_R0 = _titration_concentration(V_R0, diluted_10x=True)
-    c_E1 = _titration_concentration(V_E1, diluted_10x=True)
-    c_Rn = _titration_concentration(V_RN, diluted_10x=False)
+    c_R0 = conc_from_titration(V_R0, F_R0)
+    c_E1 = conc_from_titration(V_E1, F_E1)
+    c_Rn = conc_from_titration(V_RN, F_RN)
 
     # R0: binary BP+PA (no water); solve for wpa from molar concentration
     denom = c_R0 * MW_PA + RHO_BP * (1000.0 - c_R0 * MW_PA / RHO_PA)

@@ -179,7 +179,7 @@ function renderContactPane() {
 }
 
 // ── State ─────────────────────────────────────────────────────────────────
-const FIELDS = ['V_R0','V_E1','V_RN','flow_solvent','flow_feed'];
+const FIELDS = ['V_R0','V_E1','V_RN','flow_solvent','flow_feed','c_naoh','v_aliquot'];
 let pyodide   = null;
 let pyReady   = false;
 let cache     = {};
@@ -187,13 +187,6 @@ let rendered  = {};
 let activeTab = 'guide';
 let computing = false;
 let _lbls = { solute:{name:'Propionic Acid', abbr:'PA'}, carrier:{name:'n-Bromopropane', abbr:'BP'}, solvent:{name:'Water', abbr:'W'} };
-
-function syncDil(id, src) {
-  const num = document.getElementById('dil-' + id);
-  const sld = document.getElementById('s-dil-' + id);
-  if (src === 'num') sld.value = num.value;
-  else num.value = sld.value;
-}
 
 // ── Progress bar helper ────────────────────────────────────────────────────
 function setProgress(pct, label) {
@@ -290,7 +283,6 @@ async function initPyodide() {
     document.getElementById('calc-label').textContent = 'Calculate';
     FIELDS.forEach(f => {
       document.getElementById(f).disabled = false;
-      document.getElementById('s-' + f).disabled = false;
     });
     document.getElementById('export-btn').disabled = false;
 
@@ -612,18 +604,14 @@ function switchConjugateMethod(method) {
 // ── Input sync ─────────────────────────────────────────────────────────────
 FIELDS.forEach(f => {
   const num = document.getElementById(f);
-  const sld = document.getElementById('s-' + f);
   num.disabled = true;
-  sld.disabled = true;
 
-  sld.addEventListener('input', () => { num.value = sld.value; });
-  num.addEventListener('input', () => { sld.value = num.value; });
   num.addEventListener('change', () => {
     let v = parseFloat(num.value);
     const lo = parseFloat(num.min), hi = parseFloat(num.max);
     if (isNaN(v)) v = parseFloat(num.defaultValue);
     v = Math.max(lo, Math.min(hi, v));
-    num.value = v; sld.value = v;
+    num.value = v;
   });
 });
 
@@ -631,9 +619,11 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && pyReady && !computing) calculate();
 });
 
-['R0','E1','Rn'].forEach(id => {
-  document.getElementById('dil-' + id).addEventListener('input', () => syncDil(id, 'num'));
-  document.getElementById('s-dil-' + id).addEventListener('input', () => syncDil(id, 'slider'));
+// Titration formula box — rendered on window load because katex.min.js is
+// deferred and executes after this classic script.
+const _TITR_LATEX = 'C_{\\mathrm{solute}} = \\dfrac{C_{\\mathrm{NaOH}} \\cdot V_{\\mathrm{NaOH}} \\cdot f}{V_{\\mathrm{aliquot}}}';
+window.addEventListener('load', () => {
+  document.getElementById('titr-formula-eq').innerHTML = _katex(_TITR_LATEX);
 });
 
 // ── Core Python computation ────────────────────────────────────────────────
@@ -641,7 +631,6 @@ const PY_COMPUTE = `
 import json, math
 from config import RHO_BP, RHO_PA, RHO_W, MW_PA, FLOW_SOLVENT_ML_MIN, FLOW_FEED_ML_MIN
 
-def _c(v, dil): return 0.05 * v * float(dil)
 def _r(v):      return round(float(v), 2)
 def _comp(t):   return {'wpa': _r(t[0]), 'wbp': _r(t[1]), 'ww': _r(t[2])}
 
@@ -649,9 +638,9 @@ def _comp(t):   return {'wpa': _r(t[0]), 'wbp': _r(t[1]), 'ww': _r(t[2])}
 system    = _system
 conjugate = _conjugate
 
-c_R0 = _c(config.V_R0, _dil_R0)
-c_E1 = _c(config.V_E1, _dil_E1)
-c_Rn = _c(config.V_RN, _dil_Rn)
+c_R0 = config.conc_from_titration(config.V_R0, _f_R0)
+c_E1 = config.conc_from_titration(config.V_E1, _f_E1)
+c_Rn = config.conc_from_titration(config.V_RN, _f_Rn)
 
 denom  = c_R0 * MW_PA + RHO_BP * (1000.0 - c_R0 * MW_PA / RHO_PA)
 wpa_R0 = c_R0 * MW_PA / denom * 100.0
@@ -980,11 +969,13 @@ async function calculate(requestedKeys) {
       config.V_RN               = _V_RN
       config.FLOW_SOLVENT_ML_MIN = _flow_solvent
       config.FLOW_FEED_ML_MIN    = _flow_feed
+      config.C_NAOH             = _c_naoh
+      config.V_ALIQUOT_ML       = _v_aliquot
     `);
 
-    pyodide.globals.set('_dil_R0', parseInt(document.getElementById('dil-R0').value));
-    pyodide.globals.set('_dil_E1', parseInt(document.getElementById('dil-E1').value));
-    pyodide.globals.set('_dil_Rn', parseInt(document.getElementById('dil-Rn').value));
+    pyodide.globals.set('_f_R0', parseInt(document.getElementById('f-R0').value));
+    pyodide.globals.set('_f_E1', parseInt(document.getElementById('f-E1').value));
+    pyodide.globals.set('_f_Rn', parseInt(document.getElementById('f-Rn').value));
     pyodide.globals.set('_requested_keys', toFetch);
     const json = await pyodide.runPythonAsync(PY_COMPUTE);
     const data = JSON.parse(json);

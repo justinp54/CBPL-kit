@@ -45,54 +45,55 @@
   <!-- Sidebar -->
   <aside>
     <div class="section">
-      <div class="section-label">Titration Volumes</div>
+      <div class="section-label">Titration Data</div>
+
+      <div class="field">
+        <div class="titr-row">
+          <span class="titr-sym">C<sub>NaOH</sub></span>
+          <input class="field-input titr-input" id="c_naoh" type="number" value="0.5" min="0.01" max="5" step="0.01" aria-label="NaOH titrant concentration mol per L" />
+          <span class="field-unit titr-unit">M</span>
+          <span class="titr-sym titr-sym-r">V<sub>aliquot</sub></span>
+          <input class="field-input titr-input" id="v_aliquot" type="number" value="10" min="1" max="100" step="0.5" aria-label="Aliquot volume mL" />
+          <span class="field-unit">mL</span>
+        </div>
+      </div>
 
       <div class="field">
         <div class="field-label">Feed</div>
         <div class="field-body">
+          <span class="f-tag">f</span>
+          <input class="f-num" id="f-R0" type="number" value="10" min="1" max="20" step="1" aria-label="Feed dilution factor" />
+          <span class="f-unit">×</span>
           <input class="field-input" id="V_R0" type="number" value="10.78" min="0.5" max="40" step="0.01" aria-label="VR0 Feed titration volume mL" />
           <span class="field-unit">mL</span>
-        </div>
-        <input class="field-slider" id="s-V_R0" type="range" value="10.78" min="0.5" max="40" step="0.01" />
-        <div class="range-ends"><span>0.5</span><span>40</span></div>
-        <div class="dil-compact">
-          <span class="dil-tag">f</span>
-          <input class="dil-num" id="dil-R0" type="number" value="10" min="1" max="20" step="1" />
-          <span class="dil-unit">×</span>
-          <input class="dil-sld" id="s-dil-R0" type="range" value="10" min="1" max="20" step="1" />
         </div>
       </div>
 
       <div class="field">
         <div class="field-label">Extract</div>
         <div class="field-body">
+          <span class="f-tag">f</span>
+          <input class="f-num" id="f-E1" type="number" value="10" min="1" max="20" step="1" aria-label="Extract dilution factor" />
+          <span class="f-unit">×</span>
           <input class="field-input" id="V_E1" type="number" value="3.80" min="0.1" max="20" step="0.01" aria-label="VE1 First Extract titration volume mL" />
           <span class="field-unit">mL</span>
-        </div>
-        <input class="field-slider" id="s-V_E1" type="range" value="3.80" min="0.1" max="20" step="0.01" />
-        <div class="range-ends"><span>0.1</span><span>20</span></div>
-        <div class="dil-compact">
-          <span class="dil-tag">f</span>
-          <input class="dil-num" id="dil-E1" type="number" value="10" min="1" max="20" step="1" />
-          <span class="dil-unit">×</span>
-          <input class="dil-sld" id="s-dil-E1" type="range" value="10" min="1" max="20" step="1" />
         </div>
       </div>
 
       <div class="field">
         <div class="field-label">Raffinate</div>
         <div class="field-body">
+          <span class="f-tag">f</span>
+          <input class="f-num" id="f-Rn" type="number" value="1" min="1" max="20" step="1" aria-label="Raffinate dilution factor" />
+          <span class="f-unit">×</span>
           <input class="field-input" id="V_RN" type="number" value="0.64" min="0.01" max="20" step="0.01" aria-label="VRn Raffinate titration volume mL" />
           <span class="field-unit">mL</span>
         </div>
-        <input class="field-slider" id="s-V_RN" type="range" value="0.64" min="0.01" max="20" step="0.01" />
-        <div class="range-ends"><span>0.01</span><span>20</span></div>
-        <div class="dil-compact">
-          <span class="dil-tag">f</span>
-          <input class="dil-num" id="dil-Rn" type="number" value="1" min="1" max="20" step="1" />
-          <span class="dil-unit">×</span>
-          <input class="dil-sld" id="s-dil-Rn" type="range" value="1" min="1" max="20" step="1" />
-        </div>
+      </div>
+
+      <div class="corr-stats-box titr-formula-box">
+        <div class="fml-label">Solute Concentration</div>
+        <div class="fml-eq" id="titr-formula-eq"></div>
       </div>
     </div>
 
@@ -105,8 +106,6 @@
           <input class="field-input" id="flow_solvent" type="number" value="100" min="5" max="500" step="1" aria-label="Solvent flow rate mL per min" />
           <span class="field-unit">mL/min</span>
         </div>
-        <input class="field-slider" id="s-flow_solvent" type="range" value="100" min="5" max="500" step="1" />
-        <div class="range-ends"><span>5</span><span>500</span></div>
       </div>
 
       <div class="field">
@@ -115,8 +114,6 @@
           <input class="field-input" id="flow_feed" type="number" value="40" min="5" max="300" step="1" aria-label="Feed flow rate mL per min" />
           <span class="field-unit">mL/min</span>
         </div>
-        <input class="field-slider" id="s-flow_feed" type="range" value="40" min="5" max="300" step="1" />
-        <div class="range-ends"><span>5</span><span>300</span></div>
       </div>
     </div>
 
