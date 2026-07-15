@@ -125,7 +125,11 @@ selection) 세 갈래를 함께 다룬다. 6개 feature는 의존성에 따라 �
 - **복잡도**: **Medium** (계산은 단순하나 양 상 조성 정확 추출 + 2개 plot + 패널
   통합)
 
-### 6.3 — Tie-Line Outlier Detection
+### 6.3 — Tie-Line Outlier Detection — ✗ Dropped (2026-07-13)
+
+> 결정: 진행하지 않음. Othmer-Tobias/Bachman correlation 자체가 근사식이라
+> 그 회귀 잔차 기반 outlier 판정의 신뢰도가 낮고, 투자 대비 가치가 없다고 판단.
+> (아래 원래 스코프는 참고용으로 유지)
 
 - **설명**: 6.2의 회귀선을 기준으로 이상치 tie-line을 통계적으로 탐지·시각화.
   실험 측정 오류를 잡아내고, conjugate 곡선의 kink (6.4) 원인을 진단한다.
@@ -141,7 +145,12 @@ selection) 세 갈래를 함께 다룬다. 6개 feature는 의존성에 따라 �
   accept/reject UI는 **6.4**와 데이터 흐름 공유.
 - **복잡도**: **Medium** (통계는 표준, accept/reject 상태 관리 시 Medium-High)
 
-### 6.4 — Conjugate Curve Smoothing / MAKIMA 전환
+### 6.4 — Conjugate Curve Smoothing / MAKIMA 전환 — ✓ Resolved (다른 방식으로)
+
+> 이 항목은 옛 polyfit 기반 코드 기준으로 작성됨. 이후 plait-point 탐색이
+> clamped-tangent extension 방식으로 교체되어(커밋 b5c8eb1, 498c00d) kink 문제가
+> 해소됨 — MAKIMA 전환 불필요. 현재 conjugate 곡선은 branch-Hermite 기반.
+> (아래 원래 스코프는 이력 참고용으로 유지)
 
 - **설명**: 현재 conjugate 표시 곡선은 aux intersection point 위에 PCHIP을
   올리는데, 데이터에 outlier가 있으면 **날카로운 kink**가 생긴다. CLAUDE.md에
