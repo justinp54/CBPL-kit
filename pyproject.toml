@@ -44,8 +44,8 @@ exclude = ["*.ipynb"]
 "experiments/experiment_05/*" = ["I", "W", "F401", "UP"]  # legacy: import style, whitespace, unused typing imports, old typing
 "experiments/experiment_06/legacy/*" = ["E402", "E701", "I001", "W"]  # legacy reference script
 "experiments/experiment_06/tests/*" = ["F401", "I001"]   # test suite: unused imports, import order
-"experiments/experiment_06/*.py" = ["I001", "F821", "UP037"]  # pre-existing import sort / annotation issues (tracked in HANDOFF A2)
-"public/exp06/*.py" = ["I001", "F821", "UP037"]          # pre-existing import sort / annotation issues (tracked in HANDOFF A2)
+"experiments/experiment_06/*.py" = ["I001", "UP037"]  # pre-existing import sort / annotation issues (tracked in HANDOFF A2)
+"public/exp06/*.py" = ["I001", "UP037"]          # pre-existing import sort / annotation issues (tracked in HANDOFF A2)
 "paper/*.py" = ["E741"]                                  # ambiguous variable name `l` in extract_manuscript.py
 
 [tool.ruff.format]

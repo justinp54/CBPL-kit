@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 from scipy.interpolate import CubicHermiteSpline, PchipInterpolator
@@ -303,8 +304,7 @@ class EquilibriumSystem:
     def from_yaml(cls, path: str | Path) -> "EquilibriumSystem":
         """Load equilibrium and tie-line data from a system YAML file."""
         import yaml
-        from pathlib import Path as _Path
-        with open(_Path(path)) as f:
+        with open(Path(path)) as f:
             data = yaml.safe_load(f)
         equil = np.array(data["equilibrium_data"], dtype=float)
         ties = [tuple(float(v) for v in row) for row in data["tie_lines"]]
