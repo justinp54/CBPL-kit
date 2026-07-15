@@ -167,7 +167,8 @@
     .sys-actions-top { display: flex; gap: 8px; margin-bottom: 10px; }
     .sys-textarea { width: 100%; height: 400px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.65; background: #0f172a; color: #e2e8f0; border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; outline: none; resize: vertical; tab-size: 2; }
     .sys-select-row { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-    .sys-select { flex: 1; padding: 8px 10px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; font-weight: 500; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
+    .sys-select { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 8px 10px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; font-weight: 500; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
+    .sys-select-row .sys-btn { flex: 0 0 auto; white-space: nowrap; }
     .sys-select:focus { border-color: var(--blue); }
     .sys-form { margin-bottom: 20px; }
     .sys-form-section { margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
