@@ -79,15 +79,38 @@ def _valid_mask(xs: np.ndarray, ys: np.ndarray) -> np.ndarray:
 # Base layout
 # ---------------------------------------------------------------------------
 
+_TERNARY_TITLE_PX = 14   # Plotly's own default for these titles — the size they render at
+_TERNARY_GAP_PX   = 10   # blank-line font: the b/c gap is 1.3x this, so ~13px
+
+
+def _bottom_axis_title(name: str) -> dict:
+    """Bottom (b/c) ternary axis title, lifted clear of its tick numbers.
+
+    Ternary axes have no title.standoff (cartesian ones do), so a leading <br>
+    is the only lever that moves these titles off the numbers they sit under.
+    Plotly emits that break as dy="1.3em" against the *title* font, so the gap
+    is 1.3 x title font — at the 14px default that lands ~18px, far too much.
+    Shrinking the title font shrinks the gap, and an inner <span> holds the
+    text at its normal size: that decoupling is what buys a part-line gap,
+    since a bare <br> only ever gives whole lines and Plotly ignores font-size
+    on a span wrapping the break itself.
+    """
+    return dict(
+        text=f'<br><span style="font-size:{_TERNARY_TITLE_PX}px">{name} (wt%)</span>',
+        font=dict(size=_TERNARY_GAP_PX),
+    )
+
+
 def _layout(title: str, system: EquilibriumSystem | None = None) -> dict:
     lb = _lb(system) if system else _DEFAULT_LABELS
     return dict(
         title=dict(text=title, x=0.5, font=dict(size=15)),
         ternary=dict(
             sum=100,
-            aaxis=dict(title=f"{lb['solute']['name']} (wt%)",  min=0.0, ticks="outside", linewidth=2, dtick=10),
-            baxis=dict(title=f"{lb['solvent']['name']} (wt%)", min=0.0, ticks="outside", linewidth=2, dtick=10),
-            caxis=dict(title=f"{lb['carrier']['name']} (wt%)", min=0.0, ticks="outside", linewidth=2, dtick=10),
+            # The a title is at the apex, clear of everything — leave it be.
+            aaxis=dict(title=f"{lb['solute']['name']} (wt%)", min=0.0, ticks="outside", linewidth=2, dtick=10),
+            baxis=dict(title=_bottom_axis_title(lb['solvent']['name']), min=0.0, ticks="outside", linewidth=2, dtick=10),
+            caxis=dict(title=_bottom_axis_title(lb['carrier']['name']), min=0.0, ticks="outside", linewidth=2, dtick=10),
         ),
         width=750, height=700,
         legend=dict(x=0.01, y=0.99, bgcolor="rgba(255,255,255,0.8)"),

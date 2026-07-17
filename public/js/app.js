@@ -1067,7 +1067,13 @@ function patchedLayout(layout) {
         caxis: { ...patched.ternary.caxis, title: { text: abbr(_lbls?.carrier?.abbr ?? 'Carrier'), font: { size: 9 } }, tickfont: { size: 8 } },
       };
     } else {
-      patched.margin = { l: 40, r: 130, t: 40, b: 10 };
+      // b fits the two bottom ternary axis titles, which _bottom_axis_title()
+      // lifts off the tick numbers; at the old b:10 they fell off the figure
+      // entirely. t drops the triangle far enough that the apex title clears
+      // the chart title — the apex title's own distance from its tick numbers
+      // is fixed by Plotly and cannot be tuned (ternary axes have no
+      // title.standoff, and a trailing <br> is stripped).
+      patched.margin = { l: 40, r: 130, t: 60, b: 50 };
       patched.legend = {
         x: 1.02, y: 1, xanchor: 'left', yanchor: 'top',
         bgcolor: 'rgba(255,255,255,0.95)',
