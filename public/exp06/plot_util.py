@@ -1048,17 +1048,17 @@ def fig_correlation(corr, model):
     """
     _META = {
         'ot': {
-            'title': 'Othmer-Tobias Correlation',
+            'title': 'Othmer-Tobias correlation',
             'xlabel': 'ln[(1−w<sub>11</sub>)/w<sub>11</sub>]',
             'ylabel': 'ln[(1−w<sub>33</sub>)/w<sub>33</sub>]',
         },
         'hand': {
-            'title': 'Hand Correlation',
+            'title': 'Hand correlation',
             'xlabel': 'ln(w<sub>21</sub>/w<sub>11</sub>)',
             'ylabel': 'ln(w<sub>23</sub>/w<sub>33</sub>)',
         },
         'bachman': {
-            'title': 'Bachman Correlation',
+            'title': 'Bachman correlation',
             'xlabel': 'w<sub>33</sub>/w<sub>11</sub>',
             'ylabel': 'w<sub>33</sub>',
         },
@@ -1205,7 +1205,7 @@ def fig_plait_loglog(data):
         # correlation chart (navy, size 10, left-aligned) so the Conjugate and
         # Tie-Lines panels read consistently. The section header
         # ("Plait Point Estimation") stays an HTML label in index.html.
-        title=dict(text="Treybal's Method (Log-Log)",
+        title=dict(text="Treybal's method in Hand coordinates",
                    font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
         xaxis=dict(title=dict(text='ln(w<sub>21</sub>/w<sub>11</sub>),  ln(w<sub>2</sub>/w<sub>1</sub>)', font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text='ln(w<sub>23</sub>/w<sub>33</sub>),  ln(w<sub>2</sub>/w<sub>3</sub>)', font=dict(size=10)), **_axis),
