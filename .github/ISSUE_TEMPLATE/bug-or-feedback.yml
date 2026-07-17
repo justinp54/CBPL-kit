@@ -9,7 +9,7 @@ body:
       description: Trim the title prefix to match, e.g. "[Bug] Stage labels overlap".
       options:
         - Bug — something behaves wrong or looks broken
-        - Feedback — an idea, a suggestion, or something unclear
+        - Feedback — an idea, a suggestion, or any complements are welcome ;)
     validations:
       required: true
   - type: textarea
