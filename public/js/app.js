@@ -1512,10 +1512,10 @@ async function exportBundle() {
     // (fig1..fig10), independent of the internal cache keys.
     const star = _plaitStats ? [_plaitStarTrace()] : null;
     await _captureFig('fig1', 900, 900, 'fig1_LLE_ternary_diagram.png');
-    await _captureFig('fig_corr_ot', 700, 500, 'fig2a_correlation_OT.png');
-    await _captureFig('fig_corr_hand', 700, 500, 'fig2b_correlation_Hand.png');
-    await _captureFig('fig_corr_bachman', 700, 500, 'fig2c_correlation_Bachman.png');
-    await _captureFig('fig_selectivity', 700, 500, 'fig3_selectivity.png');
+    await _captureFig('fig_selectivity', 700, 500, 'fig2_selectivity.png');
+    await _captureFig('fig_corr_ot', 700, 500, 'fig3a_correlation_OT.png');
+    await _captureFig('fig_corr_hand', 700, 500, 'fig3b_correlation_Hand.png');
+    await _captureFig('fig_corr_bachman', 700, 500, 'fig3c_correlation_Bachman.png');
     await _captureFig('fig2a_diagonal', 900, 900, 'fig4a_conjugate_curve_diagonal.png', star);
     await _captureFig('fig2a_horizontal', 900, 900, 'fig4b_conjugate_curve_horizontal.png', star);
     await _captureFig('fig_plait', 700, 700, 'fig5_treybal_plait_point.png');
