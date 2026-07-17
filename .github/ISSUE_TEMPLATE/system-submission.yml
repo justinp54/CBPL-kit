@@ -28,8 +28,7 @@ body:
     attributes:
       label: System YAML
       description: >-
-        Paste the full system YAML here (see the Guide tab in the app for the
-        expected format). A GitHub Action will check it automatically and
+        Paste the full system YAML here. A GitHub Action will check it automatically and
         comment on this issue with the result.
       render: yaml
     validations:
