@@ -483,7 +483,7 @@ def fig_conjugate_curve(
     fig = go.Figure(data=traces)
     y_min = min(p[1] for p in conjugate.aux_points)
     fig.update_layout(**_cart_layout(
-        "Conjugate curve and Estimated Plait Point",
+        "Conjugate Curve and Estimated Plait Point",
         y_range=(y_min - 8, 100),
     ))
     return fig
