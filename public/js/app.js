@@ -127,9 +127,10 @@ function renderContactPane() {
         <img src="/images/snu_ui.png" alt="Seoul National University" class="contact-emblem">
         <div class="contact-kicker">SNU CBE · CBPL-kit</div>
         <h1 class="contact-title">Made by</h1>
-        <p class="contact-sub"><a href="https://cbe.snu.ac.kr/cbeEng/main/main.do" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:2px">Department of Chemical and Biological Engineering</a>, Seoul National University,<br>
+        <p class="contact-sub">Department of Chemical and Biological Engineering, Seoul National University,<br>
           Seoul 08826, Republic of Korea<br>
-          Developed in Spring 2026</p>
+          Developed in Spring 2026<br>
+          Last updated in July 2026</p>
         <p class="contact-tagline">Built CBPL-kit to make LLE data analysis more accessible for lab students.</p>
       </div>
       <div class="team-rows">${rows}</div>
