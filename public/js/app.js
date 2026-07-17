@@ -1223,8 +1223,8 @@ function showResults(data) {
   const streams = [
     {name:'R<sub>0</sub>',   cls:'R', d:data.stream_points.R0 },
     {name:'E<sub>1</sub>',   cls:'E', d:data.stream_points.E1 },
-    {name:'R<sub>n</sub>',   cls:'R', d:data.stream_points.Rn },
-    {name:'E<sub>n+1</sub>', cls:'E', d:data.stream_points.En1},
+    {name:'R<sub>N</sub>',   cls:'R', d:data.stream_points.Rn },
+    {name:'E<sub>N+1</sub>', cls:'E', d:data.stream_points.En1},
   ];
   document.getElementById('stream-tbody').innerHTML = streams.map(s =>
     `<tr><td><span class="dot dot-${s.cls}"></span>${s.name}</td><td>${s.d.wpa}</td><td>${s.d.wbp}</td><td>${s.d.ww}</td></tr>`
@@ -1272,7 +1272,7 @@ function showResults(data) {
     document.getElementById('sf-min-val').textContent =
       sfRatioFromWt(wt) + ' (solvent ' + wt + ' wt%)';
     document.getElementById('sf-min-desc').innerHTML =
-      '<strong>How it\'s found:</strong><br>Searching all interpolated tie lines, the one whose extension hits farthest from Rₙ sets this pinch. Below it, no stage count reaches the target.';
+      '<strong>How it\'s found:</strong><br>Searching all interpolated tie lines, the one whose extension hits farthest from R<sub>N</sub> sets this pinch. Below it, no stage count reaches the target.';
   } else {
     document.getElementById('sf-min-val').textContent = '—';
     document.getElementById('sf-min-desc').innerHTML =

@@ -28,9 +28,9 @@ Titrations use **0.5 M NaOH**. Concentration is calculated as:
 
 | Field | Stream | Sample preparation |
 |-------|--------|--------------------|
-| **V_R0** | Feed (R₀) | 10× diluted |
-| **V_E1** | First extract (E₁) | 10× diluted |
-| **V_Rn** | Final raffinate (Rₙ) | Undiluted |
+| **V_R0** | Feed (R<sub>0</sub>) | 10× diluted |
+| **V_E1** | First extract (E<sub>1</sub>) | 10× diluted |
+| **V_Rn** | Final raffinate (R<sub>N</sub>) | Undiluted |
 
 Each value can be typed directly or adjusted with the slider below the field. The sliders auto-trigger recalculation after 250 ms.
 
@@ -38,7 +38,7 @@ Each value can be typed directly or adjusted with the slider below the field. Th
 
 | Field | Meaning |
 |-------|---------|
-| **Solvent (Water)** | Pure water (extracting solvent, Eₙ₊₁) volumetric flow [mL/min] |
+| **Solvent (Water)** | Pure water (extracting solvent, E<sub>N+1</sub>) volumetric flow [mL/min] |
 | **Feed** | Feed stream volumetric flow [mL/min] |
 
 ---
@@ -50,7 +50,7 @@ Each value can be typed directly or adjusted with the slider below the field. Th
 The main stepping diagram drawn on the ternary triangle.
 
 - **Equilibrium curve** (binodal): phase boundary separating the two-phase region
-- **Operating point P**: intersection of lines E₁–Rₙ and Eₙ₊₁–R₀
+- **Operating point P**: intersection of lines E<sub>1</sub>–R<sub>N</sub> and E<sub>N+1</sub>–R<sub>0</sub>
 - **Tie lines**: each step connects a point on the left (extract) branch to the right (raffinate) branch, stepped via the conjugate curve
 - **N_theoretical** (blue badge in the tab): number of equilibrium stages counted
 
@@ -76,15 +76,15 @@ Lever-rule mass-balance diagram at the experimental flow ratio.
 
 | Point | Meaning |
 |-------|---------|
-| **R₀** | Feed (on BP–PA binary edge, no water) |
-| **Eₙ₊₁** | Pure water inlet (left vertex, extracting solvent) |
-| **M** | Overall mixing point (lever rule between R₀ and Eₙ₊₁) |
-| **P** | Operating point (line M–Rₙ extended to the left branch) |
-| **E₁′** | Predicted first extract — compare to your measured E₁ |
+| **R<sub>0</sub>** | Feed (on BP–PA binary edge, no water) |
+| **E<sub>N+1</sub>** | Pure water inlet (left vertex, extracting solvent) |
+| **M** | Overall mixing point (lever rule between R<sub>0</sub> and E<sub>N+1</sub>) |
+| **P** | Operating point (line M–R<sub>N</sub> extended to the left branch) |
+| **E<sub>1</sub>′** | Predicted first extract — compare to your measured E<sub>1</sub> |
 
 ### S:F Explorer ✦
 
-Real-time solvent-to-feed weight ratio explorer. Drag the slider or type a value to change the solvent fraction (40–97 wt%) and watch M and E₁′ update instantly.
+Real-time solvent-to-feed weight ratio explorer. Drag the slider or type a value to change the solvent fraction (40–97 wt%) and watch M and E<sub>1</sub>′ update instantly.
 
 - Find the **minimum solvent ratio** — when M approaches the equilibrium curve, the number of required stages goes to infinity
 - Study trade-offs between solvent consumption and separation quality

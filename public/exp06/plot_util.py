@@ -518,7 +518,7 @@ def fig_hunter_nash(
     N_theory: float,
     pt_R0: tuple[float, float],
     pt_Rn: tuple[float, float],
-    pt_E1: tuple[float, float],
+    pt_E1: tuple[float, float],   # noqa: ARG001 — see docstring
     pt_En1: tuple[float, float],
     pt_P: tuple[float, float],
 ) -> go.Figure:
@@ -526,23 +526,36 @@ def fig_hunter_nash(
 
     Uses go.Scatter (Cartesian) so the operating lines can extend to P even
     when P lies outside the ternary triangle.
+
+    pt_E1 is accepted but unused: it is the same point as steps[0].pt_E, which
+    the stage construction already draws. It stays in the signature because
+    callers (app.js PY_COMPUTE, main.py, demo.ipynb) pass it positionally.
     """
     lb = _lb(system)
     traces = _cart_triangle_traces(system) + _cart_equil_traces(system, hover_comp=True)
 
-    # Key stream and operating points
-    traces += [
-        _cart_point_trace(pt_R0,  "R<sub>0</sub>",    "royalblue",  labels=lb),
-        _cart_point_trace(pt_Rn,  "R<sub>n</sub>",    "royalblue",  labels=lb),
-        _cart_point_trace(pt_En1, "E<sub>n+1</sub>",  "crimson",    labels=lb),
-        _cart_point_trace(pt_E1,  "E<sub>1</sub>",    "crimson",    labels=lb),
-        _cart_point_trace(pt_P,   "P",      "saddlebrown", symbol="diamond", size=11, labels=lb),
-    ]
+    # Key stream and operating points. Every one is labelled on the plot, so
+    # none of them takes a legend entry — the legend stays down to the three
+    # things it can't say in place: Binodal curve, Equil. data, Stages.
+    #
+    # pt_E1 is deliberately not drawn here: it is exactly stage 1's E (the
+    # solver starts there), which the stage loop below already marks and
+    # labels, so a point trace for it stacked a second, differently-sized "E1"
+    # on the same spot. pt_Rn is drawn — the last stage's R lands near it but
+    # is a distinct point, and both labels carry information.
+    for tr in (
+        _cart_point_trace(pt_R0,  "R<sub>0</sub>",   "royalblue", labels=lb),
+        _cart_point_trace(pt_Rn,  "R<sub>N</sub>",   "royalblue", labels=lb),
+        _cart_point_trace(pt_En1, "E<sub>N+1</sub>", "crimson",   labels=lb),
+        _cart_point_trace(pt_P,   "P", "saddlebrown", symbol="diamond", size=11, labels=lb),
+    ):
+        tr.showlegend = False
+        traces.append(tr)
 
     # Operating lines through P (extend outside triangle)
-    for pt_stream, label in [(pt_R0, "R<sub>0</sub>–P"), (pt_Rn, "R<sub>n</sub>–P")]:
+    for pt_stream, label in [(pt_R0, "R<sub>0</sub>–P"), (pt_Rn, "R<sub>N</sub>–P")]:
         traces.append(_cart_line_trace(
-            pt_stream, pt_P, label, "saddlebrown", dash="dash", width=1
+            pt_stream, pt_P, label, "saddlebrown", dash="dash", width=1, showlegend=False
         ))
 
     # Stages: tie line E_i → R_i, then operating line R_i → P
@@ -674,22 +687,22 @@ def fig_lever_rule(
     traces += [
         # R₀ sits on the water-free right edge — label inward to avoid clipping.
         _point_trace(pt_R0,  "R<sub>0</sub>",    "royalblue",   labels=lb, textposition="middle left"),
-        _point_trace(pt_Rn,  "R<sub>n</sub>",    "royalblue",   labels=lb),
+        _point_trace(pt_Rn,  "R<sub>N</sub>",    "royalblue",   labels=lb),
         _point_trace(pt_E1,  "E<sub>1</sub>",    "crimson",     labels=lb),
-        _point_trace(pt_En1, "E<sub>n+1</sub>",  "crimson",     labels=lb),
+        _point_trace(pt_En1, "E<sub>N+1</sub>",  "crimson",     labels=lb),
         _point_trace(pt_M,   "M",     "purple",     symbol="diamond-open", size=10, labels=lb),
         _point_trace(pt_Mp,  "M'",    "saddlebrown", symbol="diamond",     size=10, labels=lb),
     ]
 
     # E1–Rn and En1–R0 lines (locating M)
     traces += [
-        _line_trace(pt_E1,  pt_Rn,  "E<sub>1</sub>–R<sub>n</sub>",    "purple", width=1),
-        _line_trace(pt_En1, pt_R0,  "E<sub>n+1</sub>–R<sub>0</sub>",  "purple", width=1),
+        _line_trace(pt_E1,  pt_Rn,  "E<sub>1</sub>–R<sub>N</sub>",    "purple", width=1),
+        _line_trace(pt_En1, pt_R0,  "E<sub>N+1</sub>–R<sub>0</sub>",  "purple", width=1),
     ]
 
     if pt_E1p is not None:
         traces.append(_point_trace(pt_E1p, "E<sub>1</sub>'", "crimson", symbol="circle-open", size=11, labels=lb))
-        traces.append(_line_trace(pt_Rn, pt_E1p, "R<sub>n</sub>–E<sub>1</sub>'", "saddlebrown", width=1.2))
+        traces.append(_line_trace(pt_Rn, pt_E1p, "R<sub>N</sub>–E<sub>1</sub>'", "saddlebrown", width=1.2))
 
     fig = go.Figure(data=traces)
     fig.update_layout(**_layout(title, system))
@@ -729,23 +742,23 @@ def fig_feed_explorer(
     # ("... left") instead of "top center", which would clip past the edge.
     traces += [
         _point_trace(pt_R0_actual, "R<sub>0</sub>",    "royalblue",   labels=lb, textposition="middle left"),
-        _point_trace(pt_Rn,        "R<sub>n</sub>",    "royalblue",   labels=lb),
+        _point_trace(pt_Rn,        "R<sub>N</sub>",    "royalblue",   labels=lb),
         _point_trace(pt_E1,        "E<sub>1</sub>",    "crimson",     labels=lb),
-        _point_trace(pt_En1,       "E<sub>n+1</sub>",  "crimson",     labels=lb),
+        _point_trace(pt_En1,       "E<sub>N+1</sub>",  "crimson",     labels=lb),
         _point_trace(pt_M,         "M",     "purple", symbol="diamond-open", size=10, labels=lb),
-        _line_trace(pt_E1,  pt_Rn,        "E<sub>1</sub>–R<sub>n</sub>",   "purple", width=1),
-        _line_trace(pt_En1, pt_R0_actual, "E<sub>n+1</sub>–R<sub>0</sub>", "purple", width=1),
+        _line_trace(pt_E1,  pt_Rn,        "E<sub>1</sub>–R<sub>N</sub>",   "purple", width=1),
+        _line_trace(pt_En1, pt_R0_actual, "E<sub>N+1</sub>–R<sub>0</sub>", "purple", width=1),
     ]
 
     # ── Hypothetical (moving) primed construction ─────────────────────────────
     traces += [
         _point_trace(pt_R0p, "R<sub>0</sub>'", "saddlebrown", labels=lb, textposition="bottom left"),
-        _line_trace(pt_En1, pt_R0p, "E<sub>n+1</sub>–R<sub>0</sub>'", "saddlebrown", width=1),
+        _line_trace(pt_En1, pt_R0p, "E<sub>N+1</sub>–R<sub>0</sub>'", "saddlebrown", width=1),
         _point_trace(pt_Mp,  "M'",  "saddlebrown", symbol="diamond", size=10, labels=lb),
     ]
     if pt_E1p is not None:
         traces.append(_point_trace(pt_E1p, "E<sub>1</sub>'", "crimson", symbol="circle-open", size=11, labels=lb))
-        traces.append(_line_trace(pt_Rn, pt_E1p, "R<sub>n</sub>–E<sub>1</sub>'", "saddlebrown", width=1.2))
+        traces.append(_line_trace(pt_Rn, pt_E1p, "R<sub>N</sub>–E<sub>1</sub>'", "saddlebrown", width=1.2))
 
     fig = go.Figure(data=traces)
     fig.update_layout(**_layout(title, system))
@@ -780,12 +793,12 @@ def fig_lever_rule_interactive(
         + _cart_equil_traces(system)
         + [
             _cart_point_trace(pt_R0,  "R<sub>0</sub>",    "royalblue",  labels=lb),
-            _cart_point_trace(pt_Rn,  "R<sub>n</sub>",    "royalblue",  labels=lb),
+            _cart_point_trace(pt_Rn,  "R<sub>N</sub>",    "royalblue",  labels=lb),
             _cart_point_trace(pt_E1,  "E<sub>1</sub>",    "crimson",    labels=lb),
-            _cart_point_trace(pt_En1, "E<sub>n+1</sub>",  "crimson",    labels=lb),
+            _cart_point_trace(pt_En1, "E<sub>N+1</sub>",  "crimson",    labels=lb),
             _cart_point_trace(pt_M,   "M",      "purple", symbol="diamond-open", size=10, labels=lb),
-            _cart_line_trace(pt_E1,  pt_Rn,  "E<sub>1</sub>–R<sub>n</sub>",    "purple", width=1),
-            _cart_line_trace(pt_En1, pt_R0,  "E<sub>n+1</sub>–R<sub>0</sub>",  "purple", width=1),
+            _cart_line_trace(pt_E1,  pt_Rn,  "E<sub>1</sub>–R<sub>N</sub>",    "purple", width=1),
+            _cart_line_trace(pt_En1, pt_R0,  "E<sub>N+1</sub>–R<sub>0</sub>",  "purple", width=1),
         ]
     )
     n_static = len(static)
@@ -796,7 +809,7 @@ def fig_lever_rule_interactive(
         mp_tr  = _cart_point_trace(pt_Mp, "M'", "saddlebrown", symbol="diamond", size=10, labels=lb)
         if pt_E1p is not None:
             e1p_tr  = _cart_point_trace(pt_E1p, "E<sub>1</sub>'", "crimson", symbol="circle-open", size=11, labels=lb)
-            line_tr = _cart_line_trace(pt_Rn, pt_E1p, "R<sub>n</sub>–E<sub>1</sub>'", "saddlebrown", width=1.5)
+            line_tr = _cart_line_trace(pt_Rn, pt_E1p, "R<sub>N</sub>–E<sub>1</sub>'", "saddlebrown", width=1.5)
         else:
             e1p_tr  = go.Scatter(x=[], y=[], mode="markers", showlegend=False, hoverinfo="skip")
             line_tr = go.Scatter(x=[], y=[], mode="lines",   showlegend=False, hoverinfo="skip")
@@ -993,13 +1006,13 @@ def fig_lever_rule_interactive_feed(
         _cart_triangle_traces(system)
         + _cart_equil_traces(system)
         + [
-            _cart_point_trace(pt_Rn,        "R<sub>n</sub>",     "royalblue",  labels=lb),
+            _cart_point_trace(pt_Rn,        "R<sub>N</sub>",     "royalblue",  labels=lb),
             _cart_point_trace(pt_E1,        "E<sub>1</sub>",     "crimson",    labels=lb),
-            _cart_point_trace(pt_En1,       "E<sub>n+1</sub>",   "crimson",    labels=lb),
+            _cart_point_trace(pt_En1,       "E<sub>N+1</sub>",   "crimson",    labels=lb),
             _cart_point_trace(pt_R0_actual, "R<sub>0</sub>",     "royalblue",  labels=lb),
             _cart_point_trace(pt_M_real,    "M",      "purple", symbol="diamond-open", size=10, labels=lb),
-            _cart_line_trace(pt_E1,  pt_Rn,        "E<sub>1</sub>–R<sub>n</sub>",    "purple", width=1),
-            _cart_line_trace(pt_En1, pt_R0_actual, "E<sub>n+1</sub>–R<sub>0</sub>",  "purple", width=1),
+            _cart_line_trace(pt_E1,  pt_Rn,        "E<sub>1</sub>–R<sub>N</sub>",    "purple", width=1),
+            _cart_line_trace(pt_En1, pt_R0_actual, "E<sub>N+1</sub>–R<sub>0</sub>",  "purple", width=1),
         ]
     )
     n_static = len(static)
@@ -1013,11 +1026,11 @@ def fig_lever_rule_interactive_feed(
         pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
 
         r0p_tr  = _cart_point_trace(pt_R0p, "R<sub>0</sub>'", "saddlebrown", labels=lb)
-        en_r0p  = _cart_line_trace(pt_En1, pt_R0p, "E<sub>n+1</sub>–R<sub>0</sub>'", "saddlebrown", width=1)
+        en_r0p  = _cart_line_trace(pt_En1, pt_R0p, "E<sub>N+1</sub>–R<sub>0</sub>'", "saddlebrown", width=1)
         mp_tr   = _cart_point_trace(pt_Mp,  "M'",  "saddlebrown", symbol="diamond", size=10, labels=lb)
         if pt_E1p is not None:
             e1p_tr  = _cart_point_trace(pt_E1p, "E<sub>1</sub>'", "crimson", symbol="circle-open", size=11, labels=lb)
-            line_tr = _cart_line_trace(pt_Rn, pt_E1p, "R<sub>n</sub>–E<sub>1</sub>'", "saddlebrown", width=1.5)
+            line_tr = _cart_line_trace(pt_Rn, pt_E1p, "R<sub>N</sub>–E<sub>1</sub>'", "saddlebrown", width=1.5)
         else:
             e1p_tr  = go.Scatter(x=[], y=[], mode="markers", showlegend=False, hoverinfo="skip")
             line_tr = go.Scatter(x=[], y=[], mode="lines",   showlegend=False, hoverinfo="skip")
