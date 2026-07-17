@@ -426,6 +426,7 @@ def fig_conjugate_curve(
         y=[p[1] for p in conjugate.aux_points],
         mode="markers", name="Aux. intersections",
         marker=dict(color="darkorange", size=7, symbol="circle-open"),
+        showlegend=False,
     ))
 
     # Baseline auxiliary lines: x-intercepts → aux_points[0]

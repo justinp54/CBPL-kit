@@ -360,6 +360,10 @@ json.dumps(_sf)
       cache[k] = JSON.parse(v);
       rendered[k] = false;
     }
+    // Populate before rendering: renderFig('fig2a') draws the Treybal star
+    // from _plaitStats, which populatePlaitPanel is what sets.
+    _conjHorizontalSide = figs.conj_horizontal_side || null;
+    if (figs.plait_stats !== undefined) populatePlaitPanel(figs.plait_stats, figs.conj_plait_by_method);
     if (activeTab === 'fig1' || activeTab === 'fig2a') {
       document.getElementById('empty').style.display = 'none';
       renderFig(activeTab);
@@ -367,12 +371,10 @@ json.dumps(_sf)
     if (figs.tie_comps) populateTieLineTable(figs.tie_comps, figs.sel_stats);
     if (figs.corr_stats) populateCorrelationPanel(figs.corr_stats);
     if (figs.sel_stats) populateSelectivityPanel(figs.sel_stats);
-    _conjHorizontalSide = figs.conj_horizontal_side || null;
-    if (figs.plait_stats !== undefined) populatePlaitPanel(figs.plait_stats, figs.conj_plait_by_method);
     // Re-render panel charts with correct width after DOM paints
     requestAnimationFrame(() => {
       if (activeTab === 'fig1') { _renderCorrChart(_corrActive); _renderSelectivityChart(); }
-      else if (activeTab === 'fig2a') { _renderPlaitChart(); _addLoglogPlaitToTernary(); }
+      else if (activeTab === 'fig2a') { _renderPlaitChart(); }
     });
   } catch (e) { console.error('System fig render:', e); throw e; }
 }
@@ -507,10 +509,8 @@ function _renderPlaitChart() {
   return Plotly.react(el, cache['fig_plait'].data, layout, { displayModeBar: false });
 }
 
-let _plaitOverlayAdded = false;
-
-// Shared by the on-screen overlay (below) and the offscreen export render,
-// so the star marker never has to be kept in sync by hand in two places.
+// Shared by the on-screen render (see _figData) and the offscreen export
+// render, so the star marker never has to be kept in sync by hand in two places.
 function _plaitStarTrace() {
   const x = _plaitStats.carrier + 0.5 * _plaitStats.solute;
   const y = Math.sqrt(3) / 2 * _plaitStats.solute;
@@ -526,11 +526,23 @@ function _plaitStarTrace() {
   };
 }
 
-function _addLoglogPlaitToTernary() {
-  const el = document.getElementById('chart-fig2a');
-  if (!el || !_plaitStats || _plaitOverlayAdded || !rendered['fig2a']) return;
-  Plotly.addTraces(el, _plaitStarTrace());
-  _plaitOverlayAdded = true;
+// Trace list to render for a cached figure. The Treybal star is an overlay the
+// app adds on top of what Python built for fig2a, so it is appended here at
+// render time.
+//
+// EVERY path that draws chart-fig2a must go through this — there are four
+// (renderFig, switchConjugateMethod, switchTab's resize re-render, and the
+// mobile resize handler), and any one of them passing cache.fig2a.data raw
+// silently strips the star back off whatever the others just drew.
+//
+// The star must also never be pushed into cache[key].data itself (e.g. via
+// Plotly.addTraces): Plotly keeps the array we hand it as gd.data, so mutating
+// it leaves a star behind in the cache and stacks up another on every re-render.
+function _figData(key) {
+  const fig = cache[key];
+  if (!fig) return [];
+  if (key === 'fig2a' && _plaitStats) return [...fig.data, _plaitStarTrace()];
+  return fig.data;
 }
 
 function populatePlaitPanel(treybalStats, conjPlaitByMethod) {
@@ -592,9 +604,7 @@ function switchConjugateMethod(method) {
 
   const el = document.getElementById('chart-fig2a');
   if (el && rendered.fig2a) {
-    Plotly.react(el, cache.fig2a.data, patchedLayout(cache.fig2a.layout), PLOTLY_CFG);
-    _plaitOverlayAdded = false;
-    _addLoglogPlaitToTernary();
+    Plotly.react(el, _figData('fig2a'), patchedLayout(cache.fig2a.layout), PLOTLY_CFG);
   }
   _renderPlaitTable();
 }
@@ -656,7 +666,7 @@ pt_M, pt_P = find_M_and_P(pt_E1, pt_Rn, pt_En1, pt_R0)
 # infinite stages; S_max: above this M leaves the two-phase region
 # entirely). Falls back to the old fixed 0.40-0.97 span if either can't
 # be found (e.g. a solutropic system — see find_smin_over_f's docstring).
-_sf_frac_min = find_smin_over_f(system, pt_R0, pt_Rn, pt_En1)
+_sf_frac_min = find_smin_over_f(system, pt_R0, pt_Rn, pt_En1, conjugate)
 _sf_frac_max = find_smax_over_f(system, pt_R0, pt_En1)
 sf_frac_min = round(_sf_frac_min, 4) if _sf_frac_min is not None else 0.40
 sf_frac_max = round(_sf_frac_max, 4) if _sf_frac_max is not None else 0.97
@@ -990,7 +1000,6 @@ async function calculate(requestedKeys) {
         // of silently reverting the displayed curve to diagonal.
         cache.fig2a_diagonal = cache.fig2a;
         cache.fig2a = cache['fig2a_' + _conjMethod] || cache.fig2a;
-        _plaitOverlayAdded = false;
       }
     }
 
@@ -1090,7 +1099,7 @@ function renderFig(key) {
   if (!el) return;
   document.getElementById('empty').style.display = 'none';
   const fig = cache[key];
-  Plotly.newPlot(el, fig.data, patchedLayout(fig.layout), PLOTLY_CFG);
+  Plotly.newPlot(el, _figData(key), patchedLayout(fig.layout), PLOTLY_CFG);
   if (fig.frames?.length) Plotly.addFrames(el, fig.frames);
   rendered[key] = true;
   requestAnimationFrame(() => Plotly.Plots.resize(el));
@@ -1143,7 +1152,7 @@ function switchTab(key) {
   if (['fig1', 'fig2a', 'fig2b', 'fig3', 'fig4'].includes(key) && cache[key]) {
     requestAnimationFrame(() => {
       const _el = document.getElementById('chart-' + key) || document.getElementById('plot-' + key);
-      if (_el?.data) Plotly.react(_el, cache[key].data, patchedLayout(cache[key].layout), PLOTLY_CFG);
+      if (_el?.data) Plotly.react(_el, _figData(key), patchedLayout(cache[key].layout), PLOTLY_CFG);
     });
   }
 
@@ -1180,7 +1189,7 @@ function switchTab(key) {
       document.getElementById('empty').style.display = 'none';
       renderFig(key);
       if (key === 'fig1') requestAnimationFrame(() => { _renderCorrChart(_corrActive); _renderSelectivityChart(); });
-      if (key === 'fig2a') requestAnimationFrame(() => { _renderPlaitChart(); _addLoglogPlaitToTernary(); });
+      if (key === 'fig2a') requestAnimationFrame(() => { _renderPlaitChart(); });
     } else if (pyReady && cache['fig3'] && key.startsWith('fig')) {
       // Only figure tabs may be requested from Python — a non-figure tab
       // (contact) would make PY_COMPUTE's _build() return '' and crash
@@ -1260,7 +1269,7 @@ function showResults(data) {
     document.getElementById('sf-min-val').textContent =
       sfRatioFromWt(wt) + ' (solvent ' + wt + ' wt%)';
     document.getElementById('sf-min-desc').innerHTML =
-      '<strong>How it\'s found:</strong><br>The tie line whose extension hits farthest from Rₙ sets this pinch. Below it, no stage count reaches the target.';
+      '<strong>How it\'s found:</strong><br>Searching all interpolated tie lines, the one whose extension hits farthest from Rₙ sets this pinch. Below it, no stage count reaches the target.';
   } else {
     document.getElementById('sf-min-val').textContent = '—';
     document.getElementById('sf-min-desc').innerHTML =
@@ -1479,9 +1488,9 @@ async function exportBundle() {
     // switches the tab/model/method the user is actually looking at, and
     // nothing needs to be restored afterwards. cache[key].data/layout is
     // the exact same figure Python built for the on-screen chart; the one
-    // addition is the Treybal plait-point star, which on-screen gets added
-    // live via Plotly.addTraces (see _plaitStarTrace) rather than being
-    // part of the cached figure itself.
+    // addition is the Treybal plait-point star, which is appended at render
+    // time (see _plaitStarTrace / _figData) rather than being part of the
+    // cached figure itself.
     const hiddenEl = document.getElementById('export-render');
     // `scale` multiplies the PNG resolution without touching the layout —
     // used for the small explorer trend charts, whose 320x260 layouts and
@@ -1903,7 +1912,6 @@ _b._eready     = False
     _conjPlaitByMethod = null;
     _conjMethod = 'diagonal';
     _conjHorizontalSide = null;
-    _plaitOverlayAdded = false;
     const _ps = document.getElementById('plait-stats');
     if (_ps) _ps.innerHTML = '';
     document.querySelectorAll('.corr-tab').forEach(b => {
@@ -1999,7 +2007,7 @@ window.addEventListener('resize', () => {
       const ternaryTabs = ['fig1', 'fig2a', 'fig2b', 'fig3', 'fig4'];
       if (ternaryTabs.includes(activeTab) && cache[activeTab]) {
         const chartEl = document.getElementById('chart-' + activeTab) || document.getElementById('plot-' + activeTab);
-        if (chartEl?.data) Plotly.react(chartEl, cache[activeTab].data, patchedLayout(cache[activeTab].layout), PLOTLY_CFG);
+        if (chartEl?.data) Plotly.react(chartEl, _figData(activeTab), patchedLayout(cache[activeTab].layout), PLOTLY_CFG);
       }
       // Keep trigger visible for the right tabs on mobile/tablet
       if (_drawerPanel) {
