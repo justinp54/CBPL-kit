@@ -29,6 +29,19 @@ def _lb(system: EquilibriumSystem) -> dict:
 
 # ---------------------------------------------------------------------------
 # Internal helpers
+#
+# Subscripts in any label Plotly renders — point/line labels, legend names,
+# axis and plot titles, annotations, hover — are written as <sub> tags:
+# "R<sub>0</sub>", "w<sub>21</sub>". Plotly renders a small HTML subset, and
+# <sub> inherits the chart's own font, so it stays typographically consistent
+# with everything around it. Do not use literal unicode (R₀, w₂₃) in a label:
+# it can't express every case (Eₙ₊₁ is a pile of combining oddities) and it
+# reads as a different glyph set next to real subscripts.
+#
+# LaTeX ($w_{21}$) is NOT an option here: Plotly renders math via MathJax,
+# which this app does not load (KaTeX, which it does load, is HTML-side only
+# and is unrelated to Plotly). Plain-text sinks — CSV/spreadsheet cells —
+# take neither, and spell subscripts with "_" instead.
 # ---------------------------------------------------------------------------
 
 def _to_ternary(x: float, y: float) -> tuple[float, float, float]:
@@ -496,15 +509,15 @@ def fig_hunter_nash(
 
     # Key stream and operating points
     traces += [
-        _cart_point_trace(pt_R0,  "R₀",    "royalblue",  labels=lb),
-        _cart_point_trace(pt_Rn,  "Rₙ",    "royalblue",  labels=lb),
-        _cart_point_trace(pt_En1, "Eₙ₊₁",  "crimson",    labels=lb),
-        _cart_point_trace(pt_E1,  "E₁",    "crimson",    labels=lb),
+        _cart_point_trace(pt_R0,  "R<sub>0</sub>",    "royalblue",  labels=lb),
+        _cart_point_trace(pt_Rn,  "R<sub>n</sub>",    "royalblue",  labels=lb),
+        _cart_point_trace(pt_En1, "E<sub>n+1</sub>",  "crimson",    labels=lb),
+        _cart_point_trace(pt_E1,  "E<sub>1</sub>",    "crimson",    labels=lb),
         _cart_point_trace(pt_P,   "P",      "saddlebrown", symbol="diamond", size=11, labels=lb),
     ]
 
     # Operating lines through P (extend outside triangle)
-    for pt_stream, label in [(pt_R0, "R₀–P"), (pt_Rn, "Rₙ–P")]:
+    for pt_stream, label in [(pt_R0, "R<sub>0</sub>–P"), (pt_Rn, "R<sub>n</sub>–P")]:
         traces.append(_cart_line_trace(
             pt_stream, pt_P, label, "saddlebrown", dash="dash", width=1
         ))
@@ -524,7 +537,7 @@ def fig_hunter_nash(
             mode="lines+markers+text",
             line=dict(color="darkgreen", width=1.8),
             marker=dict(color=["crimson", "royalblue"], size=8),
-            text=[f"E{i}", f"R{i}"],
+            text=[f"E<sub>{i}</sub>", f"R<sub>{i}</sub>"],
             textposition=["middle right", "middle left"],
             textfont=dict(size=10),
             customdata=[[wpa_E, s.comp_E[1], s.comp_E[2]],
@@ -586,7 +599,7 @@ def fig_interpolated_tie_lines(
             mode="lines+markers+text",
             line=dict(color="darkgreen", width=1.8),
             marker=dict(color=["crimson", "royalblue"], size=7),
-            text=[f"E{i}", f"R{i}"],
+            text=[f"E<sub>{i}</sub>", f"R<sub>{i}</sub>"],
             textposition=["middle right", "middle left"],
             textfont=dict(size=10),
             showlegend=False,
@@ -633,27 +646,27 @@ def fig_lever_rule(
 
     # Always show actual experiment stream points
     if pt_R0_actual is not None:
-        traces.append(_point_trace(pt_R0_actual, "R₀ (exp.)", "royalblue",
+        traces.append(_point_trace(pt_R0_actual, "R<sub>0</sub> (exp.)", "royalblue",
                                    symbol="circle-open", size=9, labels=lb))
     traces += [
         # R₀ sits on the water-free right edge — label inward to avoid clipping.
-        _point_trace(pt_R0,  "R₀",    "royalblue",   labels=lb, textposition="middle left"),
-        _point_trace(pt_Rn,  "Rₙ",    "royalblue",   labels=lb),
-        _point_trace(pt_E1,  "E₁",    "crimson",     labels=lb),
-        _point_trace(pt_En1, "Eₙ₊₁",  "crimson",     labels=lb),
+        _point_trace(pt_R0,  "R<sub>0</sub>",    "royalblue",   labels=lb, textposition="middle left"),
+        _point_trace(pt_Rn,  "R<sub>n</sub>",    "royalblue",   labels=lb),
+        _point_trace(pt_E1,  "E<sub>1</sub>",    "crimson",     labels=lb),
+        _point_trace(pt_En1, "E<sub>n+1</sub>",  "crimson",     labels=lb),
         _point_trace(pt_M,   "M",     "purple",     symbol="diamond-open", size=10, labels=lb),
         _point_trace(pt_Mp,  "M'",    "saddlebrown", symbol="diamond",     size=10, labels=lb),
     ]
 
     # E1–Rn and En1–R0 lines (locating M)
     traces += [
-        _line_trace(pt_E1,  pt_Rn,  "E₁–Rₙ",    "purple", width=1),
-        _line_trace(pt_En1, pt_R0,  "Eₙ₊₁–R₀",  "purple", width=1),
+        _line_trace(pt_E1,  pt_Rn,  "E<sub>1</sub>–R<sub>n</sub>",    "purple", width=1),
+        _line_trace(pt_En1, pt_R0,  "E<sub>n+1</sub>–R<sub>0</sub>",  "purple", width=1),
     ]
 
     if pt_E1p is not None:
-        traces.append(_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11, labels=lb))
-        traces.append(_line_trace(pt_Rn, pt_E1p, "Rₙ–E₁'", "saddlebrown", width=1.2))
+        traces.append(_point_trace(pt_E1p, "E<sub>1</sub>'", "crimson", symbol="circle-open", size=11, labels=lb))
+        traces.append(_line_trace(pt_Rn, pt_E1p, "R<sub>n</sub>–E<sub>1</sub>'", "saddlebrown", width=1.2))
 
     fig = go.Figure(data=traces)
     fig.update_layout(**_layout(title, system))
@@ -692,24 +705,24 @@ def fig_feed_explorer(
     # R₀/R₀' sit on the water-free right edge, so their labels go inward
     # ("... left") instead of "top center", which would clip past the edge.
     traces += [
-        _point_trace(pt_R0_actual, "R₀",    "royalblue",   labels=lb, textposition="middle left"),
-        _point_trace(pt_Rn,        "Rₙ",    "royalblue",   labels=lb),
-        _point_trace(pt_E1,        "E₁",    "crimson",     labels=lb),
-        _point_trace(pt_En1,       "Eₙ₊₁",  "crimson",     labels=lb),
+        _point_trace(pt_R0_actual, "R<sub>0</sub>",    "royalblue",   labels=lb, textposition="middle left"),
+        _point_trace(pt_Rn,        "R<sub>n</sub>",    "royalblue",   labels=lb),
+        _point_trace(pt_E1,        "E<sub>1</sub>",    "crimson",     labels=lb),
+        _point_trace(pt_En1,       "E<sub>n+1</sub>",  "crimson",     labels=lb),
         _point_trace(pt_M,         "M",     "purple", symbol="diamond-open", size=10, labels=lb),
-        _line_trace(pt_E1,  pt_Rn,        "E₁–Rₙ",   "purple", width=1),
-        _line_trace(pt_En1, pt_R0_actual, "Eₙ₊₁–R₀", "purple", width=1),
+        _line_trace(pt_E1,  pt_Rn,        "E<sub>1</sub>–R<sub>n</sub>",   "purple", width=1),
+        _line_trace(pt_En1, pt_R0_actual, "E<sub>n+1</sub>–R<sub>0</sub>", "purple", width=1),
     ]
 
     # ── Hypothetical (moving) primed construction ─────────────────────────────
     traces += [
-        _point_trace(pt_R0p, "R₀'", "saddlebrown", labels=lb, textposition="bottom left"),
-        _line_trace(pt_En1, pt_R0p, "Eₙ₊₁–R₀'", "saddlebrown", width=1),
+        _point_trace(pt_R0p, "R<sub>0</sub>'", "saddlebrown", labels=lb, textposition="bottom left"),
+        _line_trace(pt_En1, pt_R0p, "E<sub>n+1</sub>–R<sub>0</sub>'", "saddlebrown", width=1),
         _point_trace(pt_Mp,  "M'",  "saddlebrown", symbol="diamond", size=10, labels=lb),
     ]
     if pt_E1p is not None:
-        traces.append(_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11, labels=lb))
-        traces.append(_line_trace(pt_Rn, pt_E1p, "Rₙ–E₁'", "saddlebrown", width=1.2))
+        traces.append(_point_trace(pt_E1p, "E<sub>1</sub>'", "crimson", symbol="circle-open", size=11, labels=lb))
+        traces.append(_line_trace(pt_Rn, pt_E1p, "R<sub>n</sub>–E<sub>1</sub>'", "saddlebrown", width=1.2))
 
     fig = go.Figure(data=traces)
     fig.update_layout(**_layout(title, system))
@@ -743,13 +756,13 @@ def fig_lever_rule_interactive(
         _cart_triangle_traces(system)
         + _cart_equil_traces(system)
         + [
-            _cart_point_trace(pt_R0,  "R₀",    "royalblue",  labels=lb),
-            _cart_point_trace(pt_Rn,  "Rₙ",    "royalblue",  labels=lb),
-            _cart_point_trace(pt_E1,  "E₁",    "crimson",    labels=lb),
-            _cart_point_trace(pt_En1, "Eₙ₊₁",  "crimson",    labels=lb),
+            _cart_point_trace(pt_R0,  "R<sub>0</sub>",    "royalblue",  labels=lb),
+            _cart_point_trace(pt_Rn,  "R<sub>n</sub>",    "royalblue",  labels=lb),
+            _cart_point_trace(pt_E1,  "E<sub>1</sub>",    "crimson",    labels=lb),
+            _cart_point_trace(pt_En1, "E<sub>n+1</sub>",  "crimson",    labels=lb),
             _cart_point_trace(pt_M,   "M",      "purple", symbol="diamond-open", size=10, labels=lb),
-            _cart_line_trace(pt_E1,  pt_Rn,  "E₁–Rₙ",    "purple", width=1),
-            _cart_line_trace(pt_En1, pt_R0,  "Eₙ₊₁–R₀",  "purple", width=1),
+            _cart_line_trace(pt_E1,  pt_Rn,  "E<sub>1</sub>–R<sub>n</sub>",    "purple", width=1),
+            _cart_line_trace(pt_En1, pt_R0,  "E<sub>n+1</sub>–R<sub>0</sub>",  "purple", width=1),
         ]
     )
     n_static = len(static)
@@ -759,8 +772,8 @@ def fig_lever_rule_interactive(
         pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
         mp_tr  = _cart_point_trace(pt_Mp, "M'", "saddlebrown", symbol="diamond", size=10, labels=lb)
         if pt_E1p is not None:
-            e1p_tr  = _cart_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11, labels=lb)
-            line_tr = _cart_line_trace(pt_Rn, pt_E1p, "Rₙ–E₁'", "saddlebrown", width=1.5)
+            e1p_tr  = _cart_point_trace(pt_E1p, "E<sub>1</sub>'", "crimson", symbol="circle-open", size=11, labels=lb)
+            line_tr = _cart_line_trace(pt_Rn, pt_E1p, "R<sub>n</sub>–E<sub>1</sub>'", "saddlebrown", width=1.5)
         else:
             e1p_tr  = go.Scatter(x=[], y=[], mode="markers", showlegend=False, hoverinfo="skip")
             line_tr = go.Scatter(x=[], y=[], mode="lines",   showlegend=False, hoverinfo="skip")
@@ -957,13 +970,13 @@ def fig_lever_rule_interactive_feed(
         _cart_triangle_traces(system)
         + _cart_equil_traces(system)
         + [
-            _cart_point_trace(pt_Rn,        "Rₙ",     "royalblue",  labels=lb),
-            _cart_point_trace(pt_E1,        "E₁",     "crimson",    labels=lb),
-            _cart_point_trace(pt_En1,       "Eₙ₊₁",   "crimson",    labels=lb),
-            _cart_point_trace(pt_R0_actual, "R₀",     "royalblue",  labels=lb),
+            _cart_point_trace(pt_Rn,        "R<sub>n</sub>",     "royalblue",  labels=lb),
+            _cart_point_trace(pt_E1,        "E<sub>1</sub>",     "crimson",    labels=lb),
+            _cart_point_trace(pt_En1,       "E<sub>n+1</sub>",   "crimson",    labels=lb),
+            _cart_point_trace(pt_R0_actual, "R<sub>0</sub>",     "royalblue",  labels=lb),
             _cart_point_trace(pt_M_real,    "M",      "purple", symbol="diamond-open", size=10, labels=lb),
-            _cart_line_trace(pt_E1,  pt_Rn,        "E₁–Rₙ",    "purple", width=1),
-            _cart_line_trace(pt_En1, pt_R0_actual, "Eₙ₊₁–R₀",  "purple", width=1),
+            _cart_line_trace(pt_E1,  pt_Rn,        "E<sub>1</sub>–R<sub>n</sub>",    "purple", width=1),
+            _cart_line_trace(pt_En1, pt_R0_actual, "E<sub>n+1</sub>–R<sub>0</sub>",  "purple", width=1),
         ]
     )
     n_static = len(static)
@@ -976,12 +989,12 @@ def fig_lever_rule_interactive_feed(
         pt_Mp  = mixing_point(pt_R0p, pt_En1, mass_A=mass_R0, mass_B=mass_En1)
         pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
 
-        r0p_tr  = _cart_point_trace(pt_R0p, "R₀'", "saddlebrown", labels=lb)
-        en_r0p  = _cart_line_trace(pt_En1, pt_R0p, "Eₙ₊₁–R₀'", "saddlebrown", width=1)
+        r0p_tr  = _cart_point_trace(pt_R0p, "R<sub>0</sub>'", "saddlebrown", labels=lb)
+        en_r0p  = _cart_line_trace(pt_En1, pt_R0p, "E<sub>n+1</sub>–R<sub>0</sub>'", "saddlebrown", width=1)
         mp_tr   = _cart_point_trace(pt_Mp,  "M'",  "saddlebrown", symbol="diamond", size=10, labels=lb)
         if pt_E1p is not None:
-            e1p_tr  = _cart_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11, labels=lb)
-            line_tr = _cart_line_trace(pt_Rn, pt_E1p, "Rₙ–E₁'", "saddlebrown", width=1.5)
+            e1p_tr  = _cart_point_trace(pt_E1p, "E<sub>1</sub>'", "crimson", symbol="circle-open", size=11, labels=lb)
+            line_tr = _cart_line_trace(pt_Rn, pt_E1p, "R<sub>n</sub>–E<sub>1</sub>'", "saddlebrown", width=1.5)
         else:
             e1p_tr  = go.Scatter(x=[], y=[], mode="markers", showlegend=False, hoverinfo="skip")
             line_tr = go.Scatter(x=[], y=[], mode="lines",   showlegend=False, hoverinfo="skip")
@@ -1036,18 +1049,18 @@ def fig_correlation(corr, model):
     _META = {
         'ot': {
             'title': 'Othmer-Tobias Correlation',
-            'xlabel': 'ln[(1−w₁₁)/w₁₁]',
-            'ylabel': 'ln[(1−w₃₃)/w₃₃]',
+            'xlabel': 'ln[(1−w<sub>11</sub>)/w<sub>11</sub>]',
+            'ylabel': 'ln[(1−w<sub>33</sub>)/w<sub>33</sub>]',
         },
         'hand': {
             'title': 'Hand Correlation',
-            'xlabel': 'ln(w₂₁/w₁₁)',
-            'ylabel': 'ln(w₂₃/w₃₃)',
+            'xlabel': 'ln(w<sub>21</sub>/w<sub>11</sub>)',
+            'ylabel': 'ln(w<sub>23</sub>/w<sub>33</sub>)',
         },
         'bachman': {
             'title': 'Bachman Correlation',
-            'xlabel': 'w₃₃/w₁₁',
-            'ylabel': 'w₃₃',
+            'xlabel': 'w<sub>33</sub>/w<sub>11</sub>',
+            'ylabel': 'w<sub>33</sub>',
         },
     }
     m = _META[model]
@@ -1095,8 +1108,8 @@ def fig_selectivity(sel):
         hovertemplate='w₂₃: %{x:.4f}<br>S: %{y:.3f}<extra></extra>',
     ))
     fig.update_layout(
-        title=dict(text='Selectivity S vs w₂₃', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='w₂₃ (solute, solvent-rich)', font=dict(size=10)),
+        title=dict(text='Selectivity S vs w<sub>23</sub>', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text='w<sub>23</sub> (solute, solvent-rich)', font=dict(size=10)),
                    tickfont=dict(size=9), showgrid=False, nticks=4,
                    showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
         yaxis=dict(title=dict(text='S', font=dict(size=10)),
@@ -1194,8 +1207,8 @@ def fig_plait_loglog(data):
         # ("Plait Point Estimation") stays an HTML label in index.html.
         title=dict(text="Treybal's Method (Log-Log)",
                    font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='ln(w₂₁/w₁₁),  ln(w₂/w₁)', font=dict(size=10)), **_axis),
-        yaxis=dict(title=dict(text='ln(w₂₃/w₃₃),  ln(w₂/w₃)', font=dict(size=10)), **_axis),
+        xaxis=dict(title=dict(text='ln(w<sub>21</sub>/w<sub>11</sub>),  ln(w<sub>2</sub>/w<sub>1</sub>)', font=dict(size=10)), **_axis),
+        yaxis=dict(title=dict(text='ln(w<sub>23</sub>/w<sub>33</sub>),  ln(w<sub>2</sub>/w<sub>3</sub>)', font=dict(size=10)), **_axis),
         height=260,
         margin=dict(l=44, r=10, t=28, b=40),
         plot_bgcolor='white',

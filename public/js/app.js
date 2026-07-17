@@ -392,12 +392,12 @@ function populateTieLineTable(comps, sel) {
       <th>#</th>
       <th colspan="3">Solvent-rich phase</th>
       <th colspan="3">Carrier-rich phase</th>
-      <th>D₁</th><th>D₂</th><th>S</th>
+      <th>D<sub>1</sub></th><th>D<sub>2</sub></th><th>S</th>
     </tr>
     <tr>
       <th></th>
-      ${th(ca,'100w₁₃')}${th(so,'100w₂₃')}${th(sv,'100w₃₃')}
-      ${th(ca,'100w₁₁')}${th(so,'100w₂₁')}${th(sv,'100w₃₁')}
+      ${th(ca,'100w<sub>13</sub>')}${th(so,'100w<sub>23</sub>')}${th(sv,'100w<sub>33</sub>')}
+      ${th(ca,'100w<sub>11</sub>')}${th(so,'100w<sub>21</sub>')}${th(sv,'100w<sub>31</sub>')}
       <th></th><th></th><th></th>
     </tr>`;
   // D₁, D₂, S come straight from compute_correlations (the same full-precision
@@ -1218,10 +1218,10 @@ function showResults(data) {
   document.getElementById('n-sub').textContent   = '';
 
   const streams = [
-    {name:'R₀',   cls:'R', d:data.stream_points.R0 },
-    {name:'E₁',   cls:'E', d:data.stream_points.E1 },
-    {name:'Rₙ',   cls:'R', d:data.stream_points.Rn },
-    {name:'Eₙ₊₁', cls:'E', d:data.stream_points.En1},
+    {name:'R<sub>0</sub>',   cls:'R', d:data.stream_points.R0 },
+    {name:'E<sub>1</sub>',   cls:'E', d:data.stream_points.E1 },
+    {name:'R<sub>n</sub>',   cls:'R', d:data.stream_points.Rn },
+    {name:'E<sub>n+1</sub>', cls:'E', d:data.stream_points.En1},
   ];
   document.getElementById('stream-tbody').innerHTML = streams.map(s =>
     `<tr><td><span class="dot dot-${s.cls}"></span>${s.name}</td><td>${s.d.wpa}</td><td>${s.d.wbp}</td><td>${s.d.ww}</td></tr>`
