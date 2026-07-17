@@ -394,7 +394,7 @@ def fig_ternary_equilibrium(system: EquilibriumSystem) -> go.Figure:
     """Fig 1 — Ternary diagram with equilibrium curve and tie lines."""
     traces = _equil_traces(system) + _tie_traces(system)
     fig = go.Figure(data=traces)
-    fig.update_layout(**_layout("LLE Ternary Diagram", system))
+    fig.update_layout(**_layout("Ternary Phase Diagram", system))
     return fig
 
 

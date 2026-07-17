@@ -1530,7 +1530,7 @@ async function exportBundle() {
     // also honors colspan/rowspan as real merged cells, so the two-row
     // tie-line header lines up properly instead of the ragged CSV row
     // a plain text export would produce). Correlation model coefficients
-    // (a, b, R²) are appended below the Tie Lines table on the same sheet,
+    // (a, b, R²) are appended below the Equilibrium table on the same sheet,
     // pulled from the same _corrStats the on-screen formula panel uses.
     const wb = XLSX.utils.book_new();
 
@@ -1545,7 +1545,7 @@ async function exportBundle() {
         }
         XLSX.utils.sheet_add_aoa(tieSheet, corrRows, { origin: { r: range.e.r + 2, c: 0 } });
       }
-      XLSX.utils.book_append_sheet(wb, tieSheet, 'Tie Lines');
+      XLSX.utils.book_append_sheet(wb, tieSheet, 'Equilibrium');
     }
 
     const plaitTableEl = document.querySelector('#plait-stats table');
@@ -1559,7 +1559,7 @@ async function exportBundle() {
       if (streamEl?.querySelector('tr')) {
         const streamSheet = XLSX.utils.table_to_sheet(streamEl);
         // S/F limits appended below the stream table, same pattern as the
-        // correlation coefficients under Tie Lines. The w/w ratio is
+        // correlation coefficients under Equilibrium. The w/w ratio is
         // derived from the rounded wt% (not the raw frac) so it matches
         // the S:F Explorer cards exactly and reconciles under hand
         // calculation from the wt% column shown right next to it.
