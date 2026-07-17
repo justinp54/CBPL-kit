@@ -278,7 +278,6 @@ async function initPyodide() {
     // Enable UI
     const btn = document.getElementById('calc-btn');
     btn.disabled = false;
-    document.getElementById('calc-icon').textContent = '⚗';
     document.getElementById('calc-label').textContent = 'Calculate';
     FIELDS.forEach(f => {
       document.getElementById(f).disabled = false;
