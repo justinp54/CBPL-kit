@@ -39,7 +39,7 @@ const TEAM_DATA = [
   {
     name: 'Junsang Park',
     sid:  '2023-16582',
-    email: 'justinp5454@gmail.com',
+    email: 'justinp54@snu.ac.kr',
     role: 'Lead Developer',
     photo: null,
     initials: 'JP',
@@ -93,7 +93,7 @@ const TEAM_DATA = [
 // Both submission CTAs below point at the two devs directly (not the
 // advisor) — mailto has no server, so whoever's address is here just gets
 // the email; easy to change later if that should move to a shared inbox.
-const DEV_EMAILS = 'justinp5454@gmail.com,andylee1208@snu.ac.kr';
+const DEV_EMAILS = 'justinp54@snu.ac.kr,andylee1208@snu.ac.kr';
 function _mailtoHref(subject, bodyLines) {
   return `mailto:${DEV_EMAILS}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
 }
@@ -127,11 +127,11 @@ function renderContactPane() {
         <img src="/images/snu_ui.png" alt="Seoul National University" class="contact-emblem">
         <div class="contact-kicker">SNU CBE · CBPL-kit</div>
         <h1 class="contact-title">Made by</h1>
-        <p class="contact-sub">Department of Chemical and Biological Engineering, Seoul National University,<br>
-          Seoul 08826, Republic of Korea<br>
-          Developed in Spring 2026<br>
-          Last updated in July 2026</p>
+        <p class="contact-sub">Department of Chemical and Biological Engineering<br>
+          Seoul National University<br>
+          Seoul 08826, Republic of Korea</p>
         <p class="contact-tagline">Built CBPL-kit to make LLE data analysis more accessible for lab students.</p>
+        <p class="contact-sub" style="color:var(--text)">Developed in Spring 2026 | Last updated in July 2026</p>
       </div>
       <div class="team-rows">${rows}</div>
       <div class="contact-submit">
