@@ -130,7 +130,7 @@
       <button class="tab-btn"        id="tab-fig2a"    role="tab" aria-selected="false" aria-controls="plot-fig2a"    onclick="switchTab('fig2a')">Conjugate Curve</button>
       <span class="tab-sep" role="separator" aria-hidden="true"></span>
       <button class="tab-btn"        id="tab-fig3"     role="tab" aria-selected="false" aria-controls="plot-fig3"     onclick="switchTab('fig3')">Hunter-Nash <span class="n-badge" id="badge-n">N=?</span></button>
-      <button class="tab-btn"        id="tab-fig2b"    role="tab" aria-selected="false" aria-controls="plot-fig2b"    onclick="switchTab('fig2b')">Tie-Lines</button>
+      <button class="tab-btn"        id="tab-fig2b"    role="tab" aria-selected="false" aria-controls="plot-fig2b"    onclick="switchTab('fig2b')">Stages</button>
       <button class="tab-btn"        id="tab-fig4"     role="tab" aria-selected="false" aria-controls="plot-fig4"     onclick="switchTab('fig4')">Lever Rule</button>
       <button class="tab-btn"        id="tab-fig_sf"   role="tab" aria-selected="false" aria-controls="plot-fig_sf"   onclick="switchTab('fig_sf')" title="Interactive solvent-to-feed ratio explorer">S:F Explorer ✦</button>
       <button class="tab-btn"        id="tab-fig_feed" role="tab" aria-selected="false" aria-controls="plot-fig_feed" onclick="switchTab('fig_feed')" title="Interactive feed composition explorer">Feed Explorer ✦</button>
@@ -205,6 +205,8 @@
             <thead id="stream-thead"><tr><th>Stream</th><th>PA%</th><th>BP%</th><th>W%</th></tr></thead>
             <tbody id="stream-tbody"></tbody>
           </table>
+          <div class="panel-divider"></div>
+          <div class="data-panel-heading">Mass Flow Rates</div>
           <div class="flows-text" id="flows-text"></div>
           <div class="panel-divider"></div>
           <div class="data-panel-heading">Stage-by-Stage Compositions</div>

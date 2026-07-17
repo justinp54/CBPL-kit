@@ -625,7 +625,7 @@ def fig_hunter_nash(
     fig = go.Figure(data=traces)
     pad = 10
     fig.update_layout(**_cart_layout(
-        f"Hunter-Nash  (N = {N_theory:.1f} theoretical stages)",
+        f"Hunter-Nash Construction (N={N_theory:.1f})",
         x_range=(min(pt_P[0] - pad, -pad), 118),
         y_range=(min(pt_P[1] - pad, -pad), 88),
     ))
@@ -661,7 +661,7 @@ def fig_interpolated_tie_lines(
     traces.append(go.Scatter(
         x=[None], y=[None], mode="lines",
         line=dict(color="darkgreen", width=1.8),
-        name="Tie-lines", showlegend=True,
+        name="Stages", showlegend=True,
     ))
     for s in steps:
         i = s.index

@@ -111,9 +111,10 @@
     .titr-row { display: flex; align-items: center; gap: 6px; }
     .titr-sym { font-size: 11.5px; font-weight: 500; color: #a8b8c8; white-space: nowrap; flex-shrink: 0; }
     .titr-sym-r { margin-left: auto; }
-    .titr-input { flex: 0 0 56px; width: 56px; padding: 6px 7px; }
+    .titr-input { flex: 0 0 56px; width: 56px; padding: 6px 7px; -moz-appearance: textfield; appearance: textfield; }
+    .titr-input::-webkit-outer-spin-button, .titr-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .titr-unit { min-width: 0; }
-    .flows-text strong { color: var(--text); }
+    .flows-text strong { color: var(--text); display: inline-block; min-width: 50px; }
 
     /* ── Main ── */
     main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }

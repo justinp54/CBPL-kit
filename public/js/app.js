@@ -720,7 +720,7 @@ def _build(key):
     if key == 'fig2a':  return plot_util.fig_conjugate_curve(system, conjugate).to_json()
     if key == 'fig2b':  return plot_util.fig_interpolated_tie_lines(system, conjugate, steps, N_theory).to_json()
     if key == 'fig3':   return plot_util.fig_hunter_nash(system, steps, N_theory, pt_R0, pt_Rn, pt_E1, pt_En1, pt_P).to_json()
-    if key == 'fig4':   return plot_util.fig_lever_rule(system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M, pt_Mp_exp, pt_E1p_exp, title='Lever Rule — Experimental Flow Ratio').to_json()
+    if key == 'fig4':   return plot_util.fig_lever_rule(system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M, pt_Mp_exp, pt_E1p_exp, title='Overall Mass Balance (Lever Rule)').to_json()
     # fig_sf / fig_feed are NOT batch-built here — the explorer tabs render live
     # in the browser via PY_SF / PY_FEED (see computeExplorer). The static
     # slider-frame figures (fig_lever_rule_interactive[_feed]) are only used by
@@ -1236,8 +1236,8 @@ function showResults(data) {
   ]).join('');
 
   document.getElementById('flows-text').innerHTML =
-    `<strong>Solvent</strong> ${data.mass_flows.solvent_g_min} g/min<br>` +
-    `<strong>Feed &nbsp;&nbsp;&nbsp;</strong> ${data.mass_flows.feed_g_min} g/min`;
+    `<strong>Solvent</strong>${data.mass_flows.solvent_g_min} g/min<br>` +
+    `<strong>Feed</strong>${data.mass_flows.feed_g_min} g/min`;
 
   document.getElementById('panel-fig3').classList.add('has-data');
 
