@@ -1272,7 +1272,7 @@ function showResults(data) {
     document.getElementById('sf-min-val').textContent =
       sfRatioFromWt(wt) + ' (solvent ' + wt + ' wt%)';
     document.getElementById('sf-min-desc').innerHTML =
-      '<strong>How it\'s found:</strong><br>Searching all interpolated tie lines, the one whose extension hits farthest from R<sub>N</sub> sets this pinch. Below it, no stage count reaches the target.';
+      '<strong>How it\'s found:</strong><br>Where P lands on a tie line, a stage\'s step and that tie line become the same line — the step moves nothing, so no stage count reaches the target.';
   } else {
     document.getElementById('sf-min-val').textContent = '—';
     document.getElementById('sf-min-desc').innerHTML =
@@ -1283,7 +1283,7 @@ function showResults(data) {
     document.getElementById('sf-max-val').textContent =
       sfRatioFromWt(wt) + ' (solvent ' + wt + ' wt%)';
     document.getElementById('sf-max-desc').innerHTML =
-      '<strong>How it\'s found:</strong><br>Where the feed+solvent line meets the equilibrium curve, M becomes a single phase, nothing left to split.';
+      '<strong>How it\'s found:</strong><br>Where the feed+solvent line meets the binodal curve, M becomes a single phase, nothing left to separate.';
   } else {
     document.getElementById('sf-max-val').textContent = '—';
     document.getElementById('sf-max-desc').innerHTML =
