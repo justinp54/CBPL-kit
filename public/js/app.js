@@ -52,7 +52,6 @@ const TEAM_DATA = [
     ],
     links: [
       { label: 'LinkedIn', href: 'https://www.linkedin.com/in/junsang-park', external: true },
-      { label: '⟨/⟩ GitHub', href: 'https://github.com/justinp54', external: true },
     ],
   },
   {
