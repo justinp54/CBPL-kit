@@ -1430,7 +1430,7 @@ function loadBlankTemplate() {
   fillDataTable('sf-equil-tbody', [], d.equilibrium_data, 3);
   fillDataTable('sf-tie-tbody', [], d.tie_lines, 2);
   syncYamlFromForm();
-  setSysMsg('Cleared. Gray text shows example values — type in your own and press Apply System.', '');
+  setSysMsg('Gray text shows example values — type in your own.', '');
 }
 
 function resetSystem() {
@@ -1844,7 +1844,7 @@ json.dumps(validate_system.validate(json.loads(_val_json)))
   }
 
   const p = sysData.properties;
-  setSysMsg('Building system…', '');
+  setSysMsg('Applying systems…', '');
   try {
     pyodide.globals.set('_sys_equil',  pyodide.toPy(sysData.equilibrium_data));
     pyodide.globals.set('_sys_ties',   pyodide.toPy(sysData.tie_lines));
@@ -1928,7 +1928,7 @@ _b._eready     = False
       document.getElementById('empty').style.display = 'flex';
     }
     await renderSystemFigs();
-    setSysMsg('System applied. Press Calculate to run extraction analysis.', 'success');
+    setSysMsg('System applied.', 'success');
     return true;
 
   } catch (e) {

@@ -208,8 +208,6 @@
     .sys-msg { font-size: 12.5px; margin-top: 0; }
     .sys-msg.error { color: #dc2626; }
     .sys-msg.success { color: #16a34a; }
-    .sys-note { font-size: 11.5px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
-    .sys-note code { font-family: 'JetBrains Mono', monospace; background: var(--bg); padding: 1px 5px; border-radius: 3px; font-size: 11px; border: 1px solid var(--border); }
 
     /* Guide pane */
     .guide-pane { overflow-y: auto; padding: 36px 48px; background: var(--surface); }

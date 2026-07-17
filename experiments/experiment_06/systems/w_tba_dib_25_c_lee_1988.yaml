@@ -42,4 +42,4 @@ tie_lines:
   - [56.38, 20.47]
   - [58.36, 24.07]
 # data source, temperature, etc. - free text
-note: "25 °C, Lee et al., J. Chem. Eng. Data 33(3) (1988)"
+note: "25 °C, Lee (1988)"
