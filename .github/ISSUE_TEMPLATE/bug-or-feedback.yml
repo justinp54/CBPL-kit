@@ -1,0 +1,40 @@
+name: Bug Report / Feedback
+description: Report something broken, or send an idea or a suggestion
+title: "[Bug/Feedback] "
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Which is this
+      description: Trim the title prefix to match, e.g. "[Bug] Stage labels overlap".
+      options:
+        - Bug — something behaves wrong or looks broken
+        - Feedback — an idea, a suggestion, or something unclear
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened, or what you would change
+      description: >-
+        For a bug: what you did, and what the app did instead of what you
+        expected.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Which tab
+      description: e.g. Hunter-Nash, Lever Rule, S:F Explorer — if it's about one in particular
+    validations:
+      required: false
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: >-
+        Please include one if you can — drag the image straight into this box.
+        For anything about a chart or a label, a picture settles in one look
+        what a description can spend a paragraph on.
+    validations:
+      required: false
