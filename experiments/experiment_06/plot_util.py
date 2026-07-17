@@ -209,6 +209,42 @@ def _line_trace(
     )
 
 
+def _en1_point_trace(pt_En1: tuple[float, float], labels: dict) -> go.Scatterternary:
+    """E_N+1 on the water vertex, with its label nudged inside the triangle.
+
+    Scatterternary clips to the triangle, and E_N+1 sits exactly on a corner of
+    it, so the default "top center" label hangs outside and all but its tail is
+    cut away. "top right" alone isn't enough either: the left edge rises from
+    that corner at 60°, so a label starting at the vertex still begins a few px
+    outside and loses the left of the "E". Two leading spaces push the glyphs in
+    (Plotly renders label text with white-space:pre, so they survive).
+
+    The padding goes on the on-plot text only — the legend name and the hover
+    box keep the clean label.
+    """
+    tr = _point_trace(pt_En1, "E<sub>N+1</sub>", "crimson", labels=labels,
+                      textposition="top right")
+    tr.text = ["  E<sub>N+1</sub>"]
+    return tr
+
+
+# The lever-rule family (Lever Rule tab, and both explorers, which reuse these
+# same two builders) labels every point and line on the plot itself, so the
+# legend only needs the handful a label can't stand in for. Anything not named
+# here is dropped from the legend by _trim_legend, including traces added later.
+_LEVER_LEGEND = frozenset({
+    "Binodal curve", "Equil. data",
+    "E<sub>1</sub>", "E<sub>1</sub>'", "M", "M'",
+})
+
+
+def _trim_legend(fig: go.Figure, keep: frozenset[str]) -> None:
+    """Leave a legend entry only for the traces named in `keep`."""
+    for tr in fig.data:
+        if tr.name not in keep:
+            tr.showlegend = False
+
+
 # ---------------------------------------------------------------------------
 # Cartesian-based helpers (support extrapolation outside the triangle)
 #
@@ -685,11 +721,12 @@ def fig_lever_rule(
         traces.append(_point_trace(pt_R0_actual, "R<sub>0</sub> (exp.)", "royalblue",
                                    symbol="circle-open", size=9, labels=lb))
     traces += [
-        # R₀ sits on the water-free right edge — label inward to avoid clipping.
+        # R₀ sits on the water-free right edge — label inward to avoid clipping
+        # past it (E_N+1 has the same problem at its vertex; see _en1_point_trace).
         _point_trace(pt_R0,  "R<sub>0</sub>",    "royalblue",   labels=lb, textposition="middle left"),
         _point_trace(pt_Rn,  "R<sub>N</sub>",    "royalblue",   labels=lb),
         _point_trace(pt_E1,  "E<sub>1</sub>",    "crimson",     labels=lb),
-        _point_trace(pt_En1, "E<sub>N+1</sub>",  "crimson",     labels=lb),
+        _en1_point_trace(pt_En1, lb),
         _point_trace(pt_M,   "M",     "purple",     symbol="diamond-open", size=10, labels=lb),
         _point_trace(pt_Mp,  "M'",    "saddlebrown", symbol="diamond",     size=10, labels=lb),
     ]
@@ -706,6 +743,7 @@ def fig_lever_rule(
 
     fig = go.Figure(data=traces)
     fig.update_layout(**_layout(title, system))
+    _trim_legend(fig, _LEVER_LEGEND)
     return fig
 
 
@@ -740,11 +778,12 @@ def fig_feed_explorer(
     # ── Fixed real-experiment anchors ─────────────────────────────────────────
     # R₀/R₀' sit on the water-free right edge, so their labels go inward
     # ("... left") instead of "top center", which would clip past the edge.
+    # (E_N+1 has the same problem at its vertex; see _en1_point_trace.)
     traces += [
         _point_trace(pt_R0_actual, "R<sub>0</sub>",    "royalblue",   labels=lb, textposition="middle left"),
         _point_trace(pt_Rn,        "R<sub>N</sub>",    "royalblue",   labels=lb),
         _point_trace(pt_E1,        "E<sub>1</sub>",    "crimson",     labels=lb),
-        _point_trace(pt_En1,       "E<sub>N+1</sub>",  "crimson",     labels=lb),
+        _en1_point_trace(pt_En1, lb),
         _point_trace(pt_M,         "M",     "purple", symbol="diamond-open", size=10, labels=lb),
         _line_trace(pt_E1,  pt_Rn,        "E<sub>1</sub>–R<sub>N</sub>",   "purple", width=1),
         _line_trace(pt_En1, pt_R0_actual, "E<sub>N+1</sub>–R<sub>0</sub>", "purple", width=1),
@@ -762,6 +801,7 @@ def fig_feed_explorer(
 
     fig = go.Figure(data=traces)
     fig.update_layout(**_layout(title, system))
+    _trim_legend(fig, _LEVER_LEGEND)
     return fig
 
 

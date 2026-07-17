@@ -254,6 +254,13 @@
     .data-panel tbody td { padding: 4px 5px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text); border-bottom: 1px solid #f0f1f3; font-variant-numeric: tabular-nums; }
     .data-panel tbody td:first-child { text-align: center; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; color: var(--muted); }
     .data-panel tbody tr:hover { background: var(--blue-lt); }
+    /* This table's first column holds stream names, not the "#" the 28px above
+       is sized for: E<sub>N+1</sub> overflows it and breaks between its dot and
+       its label, dropping the name onto a second line. Left-aligned rather than
+       centred so the dots line up vertically instead of shifting with the width
+       of each name. */
+    #stream-table thead th:first-child,
+    #stream-table tbody td:first-child { width: auto; white-space: nowrap; text-align: left; padding-left: 8px; }
     .data-panel .phase-header { font-size: 9px; font-weight: 600; color: var(--muted); text-align: center; padding: 6px 0 2px; letter-spacing: .02em; }
     #tieline-table thead th { padding: 3px 3px 5px; font-size: 10px; }
     #tieline-table tbody td { padding: 3px 3px; font-size: 10px; }
