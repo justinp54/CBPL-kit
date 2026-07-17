@@ -657,6 +657,60 @@ def fig_lever_rule(
     return fig
 
 
+def fig_feed_explorer(
+    system: EquilibriumSystem,
+    pt_R0_actual: tuple[float, float],
+    pt_Rn: tuple[float, float],
+    pt_E1: tuple[float, float],
+    pt_En1: tuple[float, float],
+    pt_M: tuple[float, float],
+    pt_R0p: tuple[float, float],
+    pt_Mp: tuple[float, float],
+    pt_E1p: tuple[float, float] | None,
+    title: str = "Feed Explorer",
+) -> go.Figure:
+    """Static single-frame Feed Explorer figure for the live HTML slider.
+
+    The real experiment is the fixed anchor, exactly like the other tabs:
+    R₀ (experimental feed), its real mixing point M, and their locating lines
+    stay put. The slider supplies a *hypothetical* feed R₀' (binary BP+PA edge)
+    whose mixing point M' and E₁' move. Unlike fig_lever_rule (shared by Fig 4
+    and the S:F explorer, which relabels the moving feed as plain "R₀"), this
+    keeps R₀/M fixed and labels only the moving construction with primes, so
+    the real operating point and the what-if one sit side by side.
+
+    pt_M : the real experimental mixing point, held fixed (not recomputed
+           from the hypothetical feed).
+    """
+    lb = _lb(system)
+    traces = _equil_traces(system)
+
+    # ── Fixed real-experiment anchors ─────────────────────────────────────────
+    traces += [
+        _point_trace(pt_R0_actual, "R₀",    "royalblue",   labels=lb),
+        _point_trace(pt_Rn,        "Rₙ",    "royalblue",   labels=lb),
+        _point_trace(pt_E1,        "E₁",    "crimson",     labels=lb),
+        _point_trace(pt_En1,       "Eₙ₊₁",  "crimson",     labels=lb),
+        _point_trace(pt_M,         "M",     "purple", symbol="diamond-open", size=10, labels=lb),
+        _line_trace(pt_E1,  pt_Rn,        "E₁–Rₙ",   "purple", width=1),
+        _line_trace(pt_En1, pt_R0_actual, "Eₙ₊₁–R₀", "purple", width=1),
+    ]
+
+    # ── Hypothetical (moving) primed construction ─────────────────────────────
+    traces += [
+        _point_trace(pt_R0p, "R₀'", "saddlebrown", labels=lb),
+        _line_trace(pt_En1, pt_R0p, "Eₙ₊₁–R₀'", "saddlebrown", width=1),
+        _point_trace(pt_Mp,  "M'",  "saddlebrown", symbol="diamond", size=10, labels=lb),
+    ]
+    if pt_E1p is not None:
+        traces.append(_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11, labels=lb))
+        traces.append(_line_trace(pt_Rn, pt_E1p, "Rₙ–E₁'", "saddlebrown", width=1.2))
+
+    fig = go.Figure(data=traces)
+    fig.update_layout(**_layout(title, system))
+    return fig
+
+
 def fig_lever_rule_interactive(
     system: EquilibriumSystem,
     pt_R0: tuple[float, float],
@@ -872,57 +926,61 @@ def fig_lever_rule_interactive_feed(
 ) -> go.Figure:
     """Fig 6 interactive — slider controls feed PA wt% while flow rates stay fixed.
 
-    Unlike fig_lever_rule_interactive (which keeps R0 fixed and slides M'),
-    here R0 itself moves along the binary BP+PA edge (wW=0) as PA% changes.
-    M, M', and E1' all update together.
+    The real experiment is the fixed anchor, exactly like the other tabs:
+    R₀ (experimental feed) and M (its real mixing point) stay put. The slider
+    explores a *hypothetical* feed R₀' along the binary BP+PA edge (wW=0); only
+    R₀', its mixing point M', and E₁' move. Showing the fixed M beside the
+    moving M' contrasts the real operating point with the what-if one.
 
     Parameters
     ----------
     mass_R0, mass_En1 : float
         Experimental mass flow rates [g/min] kept constant across all frames.
     pt_R0_actual : tuple
-        Experimental feed point shown as a static open-circle reference.
+        Experimental feed point — the fixed R₀ anchor.
     wpa_range : tuple
-        (min, max) feed PA wt% for the slider.
+        (min, max) hypothetical feed PA wt% for the slider.
     """
     wpa_vals = np.linspace(wpa_range[0], wpa_range[1], n_steps)
 
     lb = _lb(system)
-    # ── Static traces ─────────────────────────────────────────────────────────
+    # Real mixing point M from the experimental feed — computed once and held
+    # fixed across all frames (same M as every other tab).
+    pt_M_real, _ = find_M_and_P(pt_E1, pt_Rn, pt_En1, pt_R0_actual)
+    # ── Static traces (real experiment — fixed anchors) ───────────────────────
     static = (
         _cart_triangle_traces(system)
         + _cart_equil_traces(system)
         + [
-            _cart_point_trace(pt_Rn,        "Rₙ",         "royalblue",  labels=lb),
-            _cart_point_trace(pt_E1,        "E₁",         "crimson",    labels=lb),
-            _cart_point_trace(pt_En1,       "Eₙ₊₁",       "crimson",    labels=lb),
-            _cart_point_trace(pt_R0_actual, "R₀ (exp.)",  "royalblue",
-                              symbol="circle-open", size=9, labels=lb),
-            _cart_line_trace(pt_E1, pt_Rn, "E₁–Rₙ", "purple", width=1),
+            _cart_point_trace(pt_Rn,        "Rₙ",     "royalblue",  labels=lb),
+            _cart_point_trace(pt_E1,        "E₁",     "crimson",    labels=lb),
+            _cart_point_trace(pt_En1,       "Eₙ₊₁",   "crimson",    labels=lb),
+            _cart_point_trace(pt_R0_actual, "R₀",     "royalblue",  labels=lb),
+            _cart_point_trace(pt_M_real,    "M",      "purple", symbol="diamond-open", size=10, labels=lb),
+            _cart_line_trace(pt_E1,  pt_Rn,        "E₁–Rₙ",    "purple", width=1),
+            _cart_line_trace(pt_En1, pt_R0_actual, "Eₙ₊₁–R₀",  "purple", width=1),
         ]
     )
     n_static = len(static)
-    n_dynamic = 6   # R0, En1-R0 line, M, M', E1', Rn-E1' line
+    n_dynamic = 5   # R0', En1-R0' line, M', E1', Rn-E1' line
 
     def _dynamic(wpa: float) -> list:
-        # Binary feed point (no water): x = wbp + 0.5*wpa, y = sqrt(3)/2 * wpa
+        # Hypothetical binary feed point (no water): x = wbp + 0.5*wpa, y = sqrt(3)/2 * wpa
         wbp = 100.0 - wpa
-        pt_R0 = (wbp + 0.5 * wpa, np.sqrt(3) / 2.0 * wpa)
-        pt_M, _ = find_M_and_P(pt_E1, pt_Rn, pt_En1, pt_R0)
-        pt_Mp  = mixing_point(pt_R0, pt_En1, mass_A=mass_R0, mass_B=mass_En1)
+        pt_R0p = (wbp + 0.5 * wpa, np.sqrt(3) / 2.0 * wpa)
+        pt_Mp  = mixing_point(pt_R0p, pt_En1, mass_A=mass_R0, mass_B=mass_En1)
         pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
 
-        r0_tr   = _cart_point_trace(pt_R0, "R₀",  "royalblue",   labels=lb)
-        en_r0   = _cart_line_trace(pt_En1, pt_R0, "Eₙ₊₁–R₀", "purple", width=1)
-        m_tr    = _cart_point_trace(pt_M,  "M",   "purple", symbol="diamond-open", size=10, labels=lb)
-        mp_tr   = _cart_point_trace(pt_Mp, "M'",  "saddlebrown", symbol="diamond", size=10, labels=lb)
+        r0p_tr  = _cart_point_trace(pt_R0p, "R₀'", "saddlebrown", labels=lb)
+        en_r0p  = _cart_line_trace(pt_En1, pt_R0p, "Eₙ₊₁–R₀'", "saddlebrown", width=1)
+        mp_tr   = _cart_point_trace(pt_Mp,  "M'",  "saddlebrown", symbol="diamond", size=10, labels=lb)
         if pt_E1p is not None:
             e1p_tr  = _cart_point_trace(pt_E1p, "E₁'", "crimson", symbol="circle-open", size=11, labels=lb)
             line_tr = _cart_line_trace(pt_Rn, pt_E1p, "Rₙ–E₁'", "saddlebrown", width=1.5)
         else:
             e1p_tr  = go.Scatter(x=[], y=[], mode="markers", showlegend=False, hoverinfo="skip")
             line_tr = go.Scatter(x=[], y=[], mode="lines",   showlegend=False, hoverinfo="skip")
-        return [r0_tr, en_r0, m_tr, mp_tr, e1p_tr, line_tr]
+        return [r0p_tr, en_r0p, mp_tr, e1p_tr, line_tr]
 
     fig = go.Figure(data=static + _dynamic(wpa_vals[0]))
 

@@ -770,20 +770,21 @@ plot_util.fig_lever_rule(
 ).to_json()
 `;
 
+// Feed Explorer live view: real R₀ and its real mixing point M (_b._ept_M) stay
+// fixed as anchors — exactly like the other tabs — while the slider explores a
+// hypothetical feed R₀' whose M' and E₁' move. See plot_util.fig_feed_explorer.
 const PY_FEED = `
 import json, math, builtins as _b
 wpa    = float(_feed_wpa)
 wbp    = 100.0 - wpa
 pt_R0h = (wbp + 0.5*wpa, math.sqrt(3)/2 * wpa)
-pt_Mh, _ = find_M_and_P(_b._ept_E1, _b._ept_Rn, _b._ept_En1, pt_R0h)
 pt_Mph = mixing_point(pt_R0h, _b._ept_En1, mass_A=_b._emass_R0, mass_B=_b._emass_En1)
 pt_E1ph = find_E1_prime(_b._ept_Rn, pt_Mph, _b._esystem.spline)
 _solute_abbr = _b._esystem.labels['solute']['abbr']
-plot_util.fig_lever_rule(
-    _b._esystem, pt_R0h, _b._ept_Rn, _b._ept_E1, _b._ept_En1,
-    pt_Mh, pt_Mph, pt_E1ph,
-    title=f"Feed {_solute_abbr} {wpa:.1f} wt%",
-    pt_R0_actual=_b._ept_R0
+plot_util.fig_feed_explorer(
+    _b._esystem, _b._ept_R0, _b._ept_Rn, _b._ept_E1, _b._ept_En1, _b._ept_M,
+    pt_R0h, pt_Mph, pt_E1ph,
+    title=f"Feed {_solute_abbr} {wpa:.1f} wt%"
 ).to_json()
 `;
 
