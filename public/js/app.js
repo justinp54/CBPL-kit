@@ -70,7 +70,6 @@ const TEAM_DATA = [
       'Seoul National University',
     ],
     links: [
-      { label: 'CV', href: '/cv/seong-lee-cv.pdf', external: true },
       { label: 'LinkedIn', href: 'https://www.linkedin.com/in/seonglee-snu', external: true },
     ],
   },
@@ -1341,7 +1340,7 @@ async function loadSystemTab() {
         } catch (e) { console.error('System label:', file, e); }
         return `<option value="${file}"${file === currentSystemFile ? ' selected' : ''}>${label}</option>`;
       }));
-      opts.push('<option value="__new__">+ Enter your own data</option>');
+      opts.push('<option value="__new__">+ Enter your own dataset</option>');
       sel.innerHTML = opts.join('');
     }
   } catch (e) { console.error('System list:', e); }
@@ -1378,7 +1377,7 @@ async function loadSystemFromSelect() {
   }
 }
 
-// Fixed example shown as gray placeholders in "+ Enter your own data" mode, so the
+// Fixed example shown as gray placeholders in "+ Enter your own dataset" mode, so the
 // hints (and the number of rows) stay consistent regardless of which system was
 // loaded before. Purely a UI hint — not parsed or applied.
 const BLANK_EXAMPLE = {
@@ -1399,7 +1398,7 @@ const BLANK_EXAMPLE = {
   note: 'SNU CBE, 25 °C, Treybal (1980), Zhang (2020)',
 };
 
-// "Enter your own data" — clear the form and show BLANK_EXAMPLE as gray placeholders.
+// "Enter your own dataset" — clear the form and show BLANK_EXAMPLE as gray placeholders.
 function loadBlankTemplate() {
   const d = BLANK_EXAMPLE;
   const c = d.components, p = d.properties;

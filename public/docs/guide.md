@@ -1,4 +1,4 @@
-# How to Use — LLE Hunter-Nash Simulator
+# How to Use
 
 ## Overview
 

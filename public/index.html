@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
-  <title>LLE Hunter-Nash Simulator</title>
+  <title>CBPL-kit</title>
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js" integrity="sha384-tVslJOEkg7nVRW3Y3/ReGX0NnonNrbcmt1R5qFbQXQdGa2chRkoJYHAjAsv3zoTq" crossorigin="anonymous"></script>
   <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" integrity="sha384-7TVmlZWH60iKX5Uk7lSvQhjtcgw2tkFjuwLcXoRSR4zXTyWFJRm9aPAguMh7CIra" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+" crossorigin="anonymous"></script>
@@ -26,14 +26,6 @@
   <button class="menu-toggle" id="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">☰</button>
   <span class="badge">SNU CBE</span>
   <h1>CBPL-kit</h1>
-  <div class="madeby">
-    <span class="by-label">Made by</span>
-    <span class="by-names">
-      Junsang Park<span class="sid">2023-16582</span>
-      <span class="sep">·</span>
-      Seong Lee<span class="sid">2020-11063</span>
-    </span>
-  </div>
 
   <button class="header-export-btn" id="export-btn" onclick="exportBundle()" title="Export system, figures, and results as a ZIP" disabled>
     <span class="export-icon">⬇</span><span class="export-label">Export</span>
@@ -179,7 +171,7 @@
       <!-- Pyodide init progress -->
       <div id="init-overlay">
         <div class="init-logo">⬡</div>
-        <div class="init-title">LLE Hunter-Nash Simulator</div>
+        <div class="init-title">CBPL-kit</div>
         <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
         <div class="progress-label" id="progress-label">Loading Python runtime…</div>
         <div class="init-sub">First load ≈ 20 s · cached after first visit</div>

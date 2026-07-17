@@ -39,11 +39,6 @@
     }
     .badge { background: rgba(24,120,168,.25); color: #5abade; font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 2px 8px; border-radius: 3px; text-transform: uppercase; flex-shrink: 0; border: 1px solid rgba(90,186,222,.2); }
     header h1 { color: #e8edf2; font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
-    header .madeby { display: flex; align-items: center; gap: 7px; border-left: 1px solid rgba(255,255,255,.1); padding-left: 12px; white-space: nowrap; }
-    header .madeby .by-label { font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #5abade; }
-    header .madeby .by-names { font-size: 12px; font-weight: 500; color: #c0c8d2; }
-    header .madeby .by-names .sep { color: #3a4550; margin: 0 4px; font-weight: 400; }
-    header .madeby .by-names .sid { color: #5abade; font-size: 10.5px; font-weight: 400; margin-left: 3px; }
     .header-export-btn {
       margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
       background: rgba(24,120,168,.18); border: 1px solid rgba(90,186,222,.3); color: #bcdcee;
@@ -430,7 +425,6 @@
 
     @media (max-width: 767px) {
       header h1 { font-size: 13px; }
-      header .madeby { display: none; }
       header .sub { display: none; }
       .header-export-btn .export-label { display: none; }
       .header-export-btn { padding: 6px 9px; }
@@ -454,7 +448,6 @@
 
     @media (min-width: 768px) and (max-width: 1023px) {
       :root { --sidebar-w: 260px; }
-      header .madeby .sid { display: none; }
       header .sub { display: none; }
       .guide-pane, .system-pane { padding: 28px 32px; }
     }
