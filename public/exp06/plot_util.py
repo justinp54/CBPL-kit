@@ -134,6 +134,7 @@ def _point_trace(
     symbol: str = "circle",
     size: int = 9,
     labels: dict | None = None,
+    textposition: str = "top center",
 ) -> go.Scatterternary:
     lb = labels or _DEFAULT_LABELS
     s, sv, d = lb['solute']['abbr'], lb['solvent']['abbr'], lb['carrier']['abbr']
@@ -145,7 +146,7 @@ def _point_trace(
         name=label,
         marker=dict(color=color, size=size, symbol=symbol),
         text=[label],
-        textposition="top center",
+        textposition=textposition,
         hovertemplate=(
             f"<b>{label}</b><br>{s}:{wpa:.2f}%  {sv}:{ww:.2f}%  {d}:{wbp:.2f}%<extra></extra>"
         ),
@@ -634,7 +635,8 @@ def fig_lever_rule(
         traces.append(_point_trace(pt_R0_actual, "R₀ (exp.)", "royalblue",
                                    symbol="circle-open", size=9, labels=lb))
     traces += [
-        _point_trace(pt_R0,  "R₀",    "royalblue",   labels=lb),
+        # R₀ sits on the water-free right edge — label inward to avoid clipping.
+        _point_trace(pt_R0,  "R₀",    "royalblue",   labels=lb, textposition="middle left"),
         _point_trace(pt_Rn,  "Rₙ",    "royalblue",   labels=lb),
         _point_trace(pt_E1,  "E₁",    "crimson",     labels=lb),
         _point_trace(pt_En1, "Eₙ₊₁",  "crimson",     labels=lb),
@@ -686,8 +688,10 @@ def fig_feed_explorer(
     traces = _equil_traces(system)
 
     # ── Fixed real-experiment anchors ─────────────────────────────────────────
+    # R₀/R₀' sit on the water-free right edge, so their labels go inward
+    # ("... left") instead of "top center", which would clip past the edge.
     traces += [
-        _point_trace(pt_R0_actual, "R₀",    "royalblue",   labels=lb),
+        _point_trace(pt_R0_actual, "R₀",    "royalblue",   labels=lb, textposition="middle left"),
         _point_trace(pt_Rn,        "Rₙ",    "royalblue",   labels=lb),
         _point_trace(pt_E1,        "E₁",    "crimson",     labels=lb),
         _point_trace(pt_En1,       "Eₙ₊₁",  "crimson",     labels=lb),
@@ -698,7 +702,7 @@ def fig_feed_explorer(
 
     # ── Hypothetical (moving) primed construction ─────────────────────────────
     traces += [
-        _point_trace(pt_R0p, "R₀'", "saddlebrown", labels=lb),
+        _point_trace(pt_R0p, "R₀'", "saddlebrown", labels=lb, textposition="bottom left"),
         _line_trace(pt_En1, pt_R0p, "Eₙ₊₁–R₀'", "saddlebrown", width=1),
         _point_trace(pt_Mp,  "M'",  "saddlebrown", symbol="diamond", size=10, labels=lb),
     ]
