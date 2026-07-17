@@ -716,8 +716,10 @@ def _build(key):
     if key == 'fig2b':  return plot_util.fig_interpolated_tie_lines(system, conjugate, steps, N_theory).to_json()
     if key == 'fig3':   return plot_util.fig_hunter_nash(system, steps, N_theory, pt_R0, pt_Rn, pt_E1, pt_En1, pt_P).to_json()
     if key == 'fig4':   return plot_util.fig_lever_rule(system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M, pt_Mp_exp, pt_E1p_exp, title='Lever Rule — Experimental Flow Ratio').to_json()
-    if key == 'fig_sf': return plot_util.fig_lever_rule_interactive(system, pt_R0, pt_Rn, pt_E1, pt_En1, pt_M, n_steps=30).to_json()
-    if key == 'fig_feed': return plot_util.fig_lever_rule_interactive_feed(system, pt_Rn, pt_E1, pt_En1, mass_R0=mass_R0_gm, mass_En1=mass_En1, pt_R0_actual=pt_R0, wpa_range=(feed_wpa_lo, feed_wpa_hi), n_steps=30).to_json()
+    # fig_sf / fig_feed are NOT batch-built here — the explorer tabs render live
+    # in the browser via PY_SF / PY_FEED (see computeExplorer). The static
+    # slider-frame figures (fig_lever_rule_interactive[_feed]) are only used by
+    # main.py's standalone-HTML export, not the web app.
     return ''
 
 # Save state for real-time explorer sliders
@@ -733,7 +735,7 @@ _b._esystem   = system
 _b._econjugate = conjugate
 _b._eready    = True
 
-_req_keys = [k for k in list(_requested_keys) if k not in ('fig_sf', 'fig_feed')]
+_req_keys = [k for k in _requested_keys if k in ('fig1', 'fig2a', 'fig2b', 'fig3', 'fig4')]
 _figs = {k: _build(k) for k in _req_keys}
 
 json.dumps({
@@ -956,8 +958,6 @@ async function calculate(requestedKeys) {
 
   // Which figures to compute
   const toFetch = requestedKeys || getDefaultKeys();
-  const sf_frame   = getExplorerFrame('fig_sf');
-  const feed_frame = getExplorerFrame('fig_feed');
 
   try {
     // Set config in Python
@@ -1002,9 +1002,8 @@ async function calculate(requestedKeys) {
     updateFeedRange(data.feed_range, data.stream_points.R0.wpa);
     explorerReady = true;
 
-    // If currently on an explorer tab, recompute it with new inputs
-    if (activeTab === 'fig_sf')   computeExplorer('sf');
-    if (activeTab === 'fig_feed') computeExplorer('feed');
+    // If currently on an explorer tab, reveal it now that data exists
+    if (activeTab === 'fig_sf' || activeTab === 'fig_feed') showExplorerTab(activeTab);
 
   } catch (err) {
     const box = document.getElementById('error-box');
@@ -1023,8 +1022,7 @@ function getDefaultKeys() {
   // computed so the zip export can include them even if their tabs were
   // never opened.
   const keys = ['fig3', 'fig2b', 'fig4'];
-  if (cache['fig_sf']   || activeTab === 'fig_sf')   keys.push('fig_sf');
-  if (cache['fig_feed'] || activeTab === 'fig_feed') keys.push('fig_feed');
+  // fig_sf / fig_feed are never batch-built — they render live via computeExplorer.
   if (cache['fig1']  || activeTab === 'fig1')  keys.push('fig1');
   if (cache['fig2a'] || activeTab === 'fig2a') keys.push('fig2a');
   return keys;
@@ -1100,6 +1098,36 @@ function renderFig(key) {
   requestAnimationFrame(() => Plotly.Plots.resize(el));
 }
 
+// Explorer tabs (S:F, Feed) render live via computeExplorer once an analysis
+// has been run. Before that they show the same "ready to analyze" prompt as the
+// other tabs instead of a blank chart. Called from switchTab and from the
+// Calculate handler, so switching in early then computing still reveals it.
+function showExplorerTab(key) {
+  const bar     = document.getElementById('explorer-bar');
+  const sfBar   = document.getElementById('sf-bar');
+  const feedBar = document.getElementById('feed-bar');
+  if (!explorerReady) {
+    bar.style.display = 'none';
+    document.getElementById('empty').style.display = 'flex';
+    return;
+  }
+  document.getElementById('empty').style.display = 'none';
+  bar.style.display = 'flex';
+  if (key === 'fig_sf') {
+    sfBar.style.display   = 'flex';
+    feedBar.style.display = 'none';
+    document.getElementById('plot-fig_sf').style.paddingTop = '52px';
+    computeExplorer('sf');
+    requestAnimationFrame(() => { _renderSfTrendChart(); });
+  } else {
+    sfBar.style.display   = 'none';
+    feedBar.style.display = 'flex';
+    document.getElementById('plot-fig_feed').style.paddingTop = '52px';
+    computeExplorer('feed');
+    requestAnimationFrame(() => { _renderFeedTrendChart(); });
+  }
+}
+
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(key) {
   document.getElementById('plot-' + activeTab).classList.remove('active');
@@ -1142,26 +1170,10 @@ function switchTab(key) {
   }
   sidebarManualOverride = false;
 
-  const bar      = document.getElementById('explorer-bar');
-  const sfBar    = document.getElementById('sf-bar');
-  const feedBar  = document.getElementById('feed-bar');
-
-  if (key === 'fig_sf') {
-    bar.style.display     = 'flex';
-    sfBar.style.display   = 'flex';
-    feedBar.style.display = 'none';
-    document.getElementById('plot-fig_sf').style.paddingTop = '52px';
-    computeExplorer('sf');
-    requestAnimationFrame(() => { _renderSfTrendChart(); });
-  } else if (key === 'fig_feed') {
-    bar.style.display     = 'flex';
-    sfBar.style.display   = 'none';
-    feedBar.style.display = 'flex';
-    document.getElementById('plot-fig_feed').style.paddingTop = '52px';
-    computeExplorer('feed');
-    requestAnimationFrame(() => { _renderFeedTrendChart(); });
+  if (key === 'fig_sf' || key === 'fig_feed') {
+    showExplorerTab(key);
   } else {
-    bar.style.display = 'none';
+    document.getElementById('explorer-bar').style.display = 'none';
     document.getElementById('plot-fig_sf').style.paddingTop   = '0';
     document.getElementById('plot-fig_feed').style.paddingTop = '0';
     if (key === 'guide')  { document.getElementById('empty').style.display = 'none'; loadGuide(); return; }
@@ -1180,23 +1192,6 @@ function switchTab(key) {
       document.getElementById('empty').style.display = 'flex';
     }
   }
-}
-
-// ── Explorer slider helpers ────────────────────────────────────────────────
-function getExplorerFrame(key) {
-  try { return document.getElementById('plot-' + key)._fullLayout?.sliders?.[0]?.active ?? 0; }
-  catch { return 0; }
-}
-
-function restoreExplorerFrame(key, frameIdx) {
-  if (frameIdx <= 0 || !cache[key]?.frames?.[frameIdx]) return;
-  setTimeout(() => {
-    Plotly.animate(
-      document.getElementById('plot-' + key),
-      [cache[key].frames[frameIdx].name],
-      { frame: { duration: 0, redraw: true }, mode: 'immediate' }
-    ).catch(() => {});
-  }, 80);
 }
 
 // ── Results panel ──────────────────────────────────────────────────────────
