@@ -1109,7 +1109,7 @@ def fig_selectivity(sel):
     ))
     fig.update_layout(
         title=dict(text='Selectivity S vs w<sub>23</sub>', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='w<sub>23</sub> (solute, solvent-rich)', font=dict(size=10)),
+        xaxis=dict(title=dict(text='w<sub>23</sub>', font=dict(size=10)),
                    tickfont=dict(size=9), showgrid=False, nticks=4,
                    showline=True, linewidth=1, linecolor='#d0d5dd', mirror=True),
         yaxis=dict(title=dict(text='S', font=dict(size=10)),
@@ -1127,6 +1127,7 @@ def fig_selectivity(sel):
         line_width=1,
         annotation_text='Plait point (S=1)',
         annotation_position='top left',
+        annotation_xshift=5,
         annotation_font_size=9,
         annotation_font_color='#9aa4b0',
     )

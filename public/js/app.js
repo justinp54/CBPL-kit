@@ -362,7 +362,6 @@ json.dumps(_sf)
     }
     // Populate before rendering: renderFig('fig2a') draws the Treybal star
     // from _plaitStats, which populatePlaitPanel is what sets.
-    _conjHorizontalSide = figs.conj_horizontal_side || null;
     if (figs.plait_stats !== undefined) populatePlaitPanel(figs.plait_stats, figs.conj_plait_by_method);
     if (activeTab === 'fig1' || activeTab === 'fig2a') {
       document.getElementById('empty').style.display = 'none';
@@ -478,7 +477,6 @@ let _selStats = null;
 let _plaitStats = null;
 let _conjPlaitByMethod = null;
 let _conjMethod = 'diagonal';
-let _conjHorizontalSide = null;  // 'left' | 'right' — auto-picked per system, see conjugate.py
 const CONJ_METHOD_LABELS = {
   diagonal: 'Diagonal', horizontal: 'Horizontal',
 };
@@ -488,7 +486,7 @@ function populateSelectivityPanel(stats) {
   _renderSelectivityChart();
   const el = document.getElementById('selectivity-stats');
   if (el) el.innerHTML = `
-    <div class="fml-label">Selectivity</div>
+    <div class="fml-label">Distribution Coefficient &amp; Selectivity</div>
     <div class="fml-eq">${_katex(_SEL_LATEX)}</div>`;
 }
 
@@ -565,7 +563,7 @@ function _renderPlaitTable() {
   const tdL = (active) => `style="text-align:left;padding:3px 4px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:10.5px;color:var(--text);border-bottom:1px solid #f0f1f3;white-space:nowrap${active ? ';background:var(--blue-lt)' : ''}"`;
 
   const treybalRow = _plaitStats
-    ? `<tr><td ${tdL(false)}><span style="color:#dc2626;margin-right:5px">★</span>Treybal (log-log)</td><td ${td(false)}>${f1(_plaitStats.carrier)}</td><td ${td(false)}>${f1(_plaitStats.solute)}</td><td ${td(false)}>${f1(_plaitStats.solvent)}</td></tr>`
+    ? `<tr><td ${tdL(false)}><span style="color:#dc2626;margin-right:5px">★</span>Treybal</td><td ${td(false)}>${f1(_plaitStats.carrier)}</td><td ${td(false)}>${f1(_plaitStats.solute)}</td><td ${td(false)}>${f1(_plaitStats.solvent)}</td></tr>`
     : `<tr><td colspan="4" style="text-align:center;padding:4px;color:var(--muted);font-size:10px">Treybal: not found in range</td></tr>`;
 
   const conjRows = _conjPlaitByMethod
@@ -573,8 +571,7 @@ function _renderPlaitTable() {
         const st = _conjPlaitByMethod[m];
         if (!st) return '';
         const active = m === _conjMethod;
-        const suffix = (m === 'horizontal' && _conjHorizontalSide) ? ` (${_conjHorizontalSide} endpoint)` : '';
-        return `<tr><td ${tdL(active)}><span style="color:darkorange;margin-right:5px">★</span>Conj. Curve — ${label}${suffix}</td><td ${td(active)}>${f1(st.carrier)}</td><td ${td(active)}>${f1(st.solute)}</td><td ${td(active)}>${f1(st.solvent)}</td></tr>`;
+        return `<tr><td ${tdL(active)}><span style="color:darkorange;margin-right:5px">★</span>Conj. Curve — ${label}</td><td ${td(active)}>${f1(st.carrier)}</td><td ${td(active)}>${f1(st.solute)}</td><td ${td(active)}>${f1(st.solvent)}</td></tr>`;
       }).join('')
     : '';
 
@@ -1911,7 +1908,6 @@ _b._eready     = False
     _plaitStats = null;
     _conjPlaitByMethod = null;
     _conjMethod = 'diagonal';
-    _conjHorizontalSide = null;
     const _ps = document.getElementById('plait-stats');
     if (_ps) _ps.innerHTML = '';
     document.querySelectorAll('.corr-tab').forEach(b => {
