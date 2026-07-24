@@ -1181,7 +1181,7 @@ def fig_selectivity(sel):
         marker=dict(color='#1878a8', size=6, symbol='circle',
                     line=dict(width=0.5, color='white')),
         showlegend=False,
-        hovertemplate='w₂₃: %{x:.4f}<br>S: %{y:.3f}<extra></extra>',
+        hovertemplate='w<sub>23</sub>: %{x:.4f}<br>S: %{y:.3f}<extra></extra>',
     ))
     fig.update_layout(
         title=dict(text='Selectivity S vs w<sub>23</sub>', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),

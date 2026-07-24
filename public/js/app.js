@@ -469,7 +469,7 @@ function _updateCorrStats(model) {
   el.innerHTML = `
     <div class="fml-label">${f.label} Correlation</div>
     <div class="fml-eq">${_katex(f.latex)}</div>
-    <div class="fml-params">a = ${d.a} &nbsp;&nbsp; b = ${d.b} &nbsp;&nbsp; <span class="fml-r2">R² = ${d.r2}</span></div>`;
+    <div class="fml-params">a = ${d.a} &nbsp;&nbsp; b = ${d.b} &nbsp;&nbsp; <span class="fml-r2">R<sup>2</sup> = ${d.r2}</span></div>`;
 }
 
 // ── Selectivity panel ─────────────────────────────────────────────────────
