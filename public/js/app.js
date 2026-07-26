@@ -405,7 +405,7 @@ function populateTieLineTable(comps, sel) {
   // Display precision by significant figures: compositions 2 dp; D₁ 4 dp (its
   // values are small, so 3 dp would collapse distinct rows to 0.056); D₂ 3 dp
   // and S 2 dp (both ~4 sig figs — 3 dp on S would over-state the precision).
-  const fComp = v => Number(v).toFixed(2);
+  const fComp = v => (Math.round(v * 100 + 1e-9) / 100).toFixed(2); // +1e-9: decimal half-up — 14.175 stores as 14.17499…, bare toFixed shows 14.17
   const fD1   = v => (v == null ? '' : Number(v).toFixed(4));
   const fD2   = v => (v == null ? '' : Number(v).toFixed(3));
   const fS    = v => (v == null ? '' : Number(v).toFixed(2));
