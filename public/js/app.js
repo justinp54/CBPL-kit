@@ -517,10 +517,10 @@ function _plaitStarTrace() {
     mode: 'markers',
     marker: { symbol: 'star', color: '#dc2626', size: 14,
               line: { color: 'white', width: 0.5 } },
-    name: 'Plait pt. (Treybal)',
+    name: 'Plait point (Treybal)',
     showlegend: true,
     hovertemplate:
-      `<b>Plait pt. (Treybal)</b><br>${_lbls.carrier.abbr}: ${_plaitStats.carrier.toFixed(1)}%  ${_lbls.solute.abbr}: ${_plaitStats.solute.toFixed(1)}%  ${_lbls.solvent.abbr}: ${_plaitStats.solvent.toFixed(1)}%<extra></extra>`,
+      `<b>Plait point (Treybal)</b><br>${_lbls.carrier.abbr}: ${_plaitStats.carrier.toFixed(1)}%  ${_lbls.solute.abbr}: ${_plaitStats.solute.toFixed(1)}%  ${_lbls.solvent.abbr}: ${_plaitStats.solvent.toFixed(1)}%<extra></extra>`,
   };
 }
 
@@ -571,7 +571,7 @@ function _renderPlaitTable() {
         const st = _conjPlaitByMethod[m];
         if (!st) return '';
         const active = m === _conjMethod;
-        return `<tr><td ${tdL(active)}><span style="color:darkorange;margin-right:5px">★</span>Conj. Curve — ${label}</td><td ${td(active)}>${f1(st.carrier)}</td><td ${td(active)}>${f1(st.solute)}</td><td ${td(active)}>${f1(st.solvent)}</td></tr>`;
+        return `<tr><td ${tdL(active)}><span style="color:darkorange;margin-right:5px">★</span>Conjugate — ${label}</td><td ${td(active)}>${f1(st.carrier)}</td><td ${td(active)}>${f1(st.solute)}</td><td ${td(active)}>${f1(st.solvent)}</td></tr>`;
       }).join('')
     : '';
 

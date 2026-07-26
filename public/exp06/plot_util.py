@@ -137,9 +137,9 @@ def _equil_traces(system: EquilibriumSystem) -> list[go.BaseTraceType]:
     c_pts = system.equil_data[:, 0].tolist()
     pts = go.Scatterternary(
         a=a_pts, b=b_pts, c=c_pts,
-        mode="markers", name="Equil. data",
+        mode="markers", name="Equilibrium data",
         marker=dict(color="black", size=7),
-        hovertemplate=f"{d}:%{{c:.2f}}%  {s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%<extra>Equil. data</extra>",
+        hovertemplate=f"{d}:%{{c:.2f}}%  {s}:%{{a:.2f}}%  {sv}:%{{b:.2f}}%<extra>Equilibrium data</extra>",
     )
     return [curve, pts]
 
@@ -233,7 +233,7 @@ def _en1_point_trace(pt_En1: tuple[float, float], labels: dict) -> go.Scatterter
 # legend only needs the handful a label can't stand in for. Anything not named
 # here is dropped from the legend by _trim_legend, including traces added later.
 _LEVER_LEGEND = frozenset({
-    "Binodal curve", "Equil. data",
+    "Binodal curve", "Equilibrium data",
     "E<sub>1</sub>", "E<sub>1</sub>'", "M", "M'",
 })
 
@@ -362,7 +362,7 @@ def _cart_equil_traces(system: EquilibriumSystem, hover_comp: bool = False) -> l
     )
     equil = go.Scatter(
         x=system.x_equil, y=system.y_equil,
-        mode="markers", name="Equil. data",
+        mode="markers", name="Equilibrium data",
         marker=dict(color="black", size=7),
     )
     if hover_comp:
@@ -379,7 +379,7 @@ def _cart_equil_traces(system: EquilibriumSystem, hover_comp: bool = False) -> l
             customdata=_comp_customdata(system.x_equil, system.y_equil),
             hovertemplate=(
                 f"{ca}:%{{customdata[0]:.2f}}%  {so}:%{{customdata[1]:.2f}}%  "
-                f"{sv}:%{{customdata[2]:.2f}}%<extra>Equil. data</extra>"
+                f"{sv}:%{{customdata[2]:.2f}}%<extra>Equilibrium data</extra>"
             ),
         )
     return [binodal, equil]
@@ -496,7 +496,7 @@ def fig_conjugate_curve(
     traces.append(go.Scatter(
         x=[p[0] for p in conjugate.aux_points],
         y=[p[1] for p in conjugate.aux_points],
-        mode="markers", name="Aux. intersections",
+        mode="markers", name="Auxiliary intersections",
         marker=dict(color="darkorange", size=7, symbol="circle-open"),
         showlegend=False,
     ))
@@ -531,10 +531,10 @@ def fig_conjugate_curve(
     traces.append(go.Scatter(
         x=[_px], y=[_py],
         mode="markers",
-        name="Plait pt. (Conj. Curve)",
+        name="Plait point (Conjugate)",
         marker=dict(color="darkorange", size=14, symbol="star"),
         hovertemplate=(
-            f"<b>Plait pt. (Conj. Curve)</b><br>"
+            f"<b>Plait point (Conjugate)</b><br>"
             f"{_cabbr}:{_wbp:.2f}%  {_sabbr}:{_wpa:.2f}%  {_svabbr}:{_ww:.2f}%<extra></extra>"
         ),
     ))
@@ -572,7 +572,7 @@ def fig_hunter_nash(
 
     # Key stream and operating points. Every one is labelled on the plot, so
     # none of them takes a legend entry — the legend stays down to the three
-    # things it can't say in place: Binodal curve, Equil. data, Stages.
+    # things it can't say in place: Binodal curve, Equilibrium data, Stages.
     #
     # pt_E1 is deliberately not drawn here: it is exactly stage 1's E (the
     # solver starts there), which the stage loop below already marks and
@@ -653,7 +653,7 @@ def fig_interpolated_tie_lines(
         line=dict(color="darkorange", width=2),
     ))
     traces.append(_cart_point_trace(
-        conjugate.pt_plait, "Plait pt. (Conj. Curve)", "darkorange", symbol="star", size=14,
+        conjugate.pt_plait, "Plait point (Conjugate)", "darkorange", symbol="star", size=14,
         labels=_lb(system), show_text=False,
     ))
 
@@ -1245,7 +1245,7 @@ def fig_plait_loglog(data):
         mode='markers',
         marker=dict(symbol='square', color='black', size=6),
         showlegend=False,
-        hovertemplate='(%{x:.3f}, %{y:.3f})<extra>Equil. data</extra>',
+        hovertemplate='(%{x:.3f}, %{y:.3f})<extra>Equilibrium data</extra>',
     ))
 
     # 3. Tie-line linear fit (no hover, no legend)
