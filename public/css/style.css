@@ -501,11 +501,24 @@
        rules above, which are tuned for the light data panel. */
     .corr-stats-box.titr-formula-box {
       margin-top: 4px;
+      padding: 8px 13px 7px;
+      line-height: 1.35;
       background: rgba(255,255,255,.05);
       border-color: rgba(255,255,255,.09);
     }
-    .corr-stats-box.titr-formula-box .fml-label { color: #94a3b8; }
-    .corr-stats-box.titr-formula-box .fml-eq { font-size: 12.5px; color: #cbd5e1; }
+    .corr-stats-box.titr-formula-box .fml-label { color: #94a3b8; margin-bottom: 2px; }
+    .corr-stats-box.titr-formula-box .fml-eq { font-size: 12.5px; color: #cbd5e1; padding-bottom: 0; }
+    .corr-stats-box.titr-formula-box .fml-note { font-size: 11px; color: #94a3b8; line-height: 1; }
+    /* Both lines render in KaTeX display mode, whose .katex-display blocks
+       carry margin: 1em 0 — that, not line-height, is what inflates this
+       compact box vertically. Trim it: small gap under the equation, note
+       hugging right below. */
+    .corr-stats-box.titr-formula-box .fml-eq .katex-display { margin: 8px 0 9px; }
+    .corr-stats-box.titr-formula-box .fml-note .katex-display { margin: 0 0 2px; }
+    /* KaTeX upscales its glyphs 1.21x to match surrounding x-height — undo it
+       here so the note really is smaller than the equation, and its line box
+       shrinks with it. */
+    .corr-stats-box.titr-formula-box .fml-note .katex { font-size: 1em; }
 
     /* ── Contact tab ── */
     .tab-contact { color: var(--blue) !important; }

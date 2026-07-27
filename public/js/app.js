@@ -629,6 +629,7 @@ document.addEventListener('keydown', e => {
 const _TITR_LATEX = 'C_{\\mathrm{solute}} = \\dfrac{C_{\\mathrm{NaOH}} \\cdot V_{\\mathrm{NaOH}} \\cdot f}{V_{\\mathrm{aliquot}}}';
 window.addEventListener('load', () => {
   document.getElementById('titr-formula-eq').innerHTML = _katex(_TITR_LATEX);
+  document.getElementById('titr-formula-note').innerHTML = _katex('f\\text{: dilution factor}');
 });
 
 // ── Core Python computation ────────────────────────────────────────────────
