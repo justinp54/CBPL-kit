@@ -663,7 +663,7 @@ pt_M, pt_P = find_M_and_P(pt_E1, pt_Rn, pt_En1, pt_R0)
 # infinite stages; S_max: above this M leaves the two-phase region
 # entirely). Falls back to the old fixed 0.40-0.97 span if either can't
 # be found (e.g. a solutropic system — see find_smin_over_f's docstring).
-_sf_frac_min = find_smin_over_f(system, pt_R0, pt_Rn, pt_En1, conjugate)
+_sf_frac_min = find_smin_over_f(system, pt_R0, pt_Rn, pt_En1)
 _sf_frac_max = find_smax_over_f(system, pt_R0, pt_En1)
 sf_frac_min = round(_sf_frac_min, 4) if _sf_frac_min is not None else 0.40
 sf_frac_max = round(_sf_frac_max, 4) if _sf_frac_max is not None else 0.97

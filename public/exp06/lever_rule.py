@@ -175,88 +175,19 @@ def _operating_point_at_frac(
     return pt_P
 
 
-def _interp_tie_field(
-    system,
-    conjugate,
-    n_samples: int = 240,
-    min_len: float = 1.0,
-) -> list[tuple[tuple[float, float], tuple[float, float]]]:
-    """The continuum of interpolated tie lines the Hunter-Nash solver
-    actually walks, built with the same geometry as
-    HunterNashSolver._E_to_R: for a point E on the left (solvent-rich)
-    equilibrium branch, drop a slope -√3 auxiliary line to the conjugate
-    curve, then a slope +√3 line from that intersection to the right
-    (carrier-rich) branch gives the conjugate raffinate R. Sampling E
-    densely over the left branch reproduces the interpolated tie-line
-    field, of which the measured tie lines are only a sparse subset.
-
-    E is sampled from the left domain edge up to the plait approximation
-    (the solver can step E anywhere in that range). Degenerate near-plait
-    tie lines, where E and R have collapsed onto each other, are dropped
-    (shorter than `min_len` in cartesian composition units): their
-    direction — and hence their intersection with any operating line — is
-    numerically meaningless.
-
-    Reimplements the E→R construction locally rather than importing
-    HunterNashSolver: hunter_nash imports lever_rule, so the reverse
-    import would be circular.
-    """
-    lo_E, hi_E = system.x_domain[0], system.x_plait_approx
-    lo_R, hi_R = conjugate.pt_plait[0], system.x_domain[1]
-    m = np.sqrt(3)
-
-    field: list[tuple[tuple[float, float], tuple[float, float]]] = []
-    for xE in np.linspace(lo_E, hi_E, n_samples):
-        yE = float(system.spline(xE))
-        x_int, y_int = conjugate.intersect_line(-m, xE, yE)
-
-        def line(x: float, xi=x_int, yi=y_int) -> float:
-            return m * (x - xi) + yi
-
-        f_lo = line(lo_R) - float(system.spline(lo_R))
-        f_hi = line(hi_R) - float(system.spline(hi_R))
-        if f_lo * f_hi < 0:
-            xR = brentq(lambda x: line(x) - float(system.spline(x)), lo_R, hi_R)
-        else:
-            # Close-miss allowance mirrors HunterNashSolver._find_on_spline:
-            # accept the nearer branch endpoint if the miss is small,
-            # otherwise this E has no conjugate R on the modeled envelope.
-            x_star, f_star = (lo_R, f_lo) if abs(f_lo) < abs(f_hi) else (hi_R, f_hi)
-            if abs(f_star) >= 0.5:
-                continue
-            xR = x_star
-        pt_E = (float(xE), yE)
-        pt_R = (float(xR), float(line(xR)))
-        if (pt_R[0] - pt_E[0]) ** 2 + (pt_R[1] - pt_E[1]) ** 2 < min_len ** 2:
-            continue
-        field.append((pt_E, pt_R))
-    return field
-
-
 def find_smin_construction(
     system,
     pt_R0: tuple[float, float],
     pt_Rn: tuple[float, float],
     pt_En1: tuple[float, float],
-    conjugate,
     n_scan: int = 300,
 ) -> dict | None:
     """
     S_min/F is the largest `frac` (solvent mass share) at which the
     operating point P(frac) — see _operating_point_at_frac — lands exactly
-    on a tie line, extended. Below that ratio, that stage's operating step
-    and its equilibrium tie line coincide (zero driving force there), so no
-    finite number of stages can pass it.
-
-    The tie lines searched are the *interpolated* continuum the Hunter-Nash
-    solver actually steps along (see _interp_tie_field), not only the
-    sparse measured tie lines. The solver walks conjugate-interpolated tie
-    lines at every stage, so the pinch that limits it lives in that same
-    continuum; searching only the measured subset can miss the true, closer
-    pinch and overstate how low S/F can go. The measured tie lines are
-    added explicitly as well, for robustness — the continuum already
-    contains their neighborhood, but including the exact measured points
-    costs nothing and guards against a coarse sampling straddling one.
+    on a real measured tie line, extended. Below that ratio, that stage's
+    operating step and its equilibrium tie line coincide (zero driving
+    force there), so no finite number of stages can pass it.
 
     P always lies on the fixed Rn-En1 line, so "P(frac) lands on tie line
     i" is just "P(frac)'s position along Rn-En1 equals tie line i's own
@@ -277,21 +208,21 @@ def find_smin_construction(
 
     So: scan frac from just under 1 down to just above 0, tracking where
     P(frac) sits along Rn-En1, and stop at the first frac (i.e. the
-    largest) where that position crosses any tie line's own position on
-    the same line. That's S_min. Large jumps between consecutive scan
+    largest) where that position crosses any real tie line's own position
+    on the same line. That's S_min. Large jumps between consecutive scan
     samples are P(frac) sweeping through the point at infinity (a normal
     feature of this parametrization, not a real crossing) and are ignored.
 
     Returns a dict with every point of that construction (pt_tie_L/R: the
-    interpolated tie line that produced the pinch; pt_P_pinch; pt_E1_pinch;
+    real tie line that produced the pinch; pt_P_pinch; pt_E1_pinch;
     pt_Mmin; frac_min), for building a reference figure that shows the
     construction itself — or None if no tie line is ever crossed (a
-    genuine gap: this system's tie-line field alone doesn't imply a
+    genuine gap: this system's real tie-line data alone doesn't imply a
     finite-stage limit by this method).
     """
     L_ol = _line_coeffs(pt_En1, pt_Rn)
     tie_t = []
-    for pt_L, pt_R in _interp_tie_field(system, conjugate) + list(system.tie_coords):
+    for pt_L, pt_R in system.tie_coords:
         P = _intersect(_line_coeffs(pt_L, pt_R), L_ol)
         if P is None:
             continue
@@ -351,10 +282,9 @@ def find_smin_over_f(
     pt_R0: tuple[float, float],
     pt_Rn: tuple[float, float],
     pt_En1: tuple[float, float],
-    conjugate,
 ) -> float | None:
     """S_min/F as `frac` (solvent mass share, same as the slider) — see find_smin_construction."""
-    c = find_smin_construction(system, pt_R0, pt_Rn, pt_En1, conjugate)
+    c = find_smin_construction(system, pt_R0, pt_Rn, pt_En1)
     if c is None:
         return None
     return c['frac_min']
