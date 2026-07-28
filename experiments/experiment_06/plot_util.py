@@ -689,7 +689,7 @@ def fig_interpolated_tie_lines(
     fig = go.Figure(data=traces)
     y_min = min(p[1] for p in conjugate.aux_points)
     fig.update_layout(**_cart_layout(
-        "Interpolated Tie-Lines", y_range=(y_min - 8, 100)
+        "Interpolated Tie-Lines (Stages)", y_range=(y_min - 8, 100)
     ))
     return fig
 
@@ -937,9 +937,9 @@ def fig_sf_stage_trend(
         hovertemplate='S/F %{x:.2f}<br>%{y:.1f} stages<extra></extra>',
     ))
     fig.update_layout(
-        title=dict(text='Stages needed as S:F falls', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='S/F (w/w)', font=dict(size=10)), **_axis),
-        yaxis=dict(title=dict(text='Theoretical stages', font=dict(size=10)), rangemode='tozero', **_axis),
+        title=dict(text='Stages vs S/F ratio', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text='Solvent-to-Feed ratio', font=dict(size=10)), **_axis),
+        yaxis=dict(title=dict(text='Theoretical Stages (N)', font=dict(size=10)), rangemode='tozero', **_axis),
         margin=dict(l=34, r=34, t=28, b=36),
         width=320, height=260,
         plot_bgcolor='white',
@@ -996,9 +996,9 @@ def fig_feed_stage_trend(
         hovertemplate=f'Feed {s} %{{x:.0f}} wt%<br>%{{y:.1f}} stages<extra></extra>',
     ))
     fig.update_layout(
-        title=dict(text=f'Stages needed vs Feed {s}', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text=f'Feed {s} (wt%)', font=dict(size=10)), **_axis),
-        yaxis=dict(title=dict(text='Theoretical stages', font=dict(size=10)), rangemode='tozero', **_axis),
+        title=dict(text='Stages vs Feed Composition', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
+        xaxis=dict(title=dict(text=f'{s} fraction in feed (wt%)', font=dict(size=10)), **_axis),
+        yaxis=dict(title=dict(text='Theoretical Stages (N)', font=dict(size=10)), rangemode='tozero', **_axis),
         margin=dict(l=34, r=34, t=28, b=36),
         width=320, height=260,
         plot_bgcolor='white',
