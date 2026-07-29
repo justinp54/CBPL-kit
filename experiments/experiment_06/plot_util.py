@@ -184,7 +184,7 @@ def _point_trace(
         text=[label],
         textposition=textposition,
         hovertemplate=(
-            f"<b>{label}</b><br>{s}:{wpa:.2f}%  {sv}:{ww:.2f}%  {d}:{wbp:.2f}%<extra></extra>"
+            f"<b>{label}</b><br>{d}:{wbp:.2f}%  {s}:{wpa:.2f}%  {sv}:{ww:.2f}%<extra></extra>"
         ),
     )
 
@@ -434,7 +434,7 @@ def _cart_point_trace(
         text=[label] if show_text else None,
         textposition="top center",
         hovertemplate=(
-            f"<b>{label}</b><br>{s}:{wpa:.2f}%  {d}:{wbp:.2f}%  {sv}:{ww:.2f}%<extra></extra>"
+            f"<b>{label}</b><br>{d}:{wbp:.2f}%  {s}:{wpa:.2f}%  {sv}:{ww:.2f}%<extra></extra>"
         ),
     )
 
@@ -614,7 +614,7 @@ def fig_hunter_nash(
             textfont=dict(size=10),
             customdata=[[wpa_E, s.comp_E[1], s.comp_E[2]],
                         [wpa_R, s.comp_R[1], s.comp_R[2]]],
-            hovertemplate=f"{lb['solute']['abbr']}:%{{customdata[0]:.2f}}%  {lb['carrier']['abbr']}:%{{customdata[1]:.2f}}%  {lb['solvent']['abbr']}:%{{customdata[2]:.2f}}%<extra>%{{text}}</extra>",
+            hovertemplate=f"{lb['carrier']['abbr']}:%{{customdata[1]:.2f}}%  {lb['solute']['abbr']}:%{{customdata[0]:.2f}}%  {lb['solvent']['abbr']}:%{{customdata[2]:.2f}}%<extra>%{{text}}</extra>",
             showlegend=False,
         ))
         if i < len(steps):
@@ -644,7 +644,8 @@ def fig_interpolated_tie_lines(
     N_theory: float,
 ) -> go.Figure:
     """Fig 2(b) — Interpolated tie lines via conjugate curve (Cartesian, extrapolation visible)."""
-    traces = _cart_triangle_traces(system) + _cart_equil_traces(system)
+    lb = _lb(system)
+    traces = _cart_triangle_traces(system) + _cart_equil_traces(system, hover_comp=True)
 
     # Conjugate curve — full range, no triangle mask
     traces.append(go.Scatter(
@@ -654,7 +655,7 @@ def fig_interpolated_tie_lines(
     ))
     traces.append(_cart_point_trace(
         conjugate.pt_plait, "Plait point (Conjugate)", "darkorange", symbol="star", size=14,
-        labels=_lb(system), show_text=False,
+        labels=lb, show_text=False,
     ))
 
     # Legend-only entry: green line matching the tie-line segment
@@ -674,6 +675,8 @@ def fig_interpolated_tie_lines(
             text=[f"E<sub>{i}</sub>", f"R<sub>{i}</sub>"],
             textposition=["middle right", "middle left"],
             textfont=dict(size=10),
+            customdata=[s.comp_E, s.comp_R],
+            hovertemplate=f"{lb['carrier']['abbr']}:%{{customdata[1]:.2f}}%  {lb['solute']['abbr']}:%{{customdata[0]:.2f}}%  {lb['solvent']['abbr']}:%{{customdata[2]:.2f}}%<extra>%{{text}}</extra>",
             showlegend=False,
         ))
 
