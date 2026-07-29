@@ -79,6 +79,11 @@ def _valid_mask(xs: np.ndarray, ys: np.ndarray) -> np.ndarray:
 # Base layout
 # ---------------------------------------------------------------------------
 
+# S/F limit colours, shared with the slider markers and reference cards in
+# style.css (.sf-marker-min / .sf-marker-max, .sf-limit-min / .sf-limit-max).
+_SF_MIN_COLOR = '#1a8a5f'
+_SF_MAX_COLOR = '#c0392b'
+
 _TERNARY_TITLE_PX = 14   # Plotly's own default for these titles — the size they render at
 _TERNARY_GAP_PX   = 10   # blank-line font: the b/c gap is 1.3x this, so ~13px
 
@@ -941,23 +946,72 @@ def fig_sf_stage_trend(
     ))
     fig.update_layout(
         title=dict(text='Stages vs S/F ratio', font=dict(size=10, color='#0f2744'), x=0, xanchor='left'),
-        xaxis=dict(title=dict(text='Solvent-to-Feed ratio', font=dict(size=10)), **_axis),
+        xaxis=dict(title=dict(text='S/F ratio by mass', font=dict(size=10)), **_axis),
         yaxis=dict(title=dict(text='Theoretical Stages (N)', font=dict(size=10)), rangemode='tozero', **_axis),
         margin=dict(l=34, r=34, t=28, b=36),
         width=320, height=260,
         plot_bgcolor='white',
         paper_bgcolor='white',
     )
-    fig.add_vline(
-        x=frac_min / (1 - frac_min),
-        line_dash='dash',
-        line_color='#1a8a5f',
-        line_width=1,
-        annotation_text='(S/F)<sub>min</sub>',
-        annotation_position='bottom right',
-        annotation_font_size=9,
-        annotation_font_color='#1a8a5f',
-    )
+    # Both limits are drawn so the axis spans the whole feasible window: the
+    # sampled points stop a little short of each end (see stage_count_trend),
+    # and without the S_max line the chart looks cut off well below the ratio
+    # the (S/F)max card reports.
+    # Limit colours match the slider markers and the reference cards below the
+    # chart (.sf-marker-min / .sf-marker-max in style.css): green for S_min,
+    # red for S_max. Keep the three in step if either is ever restyled.
+    r_min = frac_min / (1 - frac_min)
+    r_max = frac_max / (1 - frac_max) if frac_max < 1.0 else None
+    on_scale = r_max is not None and r_max <= max(xs) * 1.15
+
+    limits = [(r_min, '(S/F)<sub>min</sub>', 'bottom right', _SF_MIN_COLOR)]
+    if on_scale:
+        limits.append((r_max, '(S/F)<sub>max</sub>', 'bottom left', _SF_MAX_COLOR))
+    for x_lim, label, side, colour in limits:
+        fig.add_vline(
+            x=x_lim,
+            line_dash='dash',
+            line_color=colour,
+            line_width=1,
+            annotation_text=label,
+            annotation_position=side,
+            annotation_font_size=9,
+            annotation_font_color=colour,
+        )
+
+    # The axis starts at 0, which already leaves the S_min line inset by r_min;
+    # give the S_max line the same gap on the right so the pair reads as a
+    # matched frame rather than one line pinned closer to the edge than the
+    # other. (A floor keeps the label from touching the frame when r_min is
+    # tiny.) With no S_max line the trailing room is for the break squiggle.
+    if on_scale:
+        fig.update_xaxes(range=[0, r_max + max(r_min, r_max * 0.02)])
+    else:
+        fig.update_xaxes(range=[0, max(xs) * 1.09])
+
+    # S_max can sit orders of magnitude past the range worth plotting (see
+    # stage_count_trend's trimming). Drawing its line out there would stretch
+    # the axis across empty space, so the axis is cut short and the omitted
+    # stretch gets the usual break squiggle, with the value named beside it.
+    # frac_max == 1.0 (two-phase all the way to pure solvent) has no finite
+    # S_max at all, and is left unmarked; the reference card reads "—" too.
+    if r_max is not None and not on_scale:
+        fig.add_shape(
+            type='path',
+            # Flat tilde straddling the axis line (paper y=0), wider than it is
+            # tall so it reads as a break in the axis rather than a glyph.
+            path='M 0.925,0 Q 0.9425,0.026 0.960,0 Q 0.9775,-0.026 0.995,0',
+            xref='paper', yref='paper',
+            line=dict(color=_SF_MAX_COLOR, width=1.2),
+        )
+        fig.add_annotation(
+            xref='paper', yref='paper', x=1, y=0.04,
+            xanchor='right', yanchor='bottom',
+            text=f'(S/F)<sub>max</sub> {r_max:,.0f}',
+            showarrow=False,
+            font=dict(size=9, color=_SF_MAX_COLOR),
+            bgcolor='rgba(255,255,255,0.85)',
+        )
     return fig
 
 

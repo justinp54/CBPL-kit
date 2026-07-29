@@ -165,8 +165,26 @@ def stage_count_trend(
     docstring for why that boundary itself is avoided).
     """
     points: list[tuple[float, float]] = []
-    for t in np.linspace(0.9, 0.05, n):
-        frac = frac_min + t * (frac_max - frac_min)
+    # Swept evenly in log(S/F), not in `frac`. The chart this feeds plots
+    # S/F = frac/(1-frac), which runs away as frac approaches 1, so an even
+    # sweep in `frac` piles nearly every sample into the low-S/F end: 90% of
+    # the way along frac is only S/F 6 of a 12-wide range, and the plot looks
+    # truncated. Log spacing keeps samples dense down where N climbs steeply
+    # toward S_min and still reaches the S_max end.
+    #
+    # frac_max is 1.0 for systems that stay two-phase up to pure solvent, where
+    # S/F has no finite maximum to sweep to; those fall back to the old even
+    # sweep in `frac`, which needs no ratio and so no division.
+    log_sweep = frac_max < 1.0
+    if log_sweep:
+        ln_lo = np.log(frac_min / (1.0 - frac_min))
+        ln_hi = np.log(frac_max / (1.0 - frac_max))
+    for t in np.linspace(0.98 if log_sweep else 0.9, 0.05, n):
+        if log_sweep:
+            ratio = np.exp(ln_lo + t * (ln_hi - ln_lo))
+            frac = float(ratio / (1.0 + ratio))
+        else:
+            frac = frac_min + t * (frac_max - frac_min)
         pt_Mp = mixing_point(pt_R0, pt_En1, mass_A=1 - frac, mass_B=frac)
         pt_E1p = find_E1_prime(pt_Rn, pt_Mp, system.spline)
         if pt_E1p is None:
@@ -190,7 +208,36 @@ def stage_count_trend(
                 break
             continue
         points.append((float(frac), N))
-    return points
+    return _trim_flat_head(points)
+
+
+def _trim_flat_head(
+    points: list[tuple[float, float]],
+    tol: float = 0.02,
+    keep: int = 3,
+) -> list[tuple[float, float]]:
+    """Drop the run of leading samples whose N has already bottomed out.
+
+    The sweep runs high-S/F first, and that is where N flattens: past a
+    certain ratio, more solvent buys no further stage reduction. For systems
+    whose S_max is hundreds of times S_min that plateau is nearly every
+    sample, and plotting all of it squeezes the part that actually varies
+    into the left edge of the axis. A few plateau points are kept so the
+    flattening is still visible; systems that vary right up to S_max (their
+    plateau is one point or none) come back untouched.
+
+    `tol` is in stages, and 0.02 is well under the one decimal the chart
+    shows, so only genuinely indistinguishable points are trimmed.
+    """
+    if not points:
+        return points
+    floor = min(N for _, N in points)
+    last_flat = -1
+    for i, (_, N) in enumerate(points):
+        if N - floor > tol:
+            break
+        last_flat = i
+    return points[max(0, last_flat - keep):]
 
 
 def feed_stage_count_trend(
