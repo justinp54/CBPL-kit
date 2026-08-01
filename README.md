@@ -102,5 +102,5 @@ Source: https://github.com/justinp54/CBPL-kit
 
 ## Contributing
 
-See [`CBPL_PATTERNS.md`](CBPL_PATTERNS.md) for coding conventions and
+See [`AGENTS.md`](AGENTS.md) for coding conventions and patterns, and
 [`ROADMAP.md`](ROADMAP.md) for planned features.
