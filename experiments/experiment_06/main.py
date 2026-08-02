@@ -25,6 +25,7 @@ try:
         MW_PA,
         RHO_BP,
         RHO_PA,
+        RHO_W,
         V_E1,
         V_R0,
         V_RN,
@@ -46,6 +47,7 @@ except ImportError:
         MW_PA,
         RHO_BP,
         RHO_PA,
+        RHO_W,
         V_E1,
         V_R0,
         V_RN,
@@ -110,8 +112,13 @@ def compute_stream_points(system: EquilibriumSystem) -> StreamPoints:
 
 
 def compute_mass_flows(wpa_R0: float, wbp_R0: float) -> tuple[float, float]:
-    """Mass flow rates [g/min]: (solvent En1, feed R0)."""
-    mass_En1 = FLOW_SOLVENT_ML_MIN * RHO_BP
+    """Mass flow rates [g/min]: (solvent En1, feed R0).
+
+    En1 is pure solvent, so it takes RHO_W, not the carrier density. Getting
+    this wrong inflates the solvent mass, which slides the mixture point M
+    toward the solvent vertex and corrupts S/F and the stage count with it.
+    """
+    mass_En1 = FLOW_SOLVENT_ML_MIN * RHO_W
     vol_per_g = wpa_R0 / 100.0 / RHO_PA + wbp_R0 / 100.0 / RHO_BP
     mass_R0 = FLOW_FEED_ML_MIN / vol_per_g
     return mass_En1, mass_R0
@@ -130,7 +137,7 @@ def main(output_dir: str | Path = ".") -> None:
     system = EquilibriumSystem()
     print(f"  x-intercepts (spline): {system.x_intercepts}")
 
-    print("Fitting conjugate curve (degree-4 polynomial)...")
+    print("Building conjugate curve...")
     conjugate = ConjugateCurve(system)
     pp_wpa, pp_wbp, pp_ww = xy_to_comp(*conjugate.pt_plait)
     print(f"  Plait point: PA={pp_wpa:.2f}%  n-BP={pp_wbp:.2f}%  Water={pp_ww:.2f}%")
