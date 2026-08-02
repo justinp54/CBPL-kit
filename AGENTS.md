@@ -339,4 +339,4 @@ A new computation module should arrive with its own `test_*.py`.
 - Confirm with user before committing
 - Commit messages: short, conventional prefix (feat, fix, chore, docs)
 - No Co-Authored-By needed
-- Vercel Hobby: only repo owner triggers deploys (teammate push requires owner empty commit)
+- Pushing to `main` auto-deploys to Vercel; this works for either collaborator's push
