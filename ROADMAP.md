@@ -119,6 +119,11 @@ submission time. That is the whole reproducibility surface. Run
 - [ ] **README + Contact tab** — DOI badge and version, so a visitor can tell which
       site state corresponds to the archive
 - [ ] **Re-shoot paper screenshots** if any figure shows a tab absent from the archive
+- [ ] **Guide tab "Before you start" block** — `public/docs/guide.md` holds a commented-out
+      slot for the laboratory handout PDF and the walkthrough video. Uncomment each line
+      once its file exists. Deliberately not announced in the UI beforehand: the guide is
+      student-facing and should not advertise an unpublished paper.
+- [ ] **Cite / technical docs links** in the Guide, once the DOI exists
 
 Cite the **concept DOI** (all versions) in the paper, not a version DOI.
 
