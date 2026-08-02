@@ -1,63 +1,115 @@
 # CBPL-kit — Agent Operating Rules
 
-Authoritative guide for AI coding assistants working in this repository.
+Single source of truth for AI coding assistants. `CLAUDE.md` imports this file, so both
+Claude Code and other agents read the same instructions — edit here, never in two places.
 
-## Project Overview
+**Humans should read `README.md` instead** — it covers what the project is, how to run it,
+and the repository layout. This file is about how to change the code without breaking it.
 
-CBPL-kit provides interactive simulation tools for SNU CBE lab experiments.
+- **Web app**: `cbpl-kit.vercel.app` — Pyodide (Python runs in the browser, no server)
+- **Scope**: Experiment 06 (LLE Hunter-Nash) is the deployed tool and the subject of the
+  paper. Experiments 04 and 05 are Python-only course modules with no web integration.
 
-- **Web app**: `cbpl-kit.vercel.app` — Pyodide (Python runs in browser, no server)
-- **Python package**: `experiments/experiment_NN/` — importable modules + Jupyter notebooks
-- **Current scope**: Experiment 06 (LLE Hunter-Nash) is the main web app. Experiments 04, 05 exist as Python modules only.
+---
 
-**Read `CLAUDE.md` → "Domain Primer" before touching any calculation module.** This is
-liquid-liquid extraction: the numbers have physical meaning, and neither ruff nor pytest
-can tell you that a result is thermodynamically impossible. The primer lists the
-invariants and the mistakes this codebase has already made.
+## Domain Primer
 
-## Repository Layout
+**Read this before touching any calculation module.** Neither ruff nor pytest can tell you
+that a result is thermodynamically impossible.
 
-```
-public/
-  index.html           ← HTML structure only (tabs, sidebar, form, data panel)
-  css/style.css        ← All CSS (teal-blue palette, IBM Plex Sans)
-  js/app.js            ← All JS logic (Pyodide, Plotly, forms, Contact pane)
-  exp06/               ← Python modules (browser serving copy)
-  systems/             ← YAML system definition files
-    index.json         ← Dropdown manifest (filename list)
-  docs/guide.md        ← Guide tab markdown
-  images/              ← Static assets (whitelisted in .gitignore)
-experiments/
-  experiment_04/       ← Python only (no web integration)
-  experiment_05/       ← Python only (no web integration)
-  experiment_06/       ← Python module source + Jupyter notebooks
-    systems/           ← YAML (must stay in sync with public/systems/)
-    tests/             ← pytest suite (the only pyproject testpaths entry)
-scripts/
-  check_dual_copy.py   ← Enforces the file sync rule below
-.github/workflows/
-  ci.yml               ← ruff + dual-copy check + pytest, on push to main and every PR
-  validate-system-submission.yml  ← Runs validate_system.py on `system`-labelled issues
-dev_server.py          ← Local dev server (port 8080)
-```
+Liquid-liquid extraction (LLE) separates a **solute** out of a **carrier** liquid by
+contacting it with a **solvent** that dissolves the solute but barely mixes with the
+carrier. The **Hunter-Nash method** determines how many equilibrium stages a
+counter-current extraction column needs, by geometric construction on a **ternary phase
+diagram**. Undergraduates normally draw this by hand on graph paper; this tool does the
+construction numerically so they can explore "what-if" instead of redrawing.
+
+`public/docs/guide.md` is the student-facing explanation. This section is the minimum
+needed to avoid making physically wrong changes.
+
+### Vocabulary
+
+| Term | Meaning |
+|------|---------|
+| **Ternary diagram** | Triangle where each point is one 3-component composition; each vertex is a pure component |
+| **Binodal / equilibrium curve** | Boundary of the two-phase region. Inside it a mixture splits into two phases; outside it stays one phase |
+| **Tie line** | Segment joining the two phases that a mixture inside the envelope actually splits into. Both endpoints lie **on** the binodal |
+| **Conjugate curve** | Auxiliary construction used to interpolate a tie line at any composition, rather than only at the measured ones |
+| **Plait point** | Where the two phases become identical and the tie line shrinks to zero length. The conjugate curve **terminates** here |
+| **Raffinate (R)** | Carrier-rich product, depleted of solute — **phase 1** |
+| **Extract (E)** | Solvent-rich product, enriched in solute — **phase 3** |
+| **Mixing point M** | Composition of the overall mixture; found by the lever rule |
+| **Operating point P** | Construction pole. Every stage's passing streams lie on a line through P |
+| **S/F ratio** | Solvent-to-feed ratio — the main design knob |
+| **N** | Number of theoretical stages |
+| **S_min** | Smallest S/F at which the separation is still possible with finite stages |
+| **Type I system** | Only the carrier-solvent pair is partially miscible; the solute is miscible with both. Hunter-Nash as implemented here assumes this |
+
+### Physical invariants
+
+Check any numerical change against these before believing it:
+
+- The three mass fractions of a composition **always sum to 100 %**. A change that
+  adjusts two of them and leaves the third is wrong.
+- **Tie-line endpoints lie on the binodal.** An endpoint drifting off the curve means
+  the interpolation is broken, not that the data is unusual.
+- **The conjugate curve ends at the plait point.** Extrapolating past it is meaningless
+  — beyond that point there are no two phases to connect.
+- **N is a positive real, and a fractional value is correct**, not a bug to be rounded
+  away. It means the last stage is partial.
+- **S_min is derived from real measured tie lines only** — never from interpolated
+  ones. Changing this silently changes every published S_min number.
+- Composition ↔ concentration conversion is **iterative**, because a sample's density
+  depends on its own solute content. Do not substitute the pure-carrier or pure-solvent
+  density; avoiding exactly that approximation is one of the paper's claims.
+
+### Mistakes this codebase has already made
+
+- **`S_min` scanned only one leg of the sweep.** `P(frac)` moves non-monotonically along
+  the Rn-En1 line and can pass through infinity. An earlier version checked only the
+  `t > 1` leg; it happened to work for every system tried at the time, then reported
+  "no S_min" for `w_acoh_dipe`, whose tie lines sit on the negative leg. The `JUMP`
+  constant in `find_smin_construction` guards the infinity crossing — do not remove it.
+- **The conjugate curve used to be a degree-4 polynomial fit**, which produced sharp
+  kinks near the plait point. It is now branch-Hermite with a clamped-tangent extension.
+  Any document or comment still mentioning `degree` or `polyfit` for it is stale.
+- A plait point / conjugate change propagates to **N**, so it is never a local edit.
+
+---
+
+## Pyodide constraints
+
+Anything imported by `public/exp06/*.py` is **downloaded into the user's browser**. The
+runtime already loads numpy, scipy, pyyaml, and plotly, and cold start is already slow;
+every added dependency is paid by every user, every first visit.
+
+Pyodide is also single-threaded with no process fork, so `multiprocessing` / `joblib`
+cannot run there at all. Its filesystem is flat, which is why these modules use flat
+imports (`from ternary import ...`) rather than package-relative ones — do not paper over
+that with `try/except` import blocks.
+
+These limits apply to modules that ship to `public/exp06/`. Code under `experiments/` that
+never reaches the browser is not bound by them.
 
 External JS/CSS in `index.html` is **version-pinned with SRI hashes** (Pyodide, Plotly,
 marked, js-yaml, JSZip, SheetJS, KaTeX). Never loosen a pin to `@latest` — the pinning is
 what lets an archived snapshot of this repo reproduce the same results years later.
 
-## Critical: File Sync Rule
+---
 
-`public/exp06/` and `experiments/experiment_06/` Python files must always be identical.
+## Dual-copy Rule
+
+`public/exp06/*.py` and `experiments/experiment_06/*.py` must always be identical.
 
 ```bash
 cp experiments/experiment_06/{config,ternary,equilibrium,conjugate,correlation,hunter_nash,lever_rule,plot_util,validate_system}.py public/exp06/
 python scripts/check_dual_copy.py    # exits 0 + "OK", or prints unified diffs
 ```
 
-Forgetting this means the web app uses stale code while the Python package is updated.
-CI runs the check on every push and PR, so a missed copy fails the build. Files that
-exist only in `experiments/experiment_06/` (`main.py`, `__init__.py`) are exempt; the
-check also compares every YAML listed in `public/systems/index.json`.
+The deployed site runs the `public/exp06/` copy, so a missed sync means users get stale
+code. CI runs the check on every push and PR. Files that exist only in
+`experiments/experiment_06/` (`main.py`, `__init__.py`) are exempt; the check also
+compares every YAML listed in `public/systems/index.json`.
 
 > **Status: temporary.** Only needed because there is no build step. ROADMAP Phase 7.4
 > replaces it with a Python package; the rule, `scripts/check_dual_copy.py`, the CI step,
@@ -66,98 +118,103 @@ check also compares every YAML listed in `public/systems/index.json`.
 > Until then it is **fully binding**, and it is not a rule to route around — if it feels
 > like an obstacle, that is Phase 7.4's problem, not something to solve locally.
 
-## Common Tasks
+---
 
-### Adding a YAML system
+## Component and phase numbering
 
-1. Create YAML file in `public/systems/` (follow existing format)
-2. Add the filename to `public/systems/index.json` (just the filename — dropdown label auto-built from `components` + `note`)
-3. Copy to `experiments/experiment_06/systems/`
-4. git push
+| Role | Index | Code key | Internal variables (never rename) |
+|------|-------|---------|---------------------|
+| Carrier | **1** | `"carrier"` | `wbp`, `RHO_BP` |
+| Solute | **2** | `"solute"` | `wpa`, `RHO_PA`, `MW_PA` |
+| Solvent | **3** | `"solvent"` | `ww`, `RHO_W` |
 
-### Modifying the System tab
+Use the `"carrier"` key and `labels.abbr` in YAML and UI only. The manuscript, the YAML
+comments, and `correlation.py` all share the numbering above — keep it consistent in any
+new code, comment, figure label, or paper text.
 
-- HTML structure: `public/index.html` (`.sys-*` class elements)
-- Styles: `public/css/style.css` (`.sys-select`, `.sys-form-*`, `.sys-editable`, etc.)
-- JS logic: `public/js/app.js` (`loadSystemTab`, `applySystem`, `validateForm`, `collectFormToYaml`)
+**Phases reuse the same digits**, named after the component that dominates them: phase
+**1** = carrier-rich = raffinate, phase **3** = solvent-rich = extract. There is no phase
+2 — the solute is the distributed species, not a phase.
 
-### Modifying tab labels or UI copy
+**Two subscripts mean `w_ij` = mass fraction of component `i` in phase `j`.**
 
-- Tab labels: `public/index.html` (`.tab-btn` elements)
-- Error/status messages: `public/js/app.js` (`setSysMsg` call sites)
-- Guide content: `public/docs/guide.md` (markdown)
+| Symbol | Meaning |
+|--------|---------|
+| `w_1`, `w_2`, `w_3` | Overall mass fraction of a component (no phase) |
+| `w_11` | Carrier in the carrier-rich phase |
+| `w_21` | Solute in the carrier-rich phase |
+| `w_23` | Solute in the solvent-rich phase |
+| `w_33` | Solvent in the solvent-rich phase |
 
-### Modifying Python computation
+- `equilibrium_data` rows are `[100w_1, 100w_2, 100w_3]` — percentages, not fractions
+- `tie_lines` rows are `[100w_23, 100w_21]` — solvent-rich first, then carrier-rich
+- `correlation.py` uses **fractions**, e.g. the Hand correlation
+  `ln(w23/w33) = a + b·ln(w21/w11)`
+- The manuscript tables use the `$100w_1$` / `$100w_{23}$` LaTeX forms
 
-- Modules: edit `public/exp06/*.py`, then sync to `experiments/experiment_06/`
-- Charts: `plot_util.py` `fig_*()` functions
-- Tie-line correlations (Othmer-Tobias / Hand / Bachman), selectivity, Hand-coordinate
-  plait point: `correlation.py`
-- YAML structural rules: `validate_system.py` — single source of truth for both the
-  System tab (via Pyodide) and the submission GitHub Action. Change it in one place only.
-- **Warning**: `_layout()` and `_cart_layout()` are shared — override per-chart via `fig.update_layout()` only
-- After editing, run the checks in "Local Development" below
+**This is not Treybal's lettering.** The manuscript cites Treybal, who labels components
+`A`/`B`/`C`: `A` = carrier, `B` = **solvent**, `C` = **solute**. Note the mismatch against
+our `2` = solute. Never mix the two schemes in one figure or table.
+
+---
 
 ## Coding Conventions
 
 1. **ASCII-only Python source** — no Korean or non-ASCII in `.py` files
 2. **Plot functions return `go.Figure`** — never call `.show()` inside
-3. **Dataclasses with `__post_init__`** — build expensive objects (splines, polynomials) once at construction
+3. **Dataclasses with `__post_init__`** — see Patterns below
 4. **Pure functions** — no global state in calculation modules
 5. **Type hints required** on all public functions
 6. **No dead code** — delete commented-out code, no `# TODO` in user-facing text
-7. **No comments** unless the WHY is non-obvious (a constraint, a workaround, a subtle invariant)
+7. **No comments** unless the WHY is non-obvious (a constraint, a workaround, an invariant)
 
 ## Patterns
 
-Worked examples of the rules above. The audience is a student running Jupyter, not a
-CLI power user — that constraint drives most of these choices.
+Only the things the code cannot tell you on its own.
 
-### Package structure
+### `__post_init__` establishes the object's invariants
 
-Every experiment directory needs `__init__.py`, or it is not a package and imports fail:
+`@dataclass` generates `__init__` for you, so `__post_init__` is the only hook into it.
+`EquilibriumSystem` uses it for three jobs, in order:
 
 ```python
-# experiments/experiment_05/__init__.py
-from .main import load_vle_data, main
-from .mccabe import compute_total_reflux, digitize_curve_from_image, set_equilibrium_data
-
-__all__ = ["main", "load_vle_data", ...]
+def __post_init__(self) -> None:
+    x_raw = self.equil_data[:, 0] + 0.5 * self.equil_data[:, 1]   # derive
+    idx = np.argsort(x_raw)                                       # normalize:
+    self.x_equil = x_raw[idx]                                     #   YAML row order must not matter
+    if np.any(np.diff(self.x_equil) < 0.05):
+        raise ValueError(...)                                     # validate: reject degenerate input
+    self.spline = self._build_spline(...)                         # derive: fit once
 ```
+
+The point is not speed, it is that **after the constructor returns, all of these are
+guaranteed** — sorted, no near-duplicates, curve fitted. Every downstream method can
+assume them without checking, and invalid YAML fails at construction where the System tab
+surfaces the message, instead of producing a plausible-looking wrong figure later.
+
+There are four construction paths (`from_yaml()`, `main.py`, and two in `app.js`); a
+separate `setup()` function would have to be remembered by all of them.
+
+Not rebuilding the curve per call is a side effect, but a large one: fitting costs ~400×
+a single evaluation, and one `S_min` construction evaluates the curve ~1500 times.
 
 ### Config is overridable because imports are live references
 
-All experimental constants live in `config.py` as module-level values:
+Experimental constants live at module level in `config.py`:
 
 ```python
 V_R0: float = 10.78   # feed titration volume [mL]
-FLOW_SOLVENT_ML_MIN: float = 100.0
 ```
 
 A student overrides them in a notebook cell before calling `main()`:
 
 ```python
 import experiments.experiment_06.config as cfg
-cfg.V_E1 = 3.95   # my measured titration volume
+cfg.V_E1 = 3.95
 ```
 
-This works because a Python import is a live reference to the module object — reassigning
-the attribute changes what every function reading it sees. Do not defeat this by copying
-config values into local variables at import time.
-
-### Build derived state once, in `__post_init__`
-
-```python
-@dataclass
-class EquilibriumSystem:
-    _spline: CubicSpline = field(init=False, repr=False)
-
-    def __post_init__(self) -> None:
-        self._spline = CubicSpline(...)
-```
-
-`field(init=False, repr=False)` keeps the cache out of the constructor signature and out
-of `repr()`. Never rebuild a spline inside a method.
+This works because a Python import is a live reference to the module object. **Do not
+defeat it** by copying config values into local variables at import time.
 
 ### Return a named dataclass, not a bare tuple
 
@@ -170,25 +227,17 @@ sp = compute_stream_points(system)
 fig = plot_lever_rule(sp.pt_R0, sp.pt_Rn, ...)
 ```
 
-### Early return for preconditions
+### Convert numpy scalars at the JS boundary
 
-```python
-def find_E1_prime(...) -> tuple[float, float] | None:
-    if abs(b2 - b1) < 1e-12:
-        return None   # parallel lines; no intersection exists
-    ...
-```
-
-Main logic stays at indentation level 1, never buried in an `else`.
-
-### numpy types at the boundary
-
-Annotate arrays with `npt.NDArray[np.float64]`, and **wrap scalar returns in `float()`** —
-callers expect a Python `float`, not an `np.float64`:
+Wrap scalar returns in `float()` and arrays in `.tolist()`:
 
 ```python
 return float(x_pp), float(self.eval(x_pp))
 ```
+
+This is not style. These values cross **Pyodide → JavaScript**, where `np.float64` does
+not survive cleanly; there are ~87 such casts across `exp06`. Rounding is a display
+concern handled once in JS (`toFixed` / Plotly hover format), never here.
 
 ### Raise on solver failure; never fall back silently
 
@@ -200,127 +249,45 @@ raise ValueError(
 ```
 
 A silent fallback produces a plausible-looking but wrong figure, which is worse than a
-crash. The message must say what to inspect — these errors surface directly in the
-browser UI, where the reader is a student, not a developer.
+crash. The message must say what to inspect — these errors surface directly in the browser
+UI, where the reader is a student, not a developer.
 
 ### Plotting
 
-Plotly builders return the figure so the caller decides what to do with it:
+`_layout()` and `_cart_layout()` in `plot_util.py` are **shared** — never modify them for
+one chart; use `fig.update_layout()` inside that chart's `fig_*()` instead. Cartesian
+charts use `scaleanchor="x"`, which ignores margin changes, so adjust `y_range` or text
+positioning instead. Matplotlib code (exp04/05) must always call `plt.close()` — open
+figures accumulate.
 
-```python
-fig = fig_ternary_equilibrium(system)
-fig.show()                          # notebook
-fig.write_html("outputs/fig1.html") # sharing
-```
+---
 
-Matplotlib (exp04/05) takes `show` and `save_path` as separate parameters, and **always**
-calls `plt.close()` — open figures accumulate:
+## Common Tasks
 
-```python
-def plot_vle_comparison(..., save_path: Path | None = None, show: bool = True) -> None:
-    if save_path is not None:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
-    if show:
-        plt.show()
-    plt.close()
-```
+| Task | Where |
+|------|-------|
+| Add a YAML system | `public/systems/CLAUDE.md` (loads when working in that directory) |
+| Add a new experiment | `ROADMAP.md` Phase 7 — **read 7.4 first**; the dual-copy rule is scheduled for removal and a new experiment should not entrench it |
+| System tab | `public/index.html` (`.sys-*`), `css/style.css`, `app.js` (`loadSystemTab`, `applySystem`, `validateForm`, `collectFormToYaml`) |
+| Tab labels / UI copy | `public/index.html` (`.tab-btn`); messages at `setSysMsg` call sites |
+| Guide content | `public/docs/guide.md` |
+| Charts | `plot_util.py` `fig_*()` |
+| Tie-line correlations, selectivity, Hand plait point | `correlation.py` |
+| YAML structural rules | `validate_system.py` — single source of truth for both the System tab (via Pyodide) and the submission GitHub Action. Change it in one place only. |
 
-### `Path`, never `os`
+**Web app notes.** `initPyodide()` fetches `.py` files from `/exp06/` into the Pyodide
+filesystem; `calculate()` sets config globals and returns Plotly JSON;
+`computeExplorer('sf'|'feed')` computes a single frame for real-time slider interaction;
+system switching calls `Plotly.purge()` before `Plotly.newPlot()` to avoid stale state.
+The sidebar auto-collapses on ternary tabs and auto-expands on extraction tabs.
 
-```python
-output_dir = Path(__file__).resolve().parent / "outputs"
-output_dir.mkdir(parents=True, exist_ok=True)
-```
+Tab order (`‖` = `.tab-sep` divider, `✦` = interactive/editable marker in the label):
+Guide | System ✦ ‖ Equilibrium | Conjugate Curve ‖ Hunter-Nash | Stages | Lever Rule |
+S:F Explorer ✦ | Feed Explorer ✦ ‖ Contact
 
-## What NOT to use here
+---
 
-These are competent patterns from other projects that are deliberately excluded. Rejecting
-them is a decision, not an oversight — do not reintroduce them without a reason.
-
-| Pattern | Why excluded |
-|---------|-------------|
-| Typer / Click CLI | Users run notebook cells, not terminal commands |
-| Pydantic `BaseModel` | Overkill for a config of ~10 floats; `validate_system.py` covers the real validation need |
-| `joblib.Parallel`, multiprocessing | Single-experiment jobs; overhead exceeds benefit, and Pyodide is single-threaded anyway |
-| `uv` / `pre-commit` / `mypy` | Infrastructure barrier for student contributors; ruff + pytest in CI is the whole toolchain |
-| `try/except` import blocks | Fix the package structure instead |
-| Heavy deps (networkx, pandas) | Every import costs Pyodide load time in the browser |
-
-## Pattern Index
-
-| Pattern | Reference file |
-|---------|------|
-| Package export | `experiment_05/__init__.py` |
-| Config override in Jupyter | `experiment_06/config.py` |
-| Dataclass + `__post_init__` | `experiment_06/equilibrium.py` |
-| Named result dataclass | `experiment_06/main.py` (`StreamPoints`) |
-| Pure functions, no global state | `experiment_06/ternary.py` |
-| Early return for edge cases | `experiment_06/lever_rule.py` |
-| `npt.NDArray` + `float()` wrap | `experiment_06/conjugate.py` |
-| Raise on solver failure | `experiment_06/conjugate.py` |
-| Plotly figure return | `experiment_06/plot_util.py` |
-| Matplotlib show/save params | `experiment_04/plot_util.py` |
-| `Path` over `os` | `experiment_04/main.py` |
-
-## Hard Guardrails
-
-### Confirm before modifying
-- `pyproject.toml` — check Pyodide compatibility before adding dependencies
-- `vercel.json` — routing changes can break the deployed site
-- `plot_util.py` `_layout()` / `_cart_layout()` — shared functions, never modify for a single chart
-
-### Never rename
-Python internal variables: `wpa`, `wbp`, `ww`, `RHO_PA`, `RHO_BP`, `RHO_W`, `MW_PA`.
-Use `"carrier"` key and `labels.abbr` only in YAML and UI.
-
-### Numeric index convention
-Components are numbered **1 = carrier, 2 = solute, 3 = solvent**. Phases reuse the same
-digits: **1 = carrier-rich (raffinate), 3 = solvent-rich (extract)**; there is no phase 2.
-Two subscripts mean `w_ij` = mass fraction of component `i` in phase `j` — so `w21` is
-solute in the carrier-rich phase and `w23` is solute in the solvent-rich phase.
-
-This is shared by the YAML comments, `correlation.py`, and the manuscript, and it is
-**not** Treybal's `A`/`B`/`C` lettering (Treybal's `B` is the solvent; our `2` is the
-solute). Never mix the two in one figure or table. Full table with worked examples:
-`CLAUDE.md` → "Numeric Index Convention".
-
-### Numerical correctness
-The regression baseline is `experiments/experiment_06/tests/`, which pins expected values
-to full precision (e.g. `n_theory == pytest.approx(3.6118384065055205)`). Any algorithm
-change must keep those tests green.
-
-If a change is *supposed* to move a number, say so explicitly and update the expected value
-in the same commit — never loosen `TOL` to make a test pass.
-
-Do not change scipy solver bounds, tolerances, or polynomial degrees without understanding impact.
-
-## How to Add a New Experiment
-
-1. Create `experiments/experiment_NN/` following exp06 patterns (`config.py`, computation modules, `plot_util.py`)
-2. Copy Python files to `public/expNN/`
-3. Create `public/expNN/index.html` — share `public/css/style.css` for design consistency
-4. Update `vercel.json` rewrite to exclude `/expNN` from SPA redirect
-5. Later: `public/index.html` becomes a landing page (ROADMAP Phase 7)
-
-## Web App Architecture (Pyodide)
-
-- `initPyodide()` fetches `.py` files from `/exp06/`, writes to Pyodide virtual filesystem, imports modules
-- `renderSystemFigs()` auto-renders Equilibrium + Conjugate charts on system load (no Calculate needed)
-- `calculate()` sets config globals in Python, runs computation, returns Plotly JSON
-- `computeExplorer('sf'|'feed')` computes a single frame for real-time slider interaction
-- `renderContactPane()` builds the Contact tab from `TEAM_DATA` at the top of `app.js`
-- Sidebar auto-collapses on ternary tabs, auto-expands on extraction tabs
-- System switching uses `Plotly.purge()` before `Plotly.newPlot()` to avoid stale chart state
-- Tab order: Guide | System ✦ ‖ Equilibrium | Conjugate Curve ‖ Hunter-Nash | Stages |
-  Lever Rule | S:F Explorer ✦ | Feed Explorer ✦ ‖ Contact
-  (`‖` = `.tab-sep` divider, `✦` = interactive/editable marker in the label text)
-
-## Local Development
-
-```bash
-python dev_server.py        # http://localhost:8080
-# Ctrl+Shift+R in browser (hard refresh)
-```
+## Verification
 
 Before claiming a change is done, run all three — these are exactly what CI runs:
 
@@ -330,13 +297,24 @@ python scripts/check_dual_copy.py
 python -m pytest experiments/experiment_06/tests/ -v
 ```
 
-Test files: `test_equilibrium`, `test_conjugate`, `test_correlation`, `test_hunter_nash`,
-`test_ternary`, `test_validate_system` (shared fixtures in `conftest.py` / `_helpers.py`).
-A new computation module should arrive with its own `test_*.py`.
+Local dev: `python dev_server.py` → `http://localhost:8080`, then Ctrl+Shift+R to bypass
+cache.
+
+The test suite is the **regression baseline** and pins expected values to full precision
+(e.g. `n_theory == pytest.approx(3.6118384065055205)`). If a change is *supposed* to move
+a number, say so explicitly and update the expected value in the same commit — never
+loosen `TOL` to make a test pass. A new computation module arrives with its own
+`test_*.py`.
+
+### Confirm before modifying
+
+- `pyproject.toml` — check Pyodide compatibility before adding dependencies
+- `vercel.json` — routing changes can break the deployed site
+- `plot_util.py` `_layout()` / `_cart_layout()` — shared, never for a single chart
 
 ## Git Rules
 
-- Confirm with user before committing
-- Commit messages: short, conventional prefix (feat, fix, chore, docs)
-- No Co-Authored-By needed
+- Always confirm with the user before committing
+- Commit messages: short, conventional prefix (feat, fix, chore, docs), single line
+- No Co-Authored-By
 - Pushing to `main` auto-deploys to Vercel; this works for either collaborator's push
