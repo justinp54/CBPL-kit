@@ -67,18 +67,37 @@ main(output_dir="experiments/experiment_06/outputs")
 
 ```
 experiments/
-  experiment_06/     ← LLE Hunter-Nash Python modules
-    config.py        ← experimental constants (edit here)
-    equilibrium.py   ← spline fit of equilibrium curve
-    conjugate.py     ← conjugate curve & plait point
-    hunter_nash.py   ← graphical stage-counting algorithm
-    lever_rule.py    ← material balance calculations
-    plot_util.py     ← Plotly figure builders
-    demo.ipynb       ← step-by-step Jupyter walkthrough
+  experiment_04/       ← VLE (modified Raoult / PR EOS) — Python only
+  experiment_05/       ← McCabe-Thiele distillation — Python only
+  experiment_06/       ← LLE Hunter-Nash — Python modules + web app
+    config.py          ← experimental constants (edit here)
+    equilibrium.py     ← spline fit of the equilibrium curve
+    conjugate.py       ← conjugate curve & plait point
+    hunter_nash.py     ← graphical stage-counting algorithm
+    lever_rule.py      ← material balance, S_min construction
+    correlation.py     ← Othmer-Tobias / Hand / Bachman tie-line correlations
+    ternary.py         ← cartesian ↔ ternary coordinate conversion
+    validate_system.py ← structural validation of a system YAML
+    plot_util.py       ← Plotly figure builders
+    systems/           ← YAML system definitions
+    tests/             ← pytest suite
+    demo.ipynb         ← step-by-step Jupyter walkthrough
 public/
-  index.html         ← web app (Python runs in browser)
-  exp06/             ← Python modules served for browser execution
+  index.html           ← web app shell (Python runs in the browser)
+  css/style.css        ← all styles
+  js/app.js            ← all app logic (Pyodide, Plotly, forms)
+  exp06/               ← Python modules served for browser execution
+  systems/             ← YAML system definitions + index.json manifest
+  docs/guide.md        ← in-app Guide tab content
+scripts/
+  check_dual_copy.py   ← verifies public/exp06/ and experiments/experiment_06/ match
+.github/workflows/     ← CI (lint, dual-copy check, tests) + system-submission validation
+dev_server.py          ← local dev server (port 8080)
 ```
+
+The Python modules under `experiments/experiment_06/` and `public/exp06/` are kept
+byte-identical — the web app serves the `public/` copy. `scripts/check_dual_copy.py`
+verifies this and CI runs it on every push.
 
 ---
 

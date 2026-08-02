@@ -89,6 +89,7 @@ with it. So the DOI is optional-but-worth-it, not a formality.
 |---|---|
 | `experiments/experiment_04`, `experiment_05` | Not described in the paper |
 | Contact tab personal data (student IDs, emails, photo, LinkedIn) | A Zenodo record is permanent and cannot be deleted |
+| **To decide:** `README.md` → `## Authors` also lists student IDs | Same data as the Contact tab, but in a tracked file — excluding only the Contact tab leaves it half-done |
 | `paper/` | Already untracked |
 
 The live site keeps all of it — only the archive is pruned. This is legitimate because
