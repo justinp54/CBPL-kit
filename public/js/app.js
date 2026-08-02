@@ -1941,6 +1941,55 @@ _b._eready     = False
 }
 
 // ── Guide ──────────────────────────────────────────────────────────────────
+// marked 15 no longer emits heading ids, so slug them here and build the
+// contents rail from the result.
+function _buildGuideToc(root) {
+  const content = root.querySelector('.guide-content');
+  const rail = root.querySelector('.guide-toc-inner');
+  if (!content || !rail) return;
+
+  const seen = new Set();
+  const heads = [...content.querySelectorAll('h2, h3')];
+  rail.innerHTML = heads.map(h => {
+    let slug = h.textContent.trim().toLowerCase()
+      .replace(/[^\w\s가-힣-]/g, '').replace(/\s+/g, '-').replace(/^-+|-+$/g, '') || 'section';
+    while (seen.has(slug)) slug += '-x';
+    seen.add(slug);
+    h.id = slug;
+    return `<a href="#${slug}" class="toc-${h.tagName.toLowerCase()}">${h.textContent.trim()}</a>`;
+  }).join('');
+
+  const links = new Map([...rail.querySelectorAll('a')].map(a => [a.getAttribute('href').slice(1), a]));
+  rail.addEventListener('click', e => {
+    const a = e.target.closest('a');
+    if (!a) return;
+    e.preventDefault();                       // keep the SPA out of the hash
+    document.getElementById(a.getAttribute('href').slice(1))
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // Highlight the last heading scrolled past. A plain scroll handler is used
+  // rather than IntersectionObserver: the band an observer needs can be jumped
+  // clean over, which leaves the rail stuck on whatever it saw last.
+  const pane = root.closest('.guide-pane') || root;
+  let queued = false;
+  const sync = () => {
+    queued = false;
+    const top = pane.getBoundingClientRect().top + 100;   // just under the tab bar
+    let active = heads[0]?.id;
+    for (const h of heads) {
+      if (h.getBoundingClientRect().top <= top) active = h.id; else break;
+    }
+    // At the very bottom the last section may never reach the line.
+    if (pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 4) active = heads.at(-1)?.id;
+    links.forEach((a, id) => a.classList.toggle('active', id === active));
+  };
+  pane.addEventListener('scroll', () => {
+    if (!queued) { queued = true; requestAnimationFrame(sync); }
+  }, { passive: true });
+  sync();
+}
+
 let guideLoaded = false;
 async function loadGuide() {
   if (guideLoaded) return;
@@ -1949,14 +1998,29 @@ async function loadGuide() {
   try {
     const resp = await fetch('/docs/guide.md', { cache: 'no-store' });
     if (!resp.ok) throw new Error('guide.md not found');
-    let md = await resp.text();
-    let sysYaml = '# (system file unavailable)';
-    try {
-      const yr = await fetch('/systems/bp_pa_w_snu_cbe.yaml', { cache: 'no-store' });
-      if (yr.ok) sysYaml = (await yr.text()).trim();
-    } catch (e) { console.error('Guide system YAML:', e); }
-    md = md.replace('{{SYSTEM_YAML}}', () => sysYaml);
-    el.innerHTML = `<div class="guide-content">${marked.parse(md)}</div>`;
+    const md = await resp.text();
+    // Pull maths out before marked runs — otherwise it treats LaTeX underscores
+    // as emphasis and mangles the expression. Rendered with the same _katex()
+    // helper the sidebar formulas use, so no extra dependency. $$…$$ is a
+    // display block, $…$ is inline; block first so its delimiters win.
+    const eqs = [];
+    const stash = (tex, display) => {
+      eqs.push({ tex: tex.trim(), display });
+      return `KTXEQ${eqs.length - 1}KTXEND`;
+    };
+    const src = md
+      .replace(/\$\$([\s\S]+?)\$\$/g, (_m, tex) => `\n\n${stash(tex, true)}\n\n`)
+      .replace(/\$([^$\n]+?)\$/g, (_m, tex) => stash(tex, false));
+    const html = marked.parse(src).replace(/KTXEQ(\d+)KTXEND/g, (_m, i) => {
+      const e = eqs[+i];
+      return e.display ? `<div class="guide-eq">${_katex(e.tex, true)}</div>`
+                       : _katex(e.tex, false);
+    });
+    el.innerHTML = `<div class="guide-layout">
+      <div class="guide-content">${html}</div>
+      <nav class="guide-toc" aria-label="Guide contents"><div class="guide-toc-inner"></div></nav>
+    </div>`;
+    _buildGuideToc(el);
     guideLoaded = true;
   } catch (e) {
     el.innerHTML = `<div style="padding:20px;color:#dc2626;font-size:13px">Failed to load guide: ${e.message}</div>`;
