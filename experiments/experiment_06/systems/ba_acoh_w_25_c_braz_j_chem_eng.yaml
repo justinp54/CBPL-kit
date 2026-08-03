@@ -1,0 +1,41 @@
+# System Configuration
+
+components:
+  carrier: { name: "Butyl acetate", abbr: "BA" }   # (1)
+  solute: { name: "Acetic acid", abbr: "AcOH" }   # (2)
+  solvent: { name: "Water", abbr: "W" }   # (3)
+
+properties:
+  rho_carrier: 0.8825   # g/mL
+  rho_solute: 1.0492   # g/mL
+  rho_solvent: 0.997   # g/mL
+  mw_solute: 60.052   # g/mol
+
+# Each row: [Carrier wt%, Solute wt%, Solvent wt%]
+# (100w1, 100w2, 100w3; sorted by increasing carrier)
+equilibrium_data:
+  - [0.53, 0, 99.47]
+  - [1.31, 11.59, 87.1]
+  - [2.39, 21.28, 76.32]
+  - [3.86, 30.52, 65.62]
+  - [7.82, 38.54, 53.64]
+  - [17.32, 40.5, 42.18]
+  - [30.92, 38.12, 30.96]
+  - [42.74, 34.86, 22.4]
+  - [53.33, 30.52, 16.15]
+  - [70.55, 20.41, 9.04]
+  - [84.64, 10.4, 4.97]
+  - [98.64, 0, 1.36]
+
+# Each row: [Solute wt% in solvent-rich phase (3), Solute wt% in carrier-rich phase (1)]
+# (100w23, 100w21; sorted by increasing solute)
+tie_lines:
+  - [10.1, 5.38]
+  - [18.26, 10.91]
+  - [24.68, 15.91]
+  - [30.66, 21.54]
+  - [36.71, 27.64]
+  - [40.01, 32.75]
+
+# data source, temperature, etc. - free text
+note: "25 °C, Braz. J. Chem. Eng. 21, 647 (2004)"
