@@ -24,7 +24,7 @@ It runs the construction numerically, so changing one input and seeing the answe
 
 | | You supply | You get |
 |---|---|---|
-| **Phase equilibrium** | equilibrium + tie-line data for a system | binodal curve, recovered tie lines, conjugate curve, plait point, selectivity |
+| **Phase equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity |
 | **Hunter-Nash** | …plus your own run: titration volumes and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
 
 ## 1. Choose a system
