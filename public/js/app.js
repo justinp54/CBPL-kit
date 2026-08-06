@@ -1209,9 +1209,9 @@ function switchTab(key) {
 function updateTableHeaders() {
   const s = _lbls.solute.abbr, c = _lbls.carrier.abbr, sv = _lbls.solvent.abbr;
   document.getElementById('stream-thead').innerHTML =
-    `<tr><th>Stream</th><th>${s}%</th><th>${c}%</th><th>${sv}%</th></tr>`;
+    `<tr><th>Stream</th><th>${c}%</th><th>${s}%</th><th>${sv}%</th></tr>`;
   document.getElementById('stages-thead').innerHTML =
-    `<tr><th>#</th><th></th><th>${s}%</th><th>${c}%</th><th>${sv}%</th></tr>`;
+    `<tr><th>#</th><th></th><th>${c}%</th><th>${s}%</th><th>${sv}%</th></tr>`;
   document.getElementById('feed-pa-label').textContent = `Feed ${s}`;
 }
 updateTableHeaders();
@@ -1228,12 +1228,12 @@ function showResults(data) {
     {name:'E<sub>N+1</sub>', cls:'E', d:data.stream_points.En1},
   ];
   document.getElementById('stream-tbody').innerHTML = streams.map(s =>
-    `<tr><td><span class="dot dot-${s.cls}"></span>${s.name}</td><td>${s.d.wpa}</td><td>${s.d.wbp}</td><td>${s.d.ww}</td></tr>`
+    `<tr><td><span class="dot dot-${s.cls}"></span>${s.name}</td><td>${s.d.wbp}</td><td>${s.d.wpa}</td><td>${s.d.ww}</td></tr>`
   ).join('');
 
   document.getElementById('stages-tbody').innerHTML = data.stages.flatMap(s => [
-    `<tr><td>${s.index}</td><td style="color:#dc2626">E</td><td>${s.E.wpa}</td><td>${s.E.wbp}</td><td>${s.E.ww}</td></tr>`,
-    `<tr><td></td><td style="color:var(--blue)">R</td><td>${s.R.wpa}</td><td>${s.R.wbp}</td><td>${s.R.ww}</td></tr>`,
+    `<tr><td>${s.index}</td><td style="color:#dc2626">E</td><td>${s.E.wbp}</td><td>${s.E.wpa}</td><td>${s.E.ww}</td></tr>`,
+    `<tr><td></td><td style="color:var(--blue)">R</td><td>${s.R.wbp}</td><td>${s.R.wpa}</td><td>${s.R.ww}</td></tr>`,
   ]).join('');
 
   document.getElementById('flows-text').innerHTML =
