@@ -8,6 +8,8 @@ Water is used to extract propionic acid out of n-bromopropane in a counter-curre
 <!-- Once public/docs/lab-handout.pdf exists, make the line above:
      📄 **[Laboratory handout](/docs/lab-handout.pdf)** — apparatus, procedure, and safety in full -->
 
+📄 **[Technical documentation](/docs/technical-documentation.pdf)** — the numerical methods behind every figure, for anyone who wants to check or reuse them
+
 ## What this tool does
 
 It runs the construction numerically, so changing one input and seeing the answer costs a click instead of a redraw. There are two workflows, and you can stop after the first:
@@ -16,8 +18,6 @@ It runs the construction numerically, so changing one input and seeing the answe
 |---|---|---|
 | **Phase equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity |
 | **Hunter-Nash** | …plus your own run: titration volumes and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
-
-📄 **[Technical documentation](/docs/technical-documentation.pdf)** — the numerical methods behind every figure, for anyone who wants to check or reuse them
 
 ## How to cite
 
