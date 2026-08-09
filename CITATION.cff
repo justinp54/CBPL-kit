@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using these metadata.
+type: software
+title: "CBPL-kit: a web-based interactive toolkit for ternary phase equilibrium and liquid-liquid extraction"
+abstract: >-
+  CBPL-kit turns the measurements students take in a liquid-liquid extraction
+  experiment into a quantitative and reproducible analysis. The Hunter–Nash
+  construction, normally carried out by hand on the ternary phase diagram, is
+  performed numerically, so an operating condition can be changed and the result
+  seen immediately rather than redrawn from scratch. From raw equilibrium and
+  tie-line data it fits the binodal curve, constructs the conjugate curve and
+  estimates the plait point, and checks tie-line consistency; from a student's
+  own run it steps off the equilibrium stages and verifies the mass balance by
+  the lever rule. The application runs entirely in the browser through Pyodide,
+  requiring no installation, account, or server-side computation, and the same
+  Python modules can be imported in a notebook.
+authors:
+  - family-names: Park
+    given-names: Junsang
+    orcid: https://orcid.org/0009-0002-3728-2147
+    affiliation: Department of Chemical and Biological Engineering, Seoul National University
+  - family-names: Lee
+    given-names: Seong
+    orcid: https://orcid.org/0009-0003-0305-5736
+    affiliation: Department of Chemical and Biological Engineering, Seoul National University
+  - family-names: Lee
+    given-names: Youn-Woo
+    affiliation: Department of Chemical and Biological Engineering, Seoul National University
+repository-code: https://github.com/justinp54/CBPL-kit
+url: https://cbpl-kit.vercel.app
+license: MIT
+keywords:
+  - liquid-liquid extraction
+  - ternary phase diagram
+  - Hunter-Nash method
+  - chemical engineering education
+  - interactive simulation
+  - Pyodide
+# version and date-released are set at each release and must match the git tag.
+version: 1.0.0
+date-released: "2026-08-09"
