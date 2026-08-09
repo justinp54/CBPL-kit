@@ -28,6 +28,9 @@ authors:
     affiliation: Department of Chemical and Biological Engineering, Seoul National University
 repository-code: https://github.com/justinp54/CBPL-kit
 url: https://cbpl-kit.vercel.app
+# The concept DOI, which always resolves to the latest release. Each release also
+# gets its own version DOI on the Zenodo record.
+doi: 10.5281/zenodo.21862135
 license: MIT
 keywords:
   - liquid-liquid extraction

@@ -6,6 +6,9 @@ Runs in the browser with no installation, or as a Python package in Jupyter.
 
 **🌐 Web App → [cbpl-kit.vercel.app](https://cbpl-kit.vercel.app)**
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862135.svg)](https://doi.org/10.5281/zenodo.21862135)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 ---
 
 ## Motivation
@@ -141,9 +144,26 @@ Department of Chemical and Biological Engineering, Seoul National University
 
 ## Citation
 
-<!-- On the first Zenodo release, replace this block with the concept DOI badge and a
-     BibTeX entry, and add the journal reference once the paper is accepted. -->
-A citable DOI will be minted through Zenodo at the first release.  
+Archived on Zenodo. The DOI below resolves to the latest release, so it stays correct
+as the toolkit is updated; cite a specific version from its own record if you need to.
+
+> Park, J., Lee, S., & Lee, Y.-W. (2026). *CBPL-kit: a web-based interactive toolkit for
+> ternary phase equilibrium and liquid-liquid extraction*. Zenodo.
+> https://doi.org/10.5281/zenodo.21862135
+
+```bibtex
+@software{cbplkit,
+  author    = {Park, Junsang and Lee, Seong and Lee, Youn-Woo},
+  title     = {{CBPL-kit: a web-based interactive toolkit for ternary
+               phase equilibrium and liquid-liquid extraction}},
+  publisher = {Zenodo},
+  year      = {2026},
+  doi       = {10.5281/zenodo.21862135},
+  url       = {https://doi.org/10.5281/zenodo.21862135}
+}
+```
+
+<!-- Add the journal reference here once the accompanying paper is accepted. -->
 Source: https://github.com/justinp54/CBPL-kit
 
 ---
