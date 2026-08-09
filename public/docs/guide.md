@@ -8,16 +8,6 @@ Water is used to extract propionic acid out of n-bromopropane in a counter-curre
 <!-- Once public/docs/lab-handout.pdf exists, make the line above:
      📄 **[Laboratory handout](/docs/lab-handout.pdf)** — apparatus, procedure, and safety in full -->
 
-<!-- Walkthrough video. Uncomment once it is recorded; youtube-nocookie keeps
-     tracking cookies off students. Supplementary — nothing depends on it.
-🎬 **Walkthrough** — one analysis end to end
-
-<div class="guide-video">
-  <iframe src="https://www.youtube-nocookie.com/embed/VIDEO_ID"
-          title="CBPL-kit walkthrough" loading="lazy" allowfullscreen></iframe>
-</div>
--->
-
 ## What this tool does
 
 It runs the construction numerically, so changing one input and seeing the answer costs a click instead of a redraw. There are two workflows, and you can stop after the first:
