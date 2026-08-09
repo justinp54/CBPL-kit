@@ -17,6 +17,8 @@ It runs the construction numerically, so changing one input and seeing the answe
 | **Phase equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity |
 | **Hunter-Nash** | …plus your own run: titration volumes and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
 
+📄 **[Technical documentation](/docs/technical-documentation.pdf)** — the numerical methods behind every figure, for anyone who wants to check or reuse them
+
 ## How to cite
 
 Used CBPL-kit for a report or a paper? Please cite the archived release:

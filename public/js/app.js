@@ -2020,6 +2020,15 @@ async function loadGuide() {
       <div class="guide-content">${html}</div>
       <nav class="guide-toc" aria-label="Guide contents"><div class="guide-toc-inner"></div></nav>
     </div>`;
+    // Every guide link leaves the app — a PDF, the repository, a DOI. Following
+    // one in this tab throws away the loaded Pyodide runtime, so the reader pays
+    // the ~20 s cold start again on the way back. Anchors (the contents rail)
+    // must stay in-tab.
+    el.querySelectorAll('.guide-content a[href]').forEach(a => {
+      if (a.getAttribute('href').startsWith('#')) return;
+      a.target = '_blank';
+      a.rel = 'noopener';
+    });
     _buildGuideToc(el);
     guideLoaded = true;
   } catch (e) {
