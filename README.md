@@ -21,8 +21,6 @@ Therefore, CBPL-KIT aims to provide a standardized, modular toolkit that can be 
 | Experiment | Description | Web App | Notebook |
 |------------|-------------|---------|----------|
 | **Exp 06 — LLE Hunter-Nash** | n-BP / Propionic Acid / Water | ✅ Live | `demo.ipynb` |
-| Exp 04 — VLE | Modified Raoult / PR EOS | Coming soon | Available |
-| Exp 05 — McCabe-Thiele | Distillation stage count | Coming soon | Available |
 
 ---
 
@@ -67,8 +65,6 @@ main(output_dir="experiments/experiment_06/outputs")
 
 ```
 experiments/
-  experiment_04/       ← VLE (modified Raoult / PR EOS) — Python only
-  experiment_05/       ← McCabe-Thiele distillation — Python only
   experiment_06/       ← LLE Hunter-Nash — Python modules + web app
     config.py          ← experimental constants (edit here)
     equilibrium.py     ← spline fit of the equilibrium curve
@@ -121,5 +117,4 @@ Source: https://github.com/justinp54/CBPL-kit
 
 ## Contributing
 
-See [`AGENTS.md`](AGENTS.md) for coding conventions and patterns, and
-[`ROADMAP.md`](ROADMAP.md) for planned features.
+See [`AGENTS.md`](AGENTS.md) for coding conventions and patterns.

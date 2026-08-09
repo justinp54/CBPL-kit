@@ -37,3 +37,11 @@ outputs/
 
 # Paper manuscript work
 Draft/
+
+# Local-only planning docs (kept out of the public repo on purpose)
+ROADMAP.md
+HANDOFF_TASKS.md
+
+# Exp 04 / 05 course code — archived at justinp54/CBPL-kit-archive
+experiments/experiment_04/
+experiments/experiment_05/

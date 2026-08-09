@@ -7,8 +7,8 @@ Claude Code and other agents read the same instructions — edit here, never in 
 and the repository layout. This file is about how to change the code without breaking it.
 
 - **Web app**: `cbpl-kit.vercel.app` — Pyodide (Python runs in the browser, no server)
-- **Scope**: Experiment 06 (LLE Hunter-Nash) is the deployed tool and the subject of the
-  paper. Experiments 04 and 05 are Python-only course modules with no web integration.
+- **Scope**: Experiment 06 (LLE Hunter-Nash) — the deployed tool and the subject of the
+  paper — is the whole of this repository.
 
 ---
 
@@ -111,12 +111,12 @@ code. CI runs the check on every push and PR. Files that exist only in
 `experiments/experiment_06/` (`main.py`, `__init__.py`) are exempt; the check also
 compares every YAML listed in `public/systems/index.json`.
 
-> **Status: temporary.** Only needed because there is no build step. ROADMAP Phase 7.4
-> replaces it with a Python package; the rule, `scripts/check_dual_copy.py`, the CI step,
-> and this note are all deleted together at that point.
+> **Status: temporary.** Only needed because there is no build step. The internal roadmap
+> replaces it with an installable Python package, at which point the rule,
+> `scripts/check_dual_copy.py`, the CI step, and this note are all deleted together.
 >
 > Until then it is **fully binding**, and it is not a rule to route around — if it feels
-> like an obstacle, that is Phase 7.4's problem, not something to solve locally.
+> like an obstacle, that is the packaging work's problem, not something to solve locally.
 
 ---
 
@@ -257,8 +257,7 @@ UI, where the reader is a student, not a developer.
 `_layout()` and `_cart_layout()` in `plot_util.py` are **shared** — never modify them for
 one chart; use `fig.update_layout()` inside that chart's `fig_*()` instead. Cartesian
 charts use `scaleanchor="x"`, which ignores margin changes, so adjust `y_range` or text
-positioning instead. Matplotlib code (exp04/05) must always call `plt.close()` — open
-figures accumulate.
+positioning instead.
 
 ---
 
@@ -267,7 +266,7 @@ figures accumulate.
 | Task | Where |
 |------|-------|
 | Add a YAML system | `public/systems/CLAUDE.md` (loads when working in that directory) |
-| Add a new experiment | `ROADMAP.md` Phase 7 — **read 7.4 first**; the dual-copy rule is scheduled for removal and a new experiment should not entrench it |
+| Add a new experiment | Ask first — the internal roadmap routes each experiment behind its own path and drops the dual-copy rule, so a second experiment added under today's layout would entrench what is being removed |
 | System tab | `public/index.html` (`.sys-*`), `css/style.css`, `app.js` (`loadSystemTab`, `applySystem`, `validateForm`, `collectFormToYaml`) |
 | Tab labels / UI copy | `public/index.html` (`.tab-btn`); messages at `setSysMsg` call sites |
 | Guide content | `public/docs/guide.md` |
