@@ -1,22 +1,33 @@
 [project]
 name = "cbpl-kit"
 version = "0.1.0"
-description = "Interactive simulation toolkit for SNU CBE lab experiments"
+description = "Interactive toolkit for the liquid-liquid extraction experiment in the SNU CBE process laboratory"
 requires-python = ">=3.10"
+# pyyaml is a runtime dependency, not a dev one: config.py imports it at module
+# level to read a system definition, so every entry point needs it.
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
-    "matplotlib>=3.7",
     "plotly>=5.18",
+    "pyyaml>=6.0",
     "ipywidgets>=8.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
-    "pyyaml",
     "ruff",
 ]
+
+# Spelled out because the repository root holds more than the package: setuptools
+# finds public/ and scripts/ alongside experiments/ and refuses to guess. namespaces
+# is on because experiments/ has no __init__.py — it is a container, not a module.
+[tool.setuptools.packages.find]
+include = ["experiments", "experiments.experiment_06"]
+namespaces = true
+
+[tool.setuptools.package-data]
+"experiments.experiment_06" = ["systems/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["experiments/experiment_06/tests"]
