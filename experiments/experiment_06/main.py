@@ -70,7 +70,7 @@ class StreamPoints:
     pt_R0:  tuple[float, float]   # feed (BP-rich, no water)
     pt_E1:  tuple[float, float]   # first extract (water-rich branch)
     pt_Rn:  tuple[float, float]   # final raffinate (BP-rich branch)
-    pt_En1: tuple[float, float]   # pure solvent inlet (n-BP vertex)
+    pt_En1: tuple[float, float]   # pure solvent inlet (water vertex)
     wpa_R0: float                 # PA wt% in feed
     wbp_R0: float                 # n-BP wt% in feed
 
@@ -91,7 +91,7 @@ def compute_stream_points(system: EquilibriumSystem) -> StreamPoints:
     pt_E1, comp_E1, cpa_E1 = system.find_curve_point_by_concentration(c_E1, left=True)
     pt_Rn, comp_Rn, cpa_Rn = system.find_curve_point_by_concentration(c_Rn, left=False)
 
-    # Pure solvent En+1 at the n-BP vertex
+    # Pure solvent En+1 at the water vertex
     pt_En1 = (0.0, 0.0)
 
     print("STREAM POINTS")
