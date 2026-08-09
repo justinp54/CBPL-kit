@@ -46,7 +46,7 @@ const TEAM_DATA = [
     gradient: 'linear-gradient(135deg, #1878a8 0%, #0f2744 100%)',
     bio: [
       'Undergraduate Student',
-      'Computational Biology and Biomolecular Engineering Laboratory (Compbio Lab)',
+      'Computational Biology and Biomolecular Engineering Laboratory',
       'Department of Chemical and Biological Engineering',
       'Department of Computer Science and Engineering',
       'Seoul National University',
