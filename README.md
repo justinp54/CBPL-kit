@@ -1,6 +1,7 @@
 # CBPL-kit — Chemical & Biological Process Lab Toolkit
 
-Interactive simulation and visualization tools for CBPL experiments at SNU CBE.  
+Liquid-liquid extraction analysis for the process laboratory course at SNU CBE:
+the Hunter-Nash construction carried out numerically on a ternary phase diagram.  
 Runs in the browser with no installation, or as a Python package in Jupyter.
 
 **🌐 Web App → [cbpl-kit.vercel.app](https://cbpl-kit.vercel.app)**
@@ -16,11 +17,39 @@ Therefore, CBPL-KIT aims to provide a standardized, modular toolkit that can be 
 
 ---
 
-## Available Experiments
+## What it does
 
-| Experiment | Description | Web App | Notebook |
-|------------|-------------|---------|----------|
-| **Exp 06 — LLE Hunter-Nash** | n-BP / Propionic Acid / Water | ✅ Live | `demo.ipynb` |
+In the reference experiment, water extracts propionic acid out of n-bromopropane in a
+counter-current packed column. You sample the feed, extract, and raffinate, titrate each
+against NaOH, and from those three numbers determine how many equilibrium stages the
+separation needs — by the **Hunter-Nash** construction on a ternary phase diagram, which
+is normally drawn by hand on graph paper.
+
+CBPL-kit runs that construction numerically, so changing one input and seeing the answer
+costs a click instead of a redraw. There are two workflows:
+
+| | You supply | You get |
+|---|---|---|
+| **Phase equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity, Othmer-Tobias / Hand / Bachman correlations |
+| **Extraction design** | …plus your own run: titration volumes and flow rates | stage count *N*, operating point, lever-rule check, S/F and feed-composition exploration |
+
+The method assumes a **Type I** system — only carrier and solvent are partially miscible.
+---
+
+## Bundled systems
+
+Seven ternary systems ship with the toolkit. Any of them can be loaded from the
+**System** tab, and your own data can be entered there in the same form.
+
+| Carrier | Solute | Solvent | Source |
+|---------|--------|---------|--------|
+| n-Bromopropane | Propionic acid | Water | SNU CBE — the reference experiment |
+| Water | Acetic acid | Diisopropyl ether | Treybal (1980), 20 °C |
+| Water | Acetone | 1,1,2-Trichloroethane | Seader (2006), 25 °C |
+| Water | Ethylene glycol | Furfural | Seader (2006), 25 °C |
+| Water | *tert*-Butyl alcohol | Diisobutylene | J. Chem. Eng. Data **33**, 258 (1988), 25 °C |
+| Butyl acetate | Acetic acid | Water | Braz. J. Chem. Eng. **21**, 647 (2004), 25 °C |
+| Cyclohexane | Propionic acid | Water | Braz. J. Chem. Eng. **21**, 647 (2004), 25 °C |
 
 ---
 
@@ -34,6 +63,8 @@ Enter your titration volumes → click **Calculate** → all figures update inst
 The first load takes ~20 seconds (Python runs in browser via Pyodide); subsequent visits are cached.
 
 ### Option 2 — Jupyter Notebook
+
+Python 3.10 or newer.
 
 ```bash
 git clone https://github.com/justinp54/CBPL-kit.git
@@ -64,36 +95,36 @@ main(output_dir="experiments/experiment_06/outputs")
 ## Repository Structure
 
 ```
-experiments/
-  experiment_06/       ← LLE Hunter-Nash — Python modules + web app
-    config.py          ← experimental constants (edit here)
-    equilibrium.py     ← spline fit of the equilibrium curve
-    conjugate.py       ← conjugate curve & plait point
-    hunter_nash.py     ← graphical stage-counting algorithm
-    lever_rule.py      ← material balance, S_min construction
-    correlation.py     ← Othmer-Tobias / Hand / Bachman tie-line correlations
-    ternary.py         ← cartesian ↔ ternary coordinate conversion
-    validate_system.py ← structural validation of a system YAML
-    plot_util.py       ← Plotly figure builders
-    systems/           ← YAML system definitions
-    tests/             ← pytest suite
-    demo.ipynb         ← step-by-step Jupyter walkthrough
-public/
-  index.html           ← web app shell (Python runs in the browser)
-  css/style.css        ← all styles
-  js/app.js            ← all app logic (Pyodide, Plotly, forms)
-  exp06/               ← Python modules served for browser execution
-  systems/             ← YAML system definitions + index.json manifest
-  docs/guide.md        ← in-app Guide tab content
-scripts/
-  check_dual_copy.py   ← verifies public/exp06/ and experiments/experiment_06/ match
-.github/workflows/     ← CI (lint, dual-copy check, tests) + system-submission validation
-dev_server.py          ← local dev server (port 8080)
+experiments/experiment_06/   ← the calculation modules, tests, and demo.ipynb
+public/                      ← the web app: index.html, css/, js/, docs/guide.md
+public/exp06/                ← the same calculation modules, served to the browser
+*/systems/                   ← ternary system definitions, one YAML each
 ```
 
-The Python modules under `experiments/experiment_06/` and `public/exp06/` are kept
-byte-identical — the web app serves the `public/` copy. `scripts/check_dual_copy.py`
-verifies this and CI runs it on every push.
+Each calculation module is one step of the analysis — `equilibrium.py` fits the binodal,
+`conjugate.py` builds the conjugate curve and plait point, `hunter_nash.py` steps off the
+stages, `lever_rule.py` closes the material balance, `correlation.py` fits the tie-line
+correlations. `plot_util.py` draws every figure; nothing else touches Plotly.
+
+**The two copies of those modules are byte-identical, and that is enforced.** The web app
+runs Python in the browser through Pyodide, which needs the files under `public/`; there
+is no build step to put them there. `scripts/check_dual_copy.py` compares the pair and CI
+fails the push if they have drifted. Edit one, copy to the other, run the check.
+
+---
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+
+ruff check .                                         # lint
+python scripts/check_dual_copy.py                    # the two module copies match
+python -m pytest experiments/experiment_06/tests/    # 176 tests
+python dev_server.py                                 # serve public/ at localhost:8080
+```
+
+CI runs the first three on every push and pull request.
 
 ---
 
@@ -110,7 +141,9 @@ Department of Chemical and Biological Engineering, Seoul National University
 
 ## Citation
 
-A citable DOI will be added via Zenodo before publication.  
+<!-- On the first Zenodo release, replace this block with the concept DOI badge and a
+     BibTeX entry, and add the journal reference once the paper is accepted. -->
+A citable DOI will be minted through Zenodo at the first release.  
 Source: https://github.com/justinp54/CBPL-kit
 
 ---
