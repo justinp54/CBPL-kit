@@ -17,6 +17,14 @@ It runs the construction numerically, so changing one input and seeing the answe
 | **Phase equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity |
 | **Hunter-Nash** | …plus your own run: titration volumes and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
 
+## How to cite
+
+Used CBPL-kit for a report or a paper? Please cite the archived release:
+
+> Park, J., Lee, S., & Lee, Y.-W. (2026). *CBPL-kit: a web-based interactive toolkit for ternary phase equilibrium and liquid-liquid extraction*. Zenodo. [https://doi.org/10.5281/zenodo.21862135](https://doi.org/10.5281/zenodo.21862135)
+
+The DOI always points at the most recent release, so it stays correct as the toolkit is updated. The **Cite this repository** button on [GitHub](https://github.com/justinp54/CBPL-kit) gives the same thing in BibTeX and other formats.
+
 ## 1. Choose a system
 
 Everything below starts here. In the **System ✦** tab, pick a bundled system from the dropdown, or enter your own measured data in the form — then **Apply System**.
