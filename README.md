@@ -11,7 +11,7 @@ Runs in the browser with no installation, or as a Python package in Jupyter.
 ## Motivation
 
 Chemical and Biological Process Lab (CBPL) is a core laboratory course in the department of [Chemical and Biological Engineering at Seoul National University](https://cbe.snu.ac.kr/cbe/main/main.do).
-CBPL experiments are notorious for their complexity and difficulty of analysis, often involving complex thermodynamic modeling, data processing, and visualization. However, since the primary focus of the department is not on software engineering, students face challenges in developing their own efficient and reusable tool for analyzing their experimental data. As a result, a significant amount of time is spent on debugging and troubleshooting, rather than understanding the underlying scientific principles, which can hinder the overall learning experience and limit productivity.
+CBPL experiments are notorious for their complexity and difficulty of analysis, often involving complex thermodynamic modeling, data processing, and visualization. However, since the primary focus of the course is not on software engineering, students face challenges in developing their own efficient and reusable tool for analyzing their experimental data. As a result, a significant amount of time is spent on debugging and troubleshooting, rather than understanding the underlying scientific principles, which can hinder the overall learning experience and limit productivity.
 
 Therefore, CBPL-KIT aims to provide a standardized, modular toolkit that can be easily adapted to each individual's experimental datasets, enabling more efficient and structured analysis workflows, and ultimately enhancing the learning experience for students.
 
