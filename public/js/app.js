@@ -131,7 +131,7 @@ function renderContactPane() {
           Seoul National University<br>
           Seoul 08826, Republic of Korea</p>
         <p class="contact-tagline">Built CBPL-kit to make LLE data analysis more accessible for lab students.</p>
-        <p class="contact-sub" style="color:var(--text)">Developed in Spring 2026 | Last updated in July 2026</p>
+        <p class="contact-sub" style="color:var(--text)">Developed in Spring 2026 | Last updated in August 2026</p>
       </div>
       <div class="team-rows">${rows}</div>
       <div class="contact-submit">
