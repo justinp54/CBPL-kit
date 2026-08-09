@@ -46,6 +46,7 @@ const TEAM_DATA = [
     gradient: 'linear-gradient(135deg, #1878a8 0%, #0f2744 100%)',
     bio: [
       'Undergraduate Student',
+      'Computational Biology and Biomolecular Engineering Laboratory (Compbio Lab)',
       'Department of Chemical and Biological Engineering',
       'Department of Computer Science and Engineering',
       'Seoul National University',
@@ -137,7 +138,7 @@ function renderContactPane() {
       <div class="contact-submit">
         <div class="contact-submit-text">
           <div class="contact-submit-title">Contribute a System</div>
-          <div class="contact-submit-desc">Have a new LLE system? Submit a YAML file and we'll review it for inclusion in CBPL-kit.</div>
+          <div class="contact-submit-desc">Have an LLE system we don't bundle yet? We'd like to add it. Send us the YAML and we'll review it and write back.</div>
         </div>
         <div class="contact-submit-actions">
           <a class="contact-submit-btn"
@@ -154,12 +155,12 @@ function renderContactPane() {
       </div>
       <div class="contact-submit">
         <div class="contact-submit-text">
-          <div class="contact-submit-title">Report a Bug or Feedback</div>
-          <div class="contact-submit-desc">Found something that doesn't work, or have a suggestion? Let us know.</div>
+          <div class="contact-submit-title">Found a Bug? Have an Idea?</div>
+          <div class="contact-submit-desc">Anything from a broken chart to a typo — we'd like to hear it.</div>
         </div>
         <div class="contact-submit-actions">
           <a class="contact-submit-btn"
-             href="https://github.com/justinp54/CBPL-kit/issues/new?title=Bug+Report&labels=bug"
+             href="https://github.com/justinp54/CBPL-kit/issues/new?template=bug-or-feedback.yml"
              target="_blank" rel="noopener">Report on GitHub →</a>
           <a class="contact-submit-secondary" href="${_mailtoHref('Bug Report / Feedback - CBPL-kit', [
             'System used: ',
@@ -172,7 +173,6 @@ function renderContactPane() {
       </div>
       <div class="contact-footer">
         <a href="https://github.com/justinp54/CBPL-kit" target="_blank" rel="noopener" class="contact-gh-link">⟨/⟩ View on GitHub</a>
-        &nbsp;·&nbsp; cbpl-kit.vercel.app
       </div>
     </div>`;
 }
