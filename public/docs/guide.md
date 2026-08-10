@@ -4,11 +4,9 @@ This tool was initially built for the liquid-liquid extraction experiment in the
 
 Water is used to extract propionic acid out of n-bromopropane in a counter-current packed column. Once the column reaches steady state you sample the feed, extract, and raffinate, and titrate each against NaOH to find how much acid it carries. From those three numbers you determine how many equilibrium stages the separation needs, by the **Hunter-Nash** construction on a ternary phase diagram.
 
-📄 **Laboratory handout** *(coming soon)* — apparatus, procedure, and safety in full
-<!-- Once public/docs/lab-handout.pdf exists, make the line above:
-     📄 **[Laboratory handout](/docs/lab-handout.pdf)** — apparatus, procedure, and safety in full -->
+📄 **[Laboratory handout](/docs/laboratory_handout.pdf)** — apparatus, procedure, and safety in full
 
-📄 **[Technical documentation](/docs/technical-documentation.pdf)** — the numerical methods behind every figure, for anyone who wants to check or reuse them
+📄 **[Technical documentation](/docs/technical-documentation.pdf)** — the numerical methods behind every figure
 
 ## What this tool does
 
