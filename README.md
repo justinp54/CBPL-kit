@@ -37,6 +37,7 @@ costs a click instead of a redraw. There are two workflows:
 | **Extraction design** | …plus your own run: titration volumes and flow rates | stage count *N*, operating point, lever-rule check, S/F and feed-composition exploration |
 
 The method assumes a **Type I** system — only carrier and solvent are partially miscible.
+
 ---
 
 ## Bundled systems
