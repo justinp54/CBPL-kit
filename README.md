@@ -6,7 +6,7 @@ Runs in the browser with no installation, or as a Python package in Jupyter.
 
 **🌐 Web App → [cbpl-kit.vercel.app](https://cbpl-kit.vercel.app)**
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862135.svg)](https://doi.org/10.5281/zenodo.21862135)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21862135-blue.svg)](https://doi.org/10.5281/zenodo.21862135)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---

@@ -45,3 +45,9 @@ HANDOFF_TASKS.md
 # Exp 04 / 05 course code — archived at justinp54/CBPL-kit-archive
 experiments/experiment_04/
 experiments/experiment_05/
+
+# Chrome user-data directory that paper/shotgen.py creates for its screenshots.
+# Regenerated on every run; 47 MB of caches that must never reach the repository.
+.shotgen-profile/
+CHANGES.html
+experiments/experiment_06/legacy/
