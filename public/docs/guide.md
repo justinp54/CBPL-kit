@@ -6,7 +6,7 @@ Water is used to extract propionic acid out of n-bromopropane in a counter-curre
 
 📄 **[Laboratory handout](/docs/laboratory_handout.pdf)** — apparatus, procedure, and safety in full
 
-📄 **[Technical documentation](/docs/technical-documentation.pdf)** — the numerical methods behind every figure
+📄 **[Technical documentation](/docs/technical-documentation.pdf)** — the numerical methods behind every figure, for anyone who want to reuse
 
 ## What this tool does
 
