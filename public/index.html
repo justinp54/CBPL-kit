@@ -384,5 +384,9 @@
 <button class="data-trigger-btn" id="data-trigger-btn" aria-label="Show data panel" onclick="openDataDrawer()">↑ Data</button>
 <div id="export-render" style="position:fixed; left:-9999px; top:-9999px; pointer-events:none;"></div>
 <script src="/js/app.js"></script>
+<!-- Vercel Web Analytics. First-party path, so no SRI pin: the file is injected by
+     the host at request time and its hash changes without notice, unlike the pinned
+     CDN libraries above. Outside Vercel the request 404s and nothing else happens. -->
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
