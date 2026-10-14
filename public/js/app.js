@@ -795,7 +795,8 @@ json.dumps({
         'En1': {'wpa': 0.0, 'wbp': 0.0, 'ww': 100.0},
     },
     'mass_flows': {'solvent_g_min': _r(mass_En1), 'feed_g_min': _r(mass_R0_gm)},
-    'sf_range': {'min': sf_frac_min, 'max': sf_frac_max},
+    'sf_range': {'min': sf_frac_min, 'max': sf_frac_max,
+                 'exp': round(mass_En1 / (mass_En1 + mass_R0_gm), 4)},
     'feed_range': {'min': feed_wpa_lo, 'max': feed_wpa_hi},
     'fig_sf_trend': fig_sf_trend,
     'sf_min_found': sf_min_found,
@@ -912,7 +913,8 @@ document.getElementById('sf-num').addEventListener('input', function() {
 // range (valid/invalid zones + markers) for context, but the draggable
 // #sf-slider itself is physically resized/repositioned and min/max-clamped
 // to [S_min, S_max] on every Calculate — so it's impossible to drag past
-// either limit, not just visually discouraged.
+// either limit, not just visually discouraged. Calculate also returns the
+// handle to the run being described (see the end of updateSfRange).
 const SF_SLIDER_LO = 0.0, SF_SLIDER_HI = 1.0;
 let _sfBounds = null;
 let _sfLimits = null;   // raw S_min/S_max fracs from the last Calculate, for export
@@ -943,18 +945,21 @@ function updateSfRange(sfRange) {
   num.min = (sfRange.min * 100).toFixed(0);
   num.max = (sfRange.max * 100).toFixed(0);
 
-  const clamped = Math.min(Math.max(parseFloat(slider.value), sfRange.min), sfRange.max);
-  // Always refresh (not just on clamp) — the S/F ratio label needs to
-  // populate on the very first Calculate even when the default value
-  // didn't need to move.
-  updateSfLabels(clamped);
+  // Open on the run the sidebar describes, which is also where the trend
+  // chart draws its 'exp' rule: a handle parked anywhere else reads as a
+  // second, unexplained condition. The markup default this used to keep was
+  // picked for one system and means nothing for the next. A ratio the system
+  // cannot reach falls back to the nearer limit, which is as close to the run
+  // as this cascade gets. Always refreshed, not only when the value moves:
+  // the S/F label has to populate on the very first Calculate too.
+  updateSfLabels(Math.min(Math.max(sfRange.exp, sfRange.min), sfRange.max));
 }
 
 // System-specific feed-composition range (lever_rule.find_feed_bounds —
 // the probed feasible span for the current system and flows, or the fixed
 // legacy 10-55 fallback). Applied to both the slider and the number input
-// on every Calculate; the current value is clamped into the new range,
-// falling back to the experimental feed composition.
+// on every Calculate, which also returns the handle to the run's own feed
+// composition (clamped, for a system whose feasible span excludes it).
 function updateFeedRange(feedRange, wpaExp) {
   if (!feedRange) return;
   const slider = document.getElementById('feed-slider');
@@ -963,10 +968,7 @@ function updateFeedRange(feedRange, wpaExp) {
   slider.max = feedRange.max;
   num.min = feedRange.min;
   num.max = feedRange.max;
-  let v = parseFloat(slider.value);
-  if (isNaN(v)) v = wpaExp;
-  v = Math.max(feedRange.min, Math.min(feedRange.max, v));
-  updateFeedLabels(v);
+  updateFeedLabels(Math.max(feedRange.min, Math.min(feedRange.max, wpaExp)));
 }
 
 // Feed slider
