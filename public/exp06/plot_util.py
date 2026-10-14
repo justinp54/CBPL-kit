@@ -84,6 +84,14 @@ def _valid_mask(xs: np.ndarray, ys: np.ndarray) -> np.ndarray:
 _SF_MIN_COLOR = '#1a8a5f'
 _SF_MAX_COLOR = '#c0392b'
 
+# Neutral grey for a reference mark that is not a limit: the line showing where
+# the run in the sidebar actually sits. Quieter than the two limit colours,
+# which carry a verdict ('below this it cannot be done'); this one only says
+# 'you are here'. But it still has to out-weigh the axis frame it crosses
+# (#d0d5dd, mirrored on all four sides) -- a lighter grey read as part of the
+# frame rather than as a mark on the data.
+_EXP_COLOR = '#5b6676'
+
 _TERNARY_TITLE_PX = 14   # Plotly's own default for these titles — the size they render at
 _TERNARY_GAP_PX   = 10   # blank-line font: the b/c gap is 1.3x this, so ~13px
 
@@ -906,6 +914,147 @@ def fig_lever_rule_interactive(
     return fig
 
 
+# Where a one-line note may sit, as the anchor it takes in axis-domain
+# coordinates. Tried in this order, so a panel with two free corners takes the
+# top-right one. How much room it needs there is measured per call, not fixed
+# here: a constant box went stale the moment the type size changed, and the
+# corner it cleared at 9 pt covered the 'exp' tag at 12.
+_NOTE_ANCHORS = (
+    dict(x=0.97, y=0.97, xanchor='right', yanchor='top'),
+    dict(x=0.97, y=0.04, xanchor='right', yanchor='bottom'),
+    dict(x=0.03, y=0.97, xanchor='left',  yanchor='top'),
+    dict(x=0.03, y=0.04, xanchor='left',  yanchor='bottom'),
+)
+
+# Big enough to read against the data, small enough that the eye still goes to
+# the trend first: one step over the tick numbers, level with the axis titles.
+_NOTE_SIZE, _TAG_SIZE = 11, 10
+
+# Plotly's default sans runs about 0.52 em per character, and one line stands
+# about 1.35 em. Reserving space, not typesetting -- what matters is that the
+# reserved box follows the type size instead of ignoring it.
+_EM_W, _EM_H = 0.52, 1.35
+
+
+def _text_box(fig: go.Figure, anchor: dict, text: str, size: float,
+              pad: float = 0.02) -> tuple:
+    """Panel fractions (u0, u1, v0, v1) a one-line label covers at that anchor."""
+    lay = fig.layout
+    plot_w = (lay.width or 320) - (lay.margin.l or 0) - (lay.margin.r or 0)
+    plot_h = (lay.height or 260) - (lay.margin.t or 0) - (lay.margin.b or 0)
+    w = len(text) * _EM_W * size / plot_w
+    h = _EM_H * size / plot_h
+    x, y = anchor['x'], anchor['y']
+    u0, u1 = (x - w, x) if anchor['xanchor'] == 'right' else (x, x + w)
+    v0, v1 = (y - h, y) if anchor['yanchor'] == 'top' else (y, y + h)
+    return (u0 - pad, u1 + pad, v0 - pad, v1 + pad)
+
+
+def _overlap(a: tuple, b: tuple) -> bool:
+    return a[0] < b[1] and b[0] < a[1] and a[2] < b[3] and b[2] < a[3]
+
+
+def _note_corner(fig: go.Figure, note: str, tag_boxes: tuple = ()) -> dict:
+    """The emptiest corner of a trend panel, measured rather than chosen.
+
+    feed_stage_count_trend says outright that the shape is whatever the real
+    geometry gives, so a corner picked by eye for the reference system lands on
+    the data for the next one.
+
+    A limit line counts twice. Its label sits at the foot of the line, so it
+    blocks the corner it stands in like any data point; and the line itself is a
+    wall running the full height, so a note anchored to that side is pulled back
+    clear of it rather than being allowed to end on the dash.
+
+    tag_boxes are the panel fractions already taken by other labels, which the
+    note must not land on: text over text is unreadable, while a data point
+    under the note's translucent box still is.
+    """
+    xs = np.concatenate([np.asarray(tr.x, float) for tr in fig.data])
+    ys = np.concatenate([np.asarray(tr.y, float) for tr in fig.data])
+    x_lo, x_hi = _x_span(fig, xs)
+    y_hi = float(ys.max()) * 1.06   # rangemode='tozero' plus Plotly's own headroom
+    # Only vertical rules have a foot to avoid; the break squiggle is a path with
+    # no x0 at all, and asking it for one raises rather than returning None.
+    feet = [float(s.x0) for s in fig.layout.shapes
+            if s.type == 'line' and s.x0 is not None]
+    walls = [(x - x_lo) / (x_hi - x_lo) for x in feet]
+    pts = [((x - x_lo) / (x_hi - x_lo), y / y_hi)
+           for x, y in list(zip(xs, ys)) + [(x, 0.0) for x in feet]]
+
+    def crowding(anchor):
+        box = _text_box(fig, anchor, note, _NOTE_SIZE)
+        u0, u1, v0, v1 = box
+        return (sum(1 for b in tag_boxes if _overlap(box, b)),
+                sum(1 for u, v in pts if u0 <= u <= u1 and v0 <= v <= v1))
+
+    # The emptiest corner, not the first empty one: a trend that fills the panel
+    # leaves none of the four clear, and a fixed fallback then put the note
+    # straight on top of the 'exp' tag. min() is stable, so an all-clear panel
+    # still takes the top-right corner these are declared in.
+    pos = dict(min(_NOTE_ANCHORS, key=crowding))
+    near = [u for u in walls if (u > 0.5) == (pos['xanchor'] == 'right')]
+    if near:
+        pos['x'] = (min(pos['x'], min(near) - 0.03) if pos['xanchor'] == 'right'
+                    else max(pos['x'], max(near) + 0.03))
+    return pos
+
+
+def _x_span(fig: go.Figure, xs) -> tuple:
+    """The x range the panel will actually show, explicit or auto-ranged."""
+    if fig.layout.xaxis.range is not None:
+        return tuple(float(v) for v in fig.layout.xaxis.range)
+    lo, hi = float(np.min(xs)), float(np.max(xs))
+    pad = (hi - lo) * 0.0667        # Plotly's own padding around scatter markers
+    return lo - pad, hi + pad
+
+
+def _mark_experiment(fig: go.Figure, x_exp: float, xs: list, ys: list,
+                     note: str) -> None:
+    """Mark where the run in the sidebar sits on a trend, and name what the
+    sweep held fixed to produce it.
+
+    Each explorer varies one quantity and holds the other, and which is which
+    cannot be read off the axes alone -- the note is the only thing that says
+    the two panels describe one experiment rather than two.
+
+    The 'exp' tag goes above the rule or below it, whichever side the trend
+    leaves free at that x. Always putting it at the foot, where the limit
+    labels sit, drops it onto the (S/F)min label in the S/F panel, because the
+    curve has already flattened by the time it reaches the experiment's ratio.
+    """
+    x_lo, x_hi = _x_span(fig, xs)
+    tags = ()
+    if x_lo <= x_exp <= x_hi:
+        nearest = min(range(len(xs)), key=lambda k: abs(xs[k] - x_exp))
+        high = ys[nearest] > max(ys) * 0.5
+        # Plotly hangs the tag off the right of the rule, at the head or foot.
+        tags = (_text_box(fig, dict(x=(x_exp - x_lo) / (x_hi - x_lo),
+                                    y=0.0 if high else 1.0, xanchor='left',
+                                    yanchor='bottom' if high else 'top'),
+                          'exp', _TAG_SIZE),)
+        fig.add_vline(
+            x=x_exp,
+            line_dash='dash',
+            line_color=_EXP_COLOR,
+            line_width=1,
+            annotation_text='exp',
+            annotation_position='bottom right' if high else 'top right',
+            annotation_font_size=_TAG_SIZE,
+            annotation_font_color=_EXP_COLOR,
+        )
+    # After the rule, so its foot counts as occupied when the corner is picked.
+    fig.add_annotation(
+        text=note,
+        xref='x domain', yref='y domain',
+        showarrow=False,
+        font=dict(size=_NOTE_SIZE, color='#0f2744'),
+        bgcolor='rgba(255,255,255,0.8)',
+        borderpad=1,
+        **_note_corner(fig, note, tags),
+    )
+
+
 def fig_sf_stage_trend(
     system: EquilibriumSystem,
     conjugate: ConjugateCurve,
@@ -914,11 +1063,16 @@ def fig_sf_stage_trend(
     pt_En1: tuple[float, float],
     frac_min: float,
     frac_max: float,
+    sf_exp: float | None = None,
 ) -> go.Figure | None:
     """Stages needed vs S:F ratio, using only genuinely-computed (never
     guessed-at) points from stage_count_trend — see its docstring for why
     the trend stops short of frac_min itself rather than trying to reach
     or demonstrate the boundary directly.
+
+    sf_exp is the sidebar run's own S/F by mass. Given, the chart marks it and
+    names the feed composition this sweep holds fixed; omitted, neither is
+    drawn, which is what the manuscript figure wants (it adds its own note).
 
     Computed once during Calculate, not tied to the live slider drag.
     Returns None if fewer than 2 usable points were found (too little to
@@ -1012,6 +1166,12 @@ def fig_sf_stage_trend(
             font=dict(size=9, color=_SF_MAX_COLOR),
             bgcolor='rgba(255,255,255,0.85)',
         )
+
+    # Last, so the note sees the final axis range and every rule already drawn.
+    if sf_exp is not None:
+        s = _lb(system)['solute']['abbr']
+        _mark_experiment(fig, sf_exp, xs, ys,
+                         f'Feed {s} = {xy_to_comp(*pt_R0)[0]:.1f} wt%')
     return fig
 
 
@@ -1024,12 +1184,16 @@ def fig_feed_stage_trend(
     mass_En1: float,
     wpa_lo: float = 10.0,
     wpa_hi: float = 55.0,
+    wpa_exp: float | None = None,
 ) -> go.Figure | None:
     """Stages needed vs Feed solute wt%, using only genuinely-computed points
     from feed_stage_count_trend. No named limit line (see its docstring) —
     just the trend itself. Not necessarily monotonic (see
     feed_stage_count_trend's docstring) — don't caption this as "rising"
     or "falling", the shape is whatever the real geometry gives.
+
+    wpa_exp is the sidebar run's own feed solute wt%. Given, the chart marks it
+    and names the S/F this sweep holds fixed; omitted, neither is drawn.
 
     Computed once during Calculate, not tied to the live slider drag.
     Returns None if fewer than 2 usable points were found.
@@ -1061,6 +1225,12 @@ def fig_feed_stage_trend(
         plot_bgcolor='white',
         paper_bgcolor='white',
     )
+
+    # S/F stays at the real mass flows for the whole sweep (only the feed
+    # composition moves), so one ratio describes every point on this panel.
+    if wpa_exp is not None:
+        _mark_experiment(fig, wpa_exp, xs, ys,
+                         f'S/F = {mass_En1 / mass_R0:.2f} by mass')
     return fig
 
 

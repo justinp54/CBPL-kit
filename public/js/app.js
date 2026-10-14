@@ -726,7 +726,7 @@ pp         = xy_to_comp(*conjugate.pt_plait)
 # S_min was found.
 fig_sf_trend = None
 if _sf_frac_min is not None and _sf_frac_max is not None:
-    _fig_sf_trend = plot_util.fig_sf_stage_trend(system, conjugate, pt_R0, pt_Rn, pt_En1, _sf_frac_min, _sf_frac_max)
+    _fig_sf_trend = plot_util.fig_sf_stage_trend(system, conjugate, pt_R0, pt_Rn, pt_En1, _sf_frac_min, _sf_frac_max, mass_En1 / mass_R0_gm)
     fig_sf_trend = _fig_sf_trend.to_json() if _fig_sf_trend is not None else None
 
 # Raw (un-fallback'd) S_min/S_max, for the reference cards — sf_frac_min/max
@@ -754,7 +754,7 @@ else:
 # real fixed value. See feed_stage_count_trend's docstring for why
 # there's no named limit line and why the shape isn't necessarily
 # monotonic.
-_fig_feed_trend = plot_util.fig_feed_stage_trend(system, conjugate, pt_Rn, pt_En1, mass_R0_gm, mass_En1, feed_wpa_lo, feed_wpa_hi)
+_fig_feed_trend = plot_util.fig_feed_stage_trend(system, conjugate, pt_Rn, pt_En1, mass_R0_gm, mass_En1, feed_wpa_lo, feed_wpa_hi, wpa_R0)
 fig_feed_trend = _fig_feed_trend.to_json() if _fig_feed_trend is not None else None
 
 def _build(key):
