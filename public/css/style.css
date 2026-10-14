@@ -104,6 +104,14 @@
     .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
     .dot-R { background: var(--blue); } .dot-E { background: #ef4444; }
     .flows-text { font-size: 11px; color: var(--muted); margin-top: 12px; line-height: 1.8; }
+    /* Concentration-mode picker. The System tab's .sys-select sits on a light
+       surface; the sidebar is dark, so this follows .field-input instead. */
+    .mode-select { width: 100%; background: rgba(10,22,32,.5); border: 1px solid rgba(255,255,255,.1); border-radius: 5px; color: #e2e8f0; font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; font-weight: 500; padding: 7px 9px; outline: none; cursor: pointer; transition: border-color .15s, background .15s; }
+    .mode-select:focus { border-color: var(--blue); background: rgba(10,22,32,.9); }
+    .mode-select:hover { border-color: rgba(255,255,255,.22); }
+    .mode-select:disabled { opacity: .4; cursor: not-allowed; }
+    .mode-select option { background: #11212e; color: #e2e8f0; }
+
     .f-num { width:44px; flex-shrink:0; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:5px; color:#cbd5e1; font-size:11px; font-family:'JetBrains Mono',monospace; text-align:right; padding:3px 5px; outline:none; }
     .f-num:focus { border-color:var(--blue); }
     .f-unit { font-size:11px; color:#94a3b8; flex-shrink:0; }

@@ -178,7 +178,11 @@ function renderContactPane() {
 }
 
 // ── State ─────────────────────────────────────────────────────────────────
-const FIELDS = ['V_R0','V_E1','V_RN','flow_solvent','flow_feed','c_naoh','v_aliquot'];
+const FIELDS = ['V_R0','V_E1','V_RN','flow_solvent','flow_feed','c_naoh','v_aliquot','W_R0','W_E1','W_RN','C_R0','C_E1','C_RN'];
+// Which of the three ways the solute content was measured is on screen. The
+// Python side takes it per stream, so showing one picker per stream later is
+// a change here only.
+let concMode = 'titration';
 let pyodide   = null;
 let pyReady   = false;
 let cache     = {};
@@ -276,9 +280,7 @@ async function initPyodide() {
     }, 400);
 
     // Enable UI
-    const btn = document.getElementById('calc-btn');
-    btn.disabled = false;
-    document.getElementById('calc-label').textContent = 'Calculate';
+    updateCalcEnabled();   // stays grey until a measurement method is picked
     FIELDS.forEach(f => {
       document.getElementById(f).disabled = false;
     });
@@ -624,12 +626,50 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && pyReady && !computing) calculate();
 });
 
-// Titration formula box — rendered on window load because katex.min.js is
+// Concentration box — rendered on window load because katex.min.js is
 // deferred and executes after this classic script.
 const _TITR_LATEX = 'C_{\\mathrm{solute}} = \\dfrac{C_{\\mathrm{NaOH}} \\cdot V_{\\mathrm{NaOH}} \\cdot f}{V_{\\mathrm{aliquot}}}';
+const _CONC_BOX = {
+  titration:  { label: 'Solute Concentration', eq: _TITR_LATEX,
+                note: 'f\\text{: dilution factor}' },
+  wt_percent: { label: 'Solute Mass Fraction', eq: 'w_{\\mathrm{solute}}\\ [\\mathrm{wt\\%}]',
+                note: '\\text{extract and raffinate are placed on the binodal curve}' },
+  molar:      { label: 'Solute Concentration', eq: 'C_{\\mathrm{solute}}\\ [\\mathrm{mol/L}]',
+                note: '\\text{extract and raffinate are placed on the binodal curve}' },
+};
+
+// Calculate is held back until the method is chosen. Defaulting to titration
+// would let someone with wt% data compute a wrong answer without ever noticing
+// the picker, so the choice is made deliberate rather than assumed.
+function updateCalcEnabled() {
+  const btn = document.getElementById('calc-btn');
+  btn.disabled = !(pyReady && concMode);
+  document.getElementById('calc-label').textContent =
+    pyReady ? (concMode ? 'Calculate' : 'Choose a method first') : 'Loading\u2026';
+}
+
+function setConcMode(mode) {
+  concMode = mode;
+  document.querySelectorAll('.conc-block').forEach(el => {
+    el.style.display = (el.dataset.mode === mode) ? '' : 'none';
+  });
+  // the stream names and the formula box belong to whichever method is on
+  // screen; with none chosen they would be three labels over nothing
+  document.querySelectorAll('.conc-any').forEach(el => {
+    el.style.display = mode ? '' : 'none';
+  });
+  updateCalcEnabled();
+  const b = _CONC_BOX[mode];
+  if (!b) return;          // nothing picked yet: leave the box empty
+  document.getElementById('conc-box-label').textContent = b.label;
+  document.getElementById('titr-formula-eq').innerHTML = _katex(b.eq);
+  document.getElementById('titr-formula-note').innerHTML = _katex(b.note);
+}
+
 window.addEventListener('load', () => {
-  document.getElementById('titr-formula-eq').innerHTML = _katex(_TITR_LATEX);
-  document.getElementById('titr-formula-note').innerHTML = _katex('f\\text{: dilution factor}');
+  const sel = document.getElementById('conc-mode');
+  sel.addEventListener('change', () => setConcMode(sel.value));
+  setConcMode(sel.value);
 });
 
 // ── Core Python computation ────────────────────────────────────────────────
@@ -644,9 +684,10 @@ def _comp(t):   return {'wpa': _r(t[0]), 'wbp': _r(t[1]), 'ww': _r(t[2])}
 system    = _system
 conjugate = _conjugate
 
-c_R0 = config.conc_from_titration(config.V_R0, _f_R0)
-c_E1 = config.conc_from_titration(config.V_E1, _f_E1)
-c_Rn = config.conc_from_titration(config.V_RN, _f_Rn)
+# The three input modes meet here; everything below speaks molar concentration.
+c_R0 = config.solute_concentration(_mode, _v_R0, f=_f_R0, system=system, left=None)
+c_E1 = config.solute_concentration(_mode, _v_E1, f=_f_E1, system=system, left=True)
+c_Rn = config.solute_concentration(_mode, _v_Rn, f=_f_Rn, system=system, left=False)
 
 denom  = c_R0 * MW_PA + RHO_BP * (1000.0 - c_R0 * MW_PA / RHO_PA)
 wpa_R0 = c_R0 * MW_PA / denom * 100.0
@@ -955,7 +996,7 @@ document.getElementById('feed-num').addEventListener('input', function() {
 
 // ── Calculate ──────────────────────────────────────────────────────────────
 async function calculate(requestedKeys) {
-  if (!pyReady || computing) return;
+  if (!pyReady || computing || !concMode) return;
   computing = true;
 
   document.getElementById('loading').classList.add('show');
@@ -983,6 +1024,14 @@ async function calculate(requestedKeys) {
     pyodide.globals.set('_f_R0', parseInt(document.getElementById('f-R0').value));
     pyodide.globals.set('_f_E1', parseInt(document.getElementById('f-E1').value));
     pyodide.globals.set('_f_Rn', parseInt(document.getElementById('f-Rn').value));
+    // One value per stream, read from whichever block the mode has on screen.
+    const _src = { titration: ['V_R0','V_E1','V_RN'],
+                   wt_percent: ['W_R0','W_E1','W_RN'],
+                   molar: ['C_R0','C_E1','C_RN'] }[concMode];
+    pyodide.globals.set('_mode', concMode);
+    ['_v_R0','_v_E1','_v_Rn'].forEach((g, i) => {
+      pyodide.globals.set(g, parseFloat(document.getElementById(_src[i]).value));
+    });
     pyodide.globals.set('_requested_keys', toFetch);
     const json = await pyodide.runPythonAsync(PY_COMPUTE);
     const data = JSON.parse(json);
@@ -1012,7 +1061,9 @@ async function calculate(requestedKeys) {
 
   } catch (err) {
     const box = document.getElementById('error-box');
-    box.textContent = 'Calculation failed: check your input values. (' + err.message + ')';
+    // pyErrMsg, not err.message: the raw Pyodide traceback buries the last line,
+    // which is where the calculation modules put the sentence meant for the student.
+    box.textContent = 'Calculation failed: ' + pyErrMsg(err);
     box.classList.add('show');
     document.getElementById('empty').style.display = 'flex';
     console.error(err);

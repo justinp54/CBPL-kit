@@ -29,7 +29,7 @@ try:
         V_E1,
         V_R0,
         V_RN,
-        conc_from_titration,
+        solute_concentration,
     )
     from .conjugate import ConjugateCurve
     from .equilibrium import EquilibriumSystem
@@ -51,7 +51,7 @@ except ImportError:
         V_E1,
         V_R0,
         V_RN,
-        conc_from_titration,
+        solute_concentration,
     )
     from conjugate import ConjugateCurve
     from equilibrium import EquilibriumSystem
@@ -75,11 +75,23 @@ class StreamPoints:
     wbp_R0: float                 # n-BP wt% in feed
 
 
-def compute_stream_points(system: EquilibriumSystem) -> StreamPoints:
-    """Derive R0, E1, Rn Cartesian coordinates from titration results in config.py."""
-    c_R0 = conc_from_titration(V_R0, F_R0)
-    c_E1 = conc_from_titration(V_E1, F_E1)
-    c_Rn = conc_from_titration(V_RN, F_RN)
+def compute_stream_points(
+    system: EquilibriumSystem,
+    mode: str = "titration",
+    values: tuple[float, float, float] | None = None,
+) -> StreamPoints:
+    """Derive R0, E1, Rn Cartesian coordinates from the measured stream contents.
+
+    Defaults to the titration volumes in config.py, so existing notebooks are
+    unaffected. Pass mode="wt_percent" or "molar" with values=(feed, extract,
+    raffinate) to enter the solute content directly instead.
+    """
+    if values is None:
+        values = (V_R0, V_E1, V_RN)
+    v_R0, v_E1, v_Rn = values
+    c_R0 = solute_concentration(mode, v_R0, f=F_R0, system=system, left=None)
+    c_E1 = solute_concentration(mode, v_E1, f=F_E1, system=system, left=True)
+    c_Rn = solute_concentration(mode, v_Rn, f=F_RN, system=system, left=False)
 
     # R0: binary BP+PA (no water); solve for wpa from molar concentration
     denom = c_R0 * MW_PA + RHO_BP * (1000.0 - c_R0 * MW_PA / RHO_PA)

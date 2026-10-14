@@ -318,11 +318,46 @@ class EquilibriumSystem:
         }
         return cls(equil_data=equil, tie_data=ties, labels=lbs)
 
+    def _branch_bounds(self, left: bool) -> tuple[float, float]:
+        return ((self.x_domain[0], self.x_plait_approx) if left
+                else (self.x_plait_approx, self.x_domain[1]))
+
+    def branch_solute_limit(self, left: bool) -> tuple[float, float]:
+        """Largest solute wt% and molar concentration this branch can carry.
+
+        Both run from zero at the solvent or carrier vertex up to the plait
+        point, so the maximum is what a stream on this branch cannot exceed.
+        Sampled rather than taken at the endpoint because the two need not peak
+        together once the densities differ.
+        """
+        lo, hi = self._branch_bounds(left)
+        xs = np.linspace(lo, hi, 200)
+        w = max(xy_to_comp(x, float(self.spline(x)))[0] for x in xs)
+        c = max(self.molar_concentration_pa(x, float(self.spline(x))) for x in xs)
+        return float(w), float(c)
+
     def find_curve_point_by_concentration(
         self, target_c: float, left: bool
     ) -> tuple[tuple[float, float], tuple[float, float, float], float]:
-        """Find the point on the equilibrium curve whose PA concentration equals target_c."""
-        bounds = (self.x_domain[0], self.x_plait_approx) if left else (self.x_plait_approx, self.x_domain[1])
+        """Find the point on the equilibrium curve whose PA concentration equals target_c.
+
+        A target above what the branch can carry used to be swallowed: the
+        bounded search returned the plait-point end and the caller got a
+        plausible-looking composition for an impossible stream, which then ran
+        all the way through to a stage count. It is an error now.
+        """
+        w_max, c_max = self.branch_solute_limit(left)
+        if target_c < 0:
+            raise ValueError(f"Solute concentration {target_c:.4g} M is negative.")
+        if target_c > c_max * 1.002:          # a hair of slack for the plait point itself
+            side = "extract (solvent-rich)" if left else "raffinate (carrier-rich)"
+            raise ValueError(
+                f"Solute concentration {target_c:.3f} M is above what the {side} "
+                f"branch of this system can hold: it reaches {c_max:.3f} M "
+                f"({w_max:.1f} wt% solute) at the plait point. Check the titration "
+                "volume and the dilution factor, or the concentration you entered."
+            )
+        bounds = self._branch_bounds(left)
         res = minimize_scalar(
             lambda x: abs(
                 self.molar_concentration_pa(x, float(self.spline(x))) - target_c
@@ -332,3 +367,31 @@ class EquilibriumSystem:
         )
         x, y = float(res.x), float(self.spline(res.x))
         return (x, y), xy_to_comp(x, y), self.molar_concentration_pa(x, y)
+
+    def concentration_from_wt_percent(self, w_solute: float, left: bool) -> float:
+        """Solute wt% of a stream ON the binodal -> its molar concentration [mol/L].
+
+        A stream leaving the column sits on the curve, so its solute fraction
+        already fixes the whole composition: invert the spline for x, then read
+        the concentration off that point. No density iteration is involved --
+        the composition is known before the density is ever needed.
+        """
+        w_max, _ = self.branch_solute_limit(left)
+        if w_solute < 0:
+            raise ValueError(f"Solute fraction {w_solute:.4g} wt% is negative.")
+        if w_solute > w_max * 1.002:
+            side = "extract (solvent-rich)" if left else "raffinate (carrier-rich)"
+            raise ValueError(
+                f"Solute fraction {w_solute:.2f} wt% is above what the {side} "
+                f"branch of this system can hold: it reaches {w_max:.1f} wt% at "
+                "the plait point. Check the value you entered."
+            )
+        lo, hi = self._branch_bounds(left)
+        y_target = np.sqrt(3) / 2.0 * float(w_solute)
+        f_lo = float(self.spline(lo)) - y_target
+        f_hi = float(self.spline(hi)) - y_target
+        if f_lo * f_hi < 0:
+            x = float(brentq(lambda t: float(self.spline(t)) - y_target, lo, hi))
+        else:
+            x = lo if abs(f_lo) < abs(f_hi) else hi
+        return self.molar_concentration_pa(x, float(self.spline(x)))

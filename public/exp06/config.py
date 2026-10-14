@@ -54,3 +54,67 @@ def conc_from_titration(v_naoh_mL: float, f: float = 1.0) -> float:
     sidebar take effect.
     """
     return C_NAOH * float(v_naoh_mL) * float(f) / V_ALIQUOT_ML
+
+
+def conc_from_wt_percent(w_solute: float) -> float:
+    """Solute wt% in the FEED -> solute molar concentration [mol/L].
+
+    The feed carries no solvent, so it is a binary carrier + solute mixture and
+    volume additivity inverts in closed form -- no iteration. The warning in
+    AGENTS.md about the density depending on the sample's own solute content
+    applies to a free ternary composition; here, and on the binodal curve, one
+    number already fixes the whole composition.
+
+    This is the exact inverse of the wpa_R0 line in compute_stream_points:
+        w/100 = c.M / (c.M + rho_c.(1000 - c.M/rho_s))
+    Densities are read at call time so a system switch (which rewrites
+    config.RHO_BP etc.) takes effect.
+    """
+    k = float(w_solute) / 100.0
+    if not 0.0 <= k < 1.0:
+        raise ValueError(
+            f"Feed solute fraction {w_solute:.3f} wt% is outside 0-100 wt%."
+        )
+    return 1000.0 * k * RHO_BP / (MW_PA * (1.0 - k * (1.0 - RHO_BP / RHO_PA)))
+
+
+#: How a stream's solute content was measured. The web sidebar picks one for
+#: all three streams; the signature below takes it per stream so that showing
+#: a per-stream choice later is a user-interface change only.
+INPUT_MODES = ("titration", "wt_percent", "molar")
+
+
+def solute_concentration(
+    mode: str,
+    value: float,
+    *,
+    f: float = 1.0,
+    system=None,
+    left: bool | None = None,
+) -> float:
+    """A stream's solute molar concentration [mol/L], however it was measured.
+
+    Everything downstream of this -- the stream points, the construction, the
+    stage count -- speaks molar concentration, so the three input modes only
+    have to meet here.
+
+    mode   "titration" (value is the NaOH titre in mL), "wt_percent", or "molar"
+    f      dilution factor, titration only
+    left   None for the feed, which is a binary carrier + solute mixture;
+           True for the extract and False for the raffinate, which lie on the
+           binodal curve and need the system to place a wt% on it
+    """
+    if mode not in INPUT_MODES:
+        raise ValueError(f"Unknown input mode {mode!r}; expected one of {INPUT_MODES}.")
+    if mode == "titration":
+        return conc_from_titration(value, f)
+    if mode == "molar":
+        return float(value)
+    if left is None:
+        return conc_from_wt_percent(value)
+    if system is None:
+        raise ValueError(
+            "A wt% on the binodal curve needs the system to place it; "
+            "pass system= for the extract and the raffinate."
+        )
+    return system.concentration_from_wt_percent(value, left=left)

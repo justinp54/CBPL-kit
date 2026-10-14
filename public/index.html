@@ -37,9 +37,18 @@
   <!-- Sidebar -->
   <aside>
     <div class="section">
-      <div class="section-label">Titration Data</div>
+      <div class="section-label">Concentration Determination</div>
 
       <div class="field">
+        <select class="mode-select" id="conc-mode" aria-label="How the solute content was measured">
+          <option value="" selected>Select a method…</option>
+          <option value="titration">Titration</option>
+          <option value="wt_percent">Mass fraction (wt%)</option>
+          <option value="molar">Molar concentration (mol/L)</option>
+        </select>
+      </div>
+
+      <div class="field conc-block" data-mode="titration">
         <div class="titr-row">
           <span class="titr-sym">C<sub>NaOH</sub></span>
           <input class="field-input titr-input" id="c_naoh" type="number" value="0.5" min="0.01" max="5" step="0.01" aria-label="NaOH titrant concentration mol per L" />
@@ -51,40 +60,64 @@
       </div>
 
       <div class="field">
-        <div class="field-label">Feed</div>
-        <div class="field-body">
+        <div class="field-label conc-any">Feed</div>
+        <div class="field-body conc-block" data-mode="titration">
           <span class="f-tag">f</span>
           <input class="f-num" id="f-R0" type="number" value="10" min="1" max="20" step="1" aria-label="Feed dilution factor" />
           <span class="f-unit">×</span>
-          <input class="field-input" id="V_R0" type="number" value="10.78" min="0.5" max="40" step="0.01" aria-label="VR0 Feed titration volume mL" />
+          <input class="field-input" id="V_R0" type="number" value="10.78" min="0.5" max="40" step="0.01" aria-label="Feed titration volume mL" />
           <span class="field-unit">mL</span>
+        </div>
+        <div class="field-body conc-block" data-mode="wt_percent" style="display:none">
+          <input class="field-input" id="W_R0" type="number" value="33.03" min="0" max="100" step="0.01" aria-label="Feed solute mass fraction wt%" />
+          <span class="field-unit">wt%</span>
+        </div>
+        <div class="field-body conc-block" data-mode="molar" style="display:none">
+          <input class="field-input" id="C_R0" type="number" value="5.39" min="0" max="30" step="0.001" aria-label="Feed solute molar concentration mol per L" />
+          <span class="field-unit">M</span>
         </div>
       </div>
 
       <div class="field">
-        <div class="field-label">Extract</div>
-        <div class="field-body">
+        <div class="field-label conc-any">Extract</div>
+        <div class="field-body conc-block" data-mode="titration">
           <span class="f-tag">f</span>
           <input class="f-num" id="f-E1" type="number" value="10" min="1" max="20" step="1" aria-label="Extract dilution factor" />
           <span class="f-unit">×</span>
-          <input class="field-input" id="V_E1" type="number" value="3.80" min="0.1" max="20" step="0.01" aria-label="VE1 First Extract titration volume mL" />
+          <input class="field-input" id="V_E1" type="number" value="3.80" min="0.1" max="20" step="0.01" aria-label="Extract titration volume mL" />
           <span class="field-unit">mL</span>
+        </div>
+        <div class="field-body conc-block" data-mode="wt_percent" style="display:none">
+          <input class="field-input" id="W_E1" type="number" value="13.93" min="0" max="100" step="0.01" aria-label="Extract solute mass fraction wt%" />
+          <span class="field-unit">wt%</span>
+        </div>
+        <div class="field-body conc-block" data-mode="molar" style="display:none">
+          <input class="field-input" id="C_E1" type="number" value="1.9" min="0" max="30" step="0.001" aria-label="Extract solute molar concentration mol per L" />
+          <span class="field-unit">M</span>
         </div>
       </div>
 
       <div class="field">
-        <div class="field-label">Raffinate</div>
-        <div class="field-body">
+        <div class="field-label conc-any">Raffinate</div>
+        <div class="field-body conc-block" data-mode="titration">
           <span class="f-tag">f</span>
           <input class="f-num" id="f-Rn" type="number" value="1" min="1" max="20" step="1" aria-label="Raffinate dilution factor" />
           <span class="f-unit">×</span>
-          <input class="field-input" id="V_RN" type="number" value="0.64" min="0.01" max="20" step="0.01" aria-label="VRn Raffinate titration volume mL" />
+          <input class="field-input" id="V_RN" type="number" value="0.64" min="0.01" max="20" step="0.01" aria-label="Raffinate titration volume mL" />
           <span class="field-unit">mL</span>
+        </div>
+        <div class="field-body conc-block" data-mode="wt_percent" style="display:none">
+          <input class="field-input" id="W_RN" type="number" value="0.18" min="0" max="100" step="0.01" aria-label="Raffinate solute mass fraction wt%" />
+          <span class="field-unit">wt%</span>
+        </div>
+        <div class="field-body conc-block" data-mode="molar" style="display:none">
+          <input class="field-input" id="C_RN" type="number" value="0.032" min="0" max="30" step="0.001" aria-label="Raffinate solute molar concentration mol per L" />
+          <span class="field-unit">M</span>
         </div>
       </div>
 
-      <div class="corr-stats-box titr-formula-box">
-        <div class="fml-label">Solute Concentration</div>
+      <div class="corr-stats-box titr-formula-box conc-any">
+        <div class="fml-label" id="conc-box-label">Solute Concentration</div>
         <div class="fml-eq" id="titr-formula-eq"></div>
         <div class="fml-note" id="titr-formula-note"></div>
       </div>
@@ -186,7 +219,7 @@
       <div id="empty" style="display:none">
         <div class="ico"><svg width="52" height="52" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><polygon points="16,2 30,28 2,28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="16" cy="18" r="2" fill="currentColor"/></svg></div>
         <h2>Ready to analyze</h2>
-        <p>Enter titration data and flow rates in the sidebar, then press <strong>Calculate</strong>.</p>
+        <p>Choose how the solute content was measured, enter it with the flow rates in the sidebar, then press <strong>Calculate</strong>.</p>
       </div>
 
       <div class="plot-pane plot-with-panel" id="plot-fig3" role="tabpanel" aria-labelledby="tab-fig3">
