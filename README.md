@@ -34,7 +34,7 @@ costs a click instead of a redraw. There are two workflows:
 | | You supply | You get |
 |---|---|---|
 | **Phase equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity, Othmer-Tobias / Hand / Bachman correlations |
-| **Extraction design** | …plus your own run: titration volumes and flow rates | stage count *N*, operating point, lever-rule check, S/F and feed-composition exploration |
+| **Extraction design** | …plus your own run: each stream's solute content (titration, wt% or M) and flow rates | stage count *N*, operating point, lever-rule check, S/F and feed-composition exploration |
 
 The method assumes a **Type I** system — only carrier and solvent are partially miscible.
 
@@ -63,7 +63,7 @@ Seven ternary systems ship with the toolkit. Any of them can be loaded from the
 
 Open **[cbpl-kit.vercel.app](https://cbpl-kit.vercel.app)** in any browser.
 
-Enter your titration volumes → click **Calculate** → all figures update instantly.  
+Pick how the solute was measured → enter your readings → click **Calculate** → all figures update instantly.  
 The first load takes ~20 seconds (Python runs in browser via Pyodide); subsequent visits are cached.
 
 ### Option 2 — Jupyter Notebook
@@ -93,6 +93,11 @@ cfg.FLOW_FEED_ML_MIN    = 40.0
 from experiments.experiment_06 import main
 main(output_dir="experiments/experiment_06/outputs")
 ```
+
+`main()` has no mode argument — it always reads the titration volumes above. Entering the
+solute content as wt% or molarity is a feature of the web app; in Python it is a `mode=`
+argument on `compute_stream_points`, from which the rest of the construction is yours to
+assemble.
 
 ---
 
