@@ -46,7 +46,7 @@ const TEAM_DATA = [
     gradient: 'linear-gradient(135deg, #1878a8 0%, #0f2744 100%)',
     bio: [
       'Undergraduate Student',
-      'Computational Biology and Biomolecular Engineering Laboratory',
+      'Computational Biology and Biomolecular Engineering Lab',
       'Department of Chemical and Biological Engineering',
       'Department of Computer Science and Engineering',
       'Seoul National University',
@@ -65,7 +65,7 @@ const TEAM_DATA = [
     gradient: 'linear-gradient(135deg, #5abade 0%, #1878a8 100%)',
     bio: [
       'Undergraduate Student',
-      'Microfluidics and Coating Process Laboratory (MCPL)',
+      'Microfluidics and Coating Process Lab',
       'Department of Chemical and Biological Engineering',
       'Seoul National University',
     ],
@@ -82,7 +82,7 @@ const TEAM_DATA = [
     gradient: 'linear-gradient(135deg, #0f2744 0%, #071a2e 100%)',
     bio: [
       'Professor Emeritus',
-      'Supercritical Fluid Process Laboratory (SFPL)',
+      'Supercritical Fluid Process Lab',
       'Department of Chemical and Biological Engineering',
       'Institute of Chemical Process',
       'Seoul National University',
