@@ -132,7 +132,7 @@ function renderContactPane() {
           Seoul National University<br>
           Seoul 08826, Republic of Korea</p>
         <p class="contact-tagline">Built CBPL-kit to make LLE data analysis more accessible for lab students.</p>
-        <p class="contact-sub" style="color:var(--text)">Developed in Spring 2026 | Last updated in August 2026</p>
+        <p class="contact-sub" style="color:var(--text)">Developed in Spring 2026 | Last updated in October 2026</p>
       </div>
       <div class="team-rows">${rows}</div>
       <div class="contact-submit">
@@ -629,14 +629,7 @@ document.addEventListener('keydown', e => {
 // Concentration box — rendered on window load because katex.min.js is
 // deferred and executes after this classic script.
 const _TITR_LATEX = 'C_{\\mathrm{solute}} = \\dfrac{C_{\\mathrm{NaOH}} \\cdot V_{\\mathrm{NaOH}} \\cdot f}{V_{\\mathrm{aliquot}}}';
-const _CONC_BOX = {
-  titration:  { label: 'Solute Concentration', eq: _TITR_LATEX,
-                note: 'f\\text{: dilution factor}' },
-  wt_percent: { label: 'Solute Mass Fraction', eq: 'w_{\\mathrm{solute}}\\ [\\mathrm{wt\\%}]',
-                note: '\\text{extract and raffinate are placed on the binodal curve}' },
-  molar:      { label: 'Solute Concentration', eq: 'C_{\\mathrm{solute}}\\ [\\mathrm{mol/L}]',
-                note: '\\text{extract and raffinate are placed on the binodal curve}' },
-};
+const _TITR_NOTE  = 'f\\text{: dilution factor}';
 
 // Calculate is held back until the method is chosen. Defaulting to titration
 // would let someone with wt% data compute a wrong answer without ever noticing
@@ -645,7 +638,7 @@ function updateCalcEnabled() {
   const btn = document.getElementById('calc-btn');
   btn.disabled = !(pyReady && concMode);
   document.getElementById('calc-label').textContent =
-    pyReady ? (concMode ? 'Calculate' : 'Choose a method first') : 'Loading\u2026';
+    pyReady ? (concMode ? 'Calculate' : 'Select a method first') : 'Loading\u2026';
 }
 
 function setConcMode(mode) {
@@ -653,20 +646,19 @@ function setConcMode(mode) {
   document.querySelectorAll('.conc-block').forEach(el => {
     el.style.display = (el.dataset.mode === mode) ? '' : 'none';
   });
-  // the stream names and the formula box belong to whichever method is on
-  // screen; with none chosen they would be three labels over nothing
+  // the stream names belong to whichever method is on screen; with none
+  // chosen they would be three labels over nothing
   document.querySelectorAll('.conc-any').forEach(el => {
     el.style.display = mode ? '' : 'none';
   });
   updateCalcEnabled();
-  const b = _CONC_BOX[mode];
-  if (!b) return;          // nothing picked yet: leave the box empty
-  document.getElementById('conc-box-label').textContent = b.label;
-  document.getElementById('titr-formula-eq').innerHTML = _katex(b.eq);
-  document.getElementById('titr-formula-note').innerHTML = _katex(b.note);
 }
 
 window.addEventListener('load', () => {
+  // Only titration converts a reading into a concentration, so only it has a
+  // formula box; wt% and mol/L enter the quantity itself.
+  document.getElementById('titr-formula-eq').innerHTML = _katex(_TITR_LATEX);
+  document.getElementById('titr-formula-note').innerHTML = _katex(_TITR_NOTE);
   const sel = document.getElementById('conc-mode');
   sel.addEventListener('change', () => setConcMode(sel.value));
   setConcMode(sel.value);

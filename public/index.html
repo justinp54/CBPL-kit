@@ -37,14 +37,14 @@
   <!-- Sidebar -->
   <aside>
     <div class="section">
-      <div class="section-label">Concentration Determination</div>
+      <div class="section-label">Solute Concentration</div>
 
       <div class="field">
         <select class="mode-select" id="conc-mode" aria-label="How the solute content was measured">
           <option value="" selected>Select a method…</option>
-          <option value="titration">Titration</option>
+          <option value="titration">Titration volume (mL)</option>
           <option value="wt_percent">Mass fraction (wt%)</option>
-          <option value="molar">Molar concentration (mol/L)</option>
+          <option value="molar">Molar concentration (M)</option>
         </select>
       </div>
 
@@ -116,8 +116,8 @@
         </div>
       </div>
 
-      <div class="corr-stats-box titr-formula-box conc-any">
-        <div class="fml-label" id="conc-box-label">Solute Concentration</div>
+      <div class="corr-stats-box titr-formula-box conc-block" data-mode="titration">
+        <div class="fml-label">Solute Concentration</div>
         <div class="fml-eq" id="titr-formula-eq"></div>
         <div class="fml-note" id="titr-formula-note"></div>
       </div>
