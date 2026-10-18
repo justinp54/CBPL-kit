@@ -15,7 +15,7 @@ It runs the construction numerically, so changing one input and seeing the answe
 | | You supply | You get |
 |---|---|---|
 | **Phase equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity |
-| **Hunter-Nash** | …plus your own run: titration volumes and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
+| **Hunter-Nash** | …plus your own run: each stream's solute content (titration, wt% or M) and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
 
 ## How to cite
 
@@ -29,6 +29,25 @@ The DOI always points at the most recent release, so it stays correct as the too
 
 Everything below starts here. In the **System ✦** tab, pick a bundled system from the dropdown, or enter your own measured data in the form — then **Apply System**.
 The method assumes a **Type I** system: only carrier and solvent are partially miscible.
+
+### Notation
+
+The three components are numbered by role:
+
+| | | in the bundled SNU CBE system |
+|---|---|---|
+| **1** | carrier | n-bromopropane |
+| **2** | solute | propionic acid |
+| **3** | solvent | water |
+
+The two phases reuse those digits, each taking the number of the component that dominates it. Phase **1** is the carrier-rich phase, the raffinate; phase **3** is the solvent-rich phase, the extract. Nothing is phase 2, because it stands for the solute, which is present in both phases.
+
+In $w_{ij}$ the first subscript ($i$) is the component and the second ($j$) is the phase it is in. For example:
+
+$$w_{21} = \text{solute in the raffinate}, \qquad w_{23} = \text{solute in the extract}$$
+
+- One subscript on its own is the overall mass fraction: $w_2$ is solute in the mixture as a whole
+- Tables and figures use $100w_{ij}$, the same number written as a percentage
 
 ## 2. Phase equilibrium
 
@@ -64,12 +83,21 @@ Enter your run in the sidebar, then **Calculate** (or press **Enter**). One calc
 
 ### Sidebar inputs
 
+Pick **how the solute content was measured** at the top of the sidebar. The fields below change to match, and **Calculate** stays disabled until you choose.
+
+| Method | What you enter, per stream |
+|--------|----------------------------|
+| **Titration volume (mL)** | the titre, with its dilution factor |
+| **Mass fraction (wt%)** | the solute mass fraction |
+| **Molar concentration (M)** | the solute molarity |
+
+**Titration** converts the titre for you:
+
 $$C_{\mathrm{solute}} = \dfrac{C_{\mathrm{NaOH}} \cdot V_{\mathrm{NaOH}} \cdot f}{V_{\mathrm{aliquot}}}$$
 
-Every term is a field you set, so enter what you actually did. The only thing assumed is 1:1 acid–base neutralisation.
+C<sub>NaOH</sub> and V<sub>aliquot</sub> are set once at the top, the rest per stream. Enter the volume exactly as read from the burette; `f` is applied for you, and undiluted means `f` = 1. The only thing assumed is 1:1 acid–base neutralisation.
 
-- **C<sub>NaOH</sub>** and **V<sub>aliquot</sub>**, at the top — your titrant concentration and the aliquot you titrated
-- Then for each stream, its **dilution factor `f`** and the **titration volume**. Enter the volume exactly as read from the burette; `f` is applied for you, and undiluted means `f` = 1
+**wt% and molarity** take one number per stream. The feed carries no solvent, so that number fixes its composition; the extract and the raffinate are placed **on the binodal curve**, which fixes theirs.
 
 The annotation for each stream is shown on the table below, and the same letters are used in the diagram.
 
@@ -79,7 +107,7 @@ The annotation for each stream is shown on the table below, and the same letters
 | Extract | E<sub>1</sub> |
 | Raffinate | R<sub>N</sub> |
 
-Turning a titre into a composition needs the sample's density. The tool solves for it under **volume additivity** rather than assuming the pure carrier or pure solvent, so its compositions differ slightly from a hand calculation.
+Turning a solute concentration into a composition needs the sample's density. The tool solves for it under **volume additivity** rather than assuming the pure carrier or pure solvent, so its compositions differ slightly from a hand calculation.
 
 Flow rates are the solvent (E<sub>N+1</sub>) and feed (R<sub>0</sub>) volumetric flows in mL/min. The construction is on a **mass** basis, so an S/F ratio by volume is a different number by mass.
 
@@ -110,7 +138,7 @@ $$w_{M'} = \dfrac{\dot m_F\,w_F + \dot m_S\,w_S}{\dot m_F + \dot m_S}$$
 
 where $\dot m_F$, $\dot m_S$ are the feed and solvent mass flow rates and $w_F$, $w_S$ their compositions.
 
-That gives you two cross-checks, and they matter because **the two routes rest on different measurements** — M on the compositions from titration, M′ on the flow rates you read off the rotameters.
+That gives you two cross-checks, and they matter because **the two routes rest on different measurements** — M on the stream compositions you measured, M′ on the flow rates you read off the rotameters.
 
 ### S:F Explorer ✦
 
