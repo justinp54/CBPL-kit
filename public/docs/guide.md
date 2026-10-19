@@ -1,6 +1,6 @@
-## The experiment
+## The reference experiment
 
-This tool was initially built for the liquid-liquid extraction experiment in the Chemical and Biological Process Laboratory at Seoul National University.
+This tool was initially built for the liquid-liquid extraction experiment in the **Chemical and Biological Process Laboratory** at **Seoul National University**.
 
 Water is used to extract propionic acid out of n-bromopropane in a counter-current packed column. Once the column reaches steady state you sample the feed, extract, and raffinate, and titrate each against NaOH to find how much acid it carries. From those three numbers you determine how many equilibrium stages the separation needs, by the **Hunter-Nash** construction on a ternary phase diagram.
 
@@ -10,12 +10,12 @@ Water is used to extract propionic acid out of n-bromopropane in a counter-curre
 
 ## What this tool does
 
-It runs the construction numerically, so changing one input and seeing the answer costs a click instead of a redraw. There are two workflows, and you can stop after the first:
+There are two workflows, and you can stop after the first:
 
-| | You supply | You get |
+| | Input | Output |
 |---|---|---|
-| **Phase equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity |
-| **Hunter-Nash** | …plus your own run: each stream's solute content (titration, wt% or M) and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
+| **1. Ternary Phase Equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity |
+| **2. LLE Hunter-Nash Analysis** | …plus your own run: each stream's solute content (titration, wt% or M) and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
 
 ## How to cite
 

@@ -138,7 +138,7 @@ function renderContactPane() {
       <div class="contact-submit">
         <div class="contact-submit-text">
           <div class="contact-submit-title">Contribute a System</div>
-          <div class="contact-submit-desc">Have an LLE system we don't bundle yet? We'd like to add it. Send us the YAML and we'll review it and write back.</div>
+          <div class="contact-submit-desc">Have a ternary system we don't bundle yet? We'd like to add it. Send us the YAML and we'll review it and write back.</div>
         </div>
         <div class="contact-submit-actions">
           <a class="contact-submit-btn"
