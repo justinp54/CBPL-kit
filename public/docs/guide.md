@@ -12,78 +12,66 @@ Water is used to extract propionic acid out of n-bromopropane in a counter-curre
 
 There are two workflows, and you can stop after the first:
 
-| | Input | Output |
+| Workflow | Input | Output |
 |---|---|---|
-| **1. Ternary Phase Equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity |
-| **2. LLE Hunter-Nash Analysis** | …plus your own run: each stream's solute content (titration, wt% or M) and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
+| **I. Ternary Phase Equilibrium** | equilibrium + tie-line data for a system | binodal curve, full tie-line compositions, conjugate curve, plait point, selectivity |
+| **II. LLE Hunter-Nash Analysis** | …plus your own run: each stream's solute content (titration, wt% or M) and flow rates | stage count *N*, lever-rule check, S/F and feed exploration |
 
 ## How to cite
 
-Used CBPL-kit for a report or a paper? Please cite the archived release:
-
+> **Software**<br>
 > Park, J., Lee, S., & Lee, Y.-W. (2026). *CBPL-kit: a web-based interactive toolkit for ternary phase equilibrium and liquid-liquid extraction*. Zenodo. [https://doi.org/10.5281/zenodo.21862135](https://doi.org/10.5281/zenodo.21862135)
-
-The DOI always points at the most recent release, so it stays correct as the toolkit is updated. The **Cite this repository** button on [GitHub](https://github.com/justinp54/CBPL-kit) gives the same thing in BibTeX and other formats.
+>
+> **Paper**<br>
+> Coming soon
 
 ## 1. Choose a system
 
-Everything below starts here. In the **System ✦** tab, pick a bundled system from the dropdown, or enter your own measured data in the form — then **Apply System**.
-The method assumes a **Type I** system: only carrier and solvent are partially miscible.
+In the **System ✦** tab, you can select a bundled system from the dropdown, or enter your own measured data in the form — then **Apply System**.
+The toolkit works for a **Type I** system: only carrier and solvent are partially miscible.
 
 ### Notation
 
 The three components are numbered by role:
 
-| | | in the bundled SNU CBE system |
+| | Role | Component (reference experiment) |
 |---|---|---|
 | **1** | carrier | n-bromopropane |
 | **2** | solute | propionic acid |
 | **3** | solvent | water |
 
-The two phases reuse those digits, each taking the number of the component that dominates it. Phase **1** is the carrier-rich phase, the raffinate; phase **3** is the solvent-rich phase, the extract. Nothing is phase 2, because it stands for the solute, which is present in both phases.
+Phase **1** is the carrier-rich phase, the raffinate; phase **3** is the solvent-rich phase, the extract.
 
-In $w_{ij}$ the first subscript ($i$) is the component and the second ($j$) is the phase it is in. For example:
+Compositions are expressed in mass fraction $w_{ij}$, where the first index refers to the component and the second to the phase. For example:
 
 $$w_{21} = \text{solute in the raffinate}, \qquad w_{23} = \text{solute in the extract}$$
 
 - One subscript on its own is the overall mass fraction: $w_2$ is solute in the mixture as a whole
 - Tables and figures use $100w_{ij}$, the same number written as a percentage
 
-## 2. Phase equilibrium
-
-Both tabs are drawn as soon as a system loads.
-
+## 2. Workflow I
 ### Equilibrium
 
-Binodal curve fitted to the data, with every measured tie line.
+Ternary diagram: **binodal curve** fitted to the data, with every measured **tie-line**.
 
-Side panel: the **distribution coefficients** and **selectivity**,
-
-$$D_1 = \dfrac{w_{13}}{w_{11}},\quad D_2 = \dfrac{w_{23}}{w_{21}},\quad S = \dfrac{D_2}{D_1}$$
-
-plus **Othmer-Tobias / Hand / Bachman consistency fits**.
-
-- Selectivity is highest at low solute fraction and falls to 1 at the plait point
+Side panel: the **distribution coefficients**, **selectivity**, and **Othmer-Tobias / Hand / Bachman correlations**.
 
 ### Conjugate Curve
 
-Lets a tie line be interpolated anywhere, not only where one was measured. Two constructions are available:
+Two constructions are available:
 
 - **Diagonal** draws auxiliary lines parallel to two sides of the triangle from each tie-line end
 - **Horizontal** replaces one of them with a horizontal line, picking whichever side keeps the auxiliary points inside the triangle
 
 Each gives its own plait-point estimate (◆), and **Treybal's Hand-coordinate** method gives a third.
 
-- How far the three disagree tells you how well your data pins the plait point
-- The curve **ends** at the plait point — beyond it the two phases are one
+## 3. Workflow II
 
-## 3. Hunter-Nash analysis
-
-Enter your run in the sidebar, then **Calculate** (or press **Enter**). One calculation feeds every tab below.
+Enter your run in the sidebar, then **Calculate**.
 
 ### Sidebar inputs
 
-Pick **how the solute content was measured** at the top of the sidebar. The fields below change to match, and **Calculate** stays disabled until you choose.
+Select **how the solute concentration was determined** at the top of the sidebar. The fields below change to match, and **Calculate** stays disabled until you choose.
 
 | Method | What you enter, per stream |
 |--------|----------------------------|
@@ -91,25 +79,23 @@ Pick **how the solute content was measured** at the top of the sidebar. The fiel
 | **Mass fraction (wt%)** | the solute mass fraction |
 | **Molar concentration (M)** | the solute molarity |
 
-**Titration** converts the titre for you:
+**Titration**:
 
 $$C_{\mathrm{solute}} = \dfrac{C_{\mathrm{NaOH}} \cdot V_{\mathrm{NaOH}} \cdot f}{V_{\mathrm{aliquot}}}$$
 
-C<sub>NaOH</sub> and V<sub>aliquot</sub> are set once at the top, the rest per stream. Enter the volume exactly as read from the burette; `f` is applied for you, and undiluted means `f` = 1. The only thing assumed is 1:1 acid–base neutralisation.
+The toolkit assumes NaOH titration (1:1 acid–base neutralisation).
 
-**wt% and molarity** take one number per stream. The feed carries no solvent, so that number fixes its composition; the extract and the raffinate are placed **on the binodal curve**, which fixes theirs.
+- **Titration volume / molar concentration** is converted to a full composition using a volume-additive mixture density
+- **mass fraction** fixes the stream point on the diagram directly
 
 The annotation for each stream is shown on the table below, and the same letters are used in the diagram.
 
-| Sidebar | On the diagram |
+| Stream | On the diagram |
 |---------|----------------|
 | Feed | R<sub>0</sub> |
 | Extract | E<sub>1</sub> |
 | Raffinate | R<sub>N</sub> |
-
-Turning a solute concentration into a composition needs the sample's density. The tool solves for it under **volume additivity** rather than assuming the pure carrier or pure solvent, so its compositions differ slightly from a hand calculation.
-
-Flow rates are the solvent (E<sub>N+1</sub>) and feed (R<sub>0</sub>) volumetric flows in mL/min. The construction is on a **mass** basis, so an S/F ratio by volume is a different number by mass.
+| Solvent | E<sub>N+1</sub> |
 
 ### Hunter-Nash
 
@@ -120,16 +106,14 @@ The full stage construction. **P** is the operating point — intersection of R<
 
 ### Stages
 
-The tie line interpolated for each stage, with its auxiliary lines back to the conjugate curve.
+The tie line interpolated for each stage from the conjugate curve.
 
 ### Lever Rule
 
 | Point | Meaning |
 |-------|---------|
-| **R<sub>0</sub>** | Feed — on the carrier–solute edge, no solvent |
-| **E<sub>N+1</sub>** | Solvent inlet — the pure-solvent vertex |
 | **M** | Mixture point, from the construction: where E<sub>1</sub>–R<sub>N</sub> crosses E<sub>N+1</sub>–R<sub>0</sub> |
-| **M′** | The same point from a mass balance on your flow rates |
+| **M′** | The same point from a mass balance |
 | **E<sub>1</sub>′** | Predicted first extract — R<sub>N</sub>–M′ extended to the extract branch |
 
 M′ is the mass-weighted average of the two inlet streams:
@@ -138,23 +122,21 @@ $$w_{M'} = \dfrac{\dot m_F\,w_F + \dot m_S\,w_S}{\dot m_F + \dot m_S}$$
 
 where $\dot m_F$, $\dot m_S$ are the feed and solvent mass flow rates and $w_F$, $w_S$ their compositions.
 
-That gives you two cross-checks, and they matter because **the two routes rest on different measurements** — M on the stream compositions you measured, M′ on the flow rates you read off the rotameters.
-
 ### S:F Explorer ✦
 
 Vary the solvent-to-feed ratio for the same feed and target raffinate. The operable span is computed in advance and the slider restricted to it; infeasible ranges are shaded.
 
-- The trend plot shows N rising steeply toward (S/F)<sub>min</sub> — the solvent-versus-stages trade-off
+- The trend plot shows N rising steeply toward (S/F)<sub>min</sub>
 
 ### Feed Explorer ✦
 
-Same, for the feed solute fraction.
+Vary the feed composition for the same solvent-to-feed ratio and target raffinate. The operable span is computed in advance and the slider restricted to it.
 
 The trend is **not monotonic** — worth working out why. A richer feed must transfer more solute (raising N) but carries less carrier at fixed mass flow (lowering N); the crossover is the maximum in the curve.
 
 ## Export
 
-The **Export** button saves every figure, the numerical results, and the system YAML as one ZIP for your report. Available after a calculation.
+The **Export** button saves every figure, the numerical results, and the system YAML as one ZIP for your report.
 
 ## Tips
 
